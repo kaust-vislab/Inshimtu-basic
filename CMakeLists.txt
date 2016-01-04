@@ -41,6 +41,14 @@ include("${PARAVIEW_USE_FILE}")
 include(vtkModuleMacros)
 include(vtkMPI)
 
+find_package(Boost 1.53 REQUIRED COMPONENTS
+  program_options
+  filesystem
+  system
+  regex
+)
+include_directories(${Boost_INCLUDE_DIRS})
+
 
 #add_subdirectory("source")
 set(Executable_SRCS
@@ -65,6 +73,7 @@ target_link_libraries(Inshimtu
   vtkIONetCDF
   vtkNetCDF
   hdf5
+  ${Boost_LIBRARIES}
 )
 vtk_mpi_link(Inshimtu)
 

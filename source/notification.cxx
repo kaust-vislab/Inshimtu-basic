@@ -10,19 +10,43 @@
 #include <sys/types.h>
 #include <sys/inotify.h>
 
-INotify::INotify()
+
+namespace fs = boost::filesystem;
+
+
+INotify::INotify( const fs::path& watch
+                , const boost::regex& mask
+                , const fs::path& done)
   : inotify_descriptor(-1)
-  , done_descriptor(-1)
   , watch_descriptor(-1)
+  , done_descriptor(-1)
+  , watch_directory(watch)
+  , watch_files_filter(mask)
+  , done_file(done)
 {
   std::cout << "STARTED INotify" << std::endl;
 
-  // TODO: Improve
-  // srcspath must exist; must be a directory
-  // donefile must exist; should be a file; not inside of srcspath
-  // TODO: Fix hardcoded paths; client should specify
-  std::string srcspath = "/home/holstgr/Development/Inshimtu/build/testing";
-  std::string donefilepath = srcspath + ".done";
+  if (!fs::is_directory(watch_directory))
+  {
+    std::cerr << "Failed: Cannot set inotify 'watch'. Expected an exisiting directory. "
+              << " Ensure directory '" << watch_directory << "' exists." << std::endl;
+    return;
+  }
+
+  if (!fs::is_regular_file(done_file))
+  {
+    std::cerr << "Failed: Cannot set inotify 'done'. Expected an exisiting file. "
+              << " Ensure file '" << done_file << "' exists." << std::endl;
+    return;
+  }
+
+  if (fs::equivalent(done_file.parent_path(), watch_directory))
+  {
+    std::cerr << "Failed: Cannot set inotify 'done'. Expected file outside of 'watch' directory. "
+              << " Ensure file '" << done_file << "' is not within '"
+              << watch_directory << "' directory." << std::endl;
+    return;
+  }
 
   inotify_descriptor = inotify_init();
 
@@ -32,23 +56,23 @@ INotify::INotify()
     return;
   }
 
-  done_descriptor = inotify_add_watch( inotify_descriptor, donefilepath.c_str()
+  done_descriptor = inotify_add_watch( inotify_descriptor, done_file.c_str()
                                      , IN_ACCESS | IN_MODIFY | IN_ATTRIB | IN_DELETE_SELF );
 
   if ( done_descriptor < 0)
   {
     std::cerr << "Failed: Cannot add 'done' watch. Ensure file '"
-              << donefilepath << "' exists." << std::endl;
+              << done_file << "' exists." << std::endl;
     return;
   }
 
-  watch_descriptor = inotify_add_watch( inotify_descriptor, srcspath.c_str()
+  watch_descriptor = inotify_add_watch( inotify_descriptor, watch_directory.c_str()
                                       , IN_CLOSE_WRITE );
 
   if ( watch_descriptor < 0)
   {
     std::cerr << "Failed: Cannot add filesystem watcher."
-              << "Ensure directory '" << srcspath << "' exists." << std::endl;
+              << "Ensure directory '" << watch_directory << "' exists." << std::endl;
     remove_watches();
     return;
   }
@@ -67,7 +91,7 @@ INotify::~INotify()
   std::cout << "FINALIZED INotify." << std::endl;
 }
 
-void INotify::processEvents(std::vector<std::string>& out_newFiles)
+void INotify::processEvents(std::vector<fs::path>& out_newFiles)
 {
   assert(done_descriptor > 0 && "'done' event already recieved.");
 
@@ -90,27 +114,28 @@ void INotify::processEvents(std::vector<std::string>& out_newFiles)
     struct inotify_event* event = static_cast<struct inotify_event*>(static_cast<void*>(&buffer[i]));
     if (is_watched_event(*event) && is_closed_file(*event))
     {
-      std::cout << "Watched file '" << event->name << "' was closed.\n" << std::endl;
-
-      // add to client's newly found files
-      out_newFiles.push_back(event->name);
-
-      // add to our bookkeeping list
-      auto fitr = std::find(found_files.begin(), found_files.end(), std::string(event->name));
-      if (fitr == found_files.end())
+      if (boost::regex_match(event->name, watch_files_filter))
       {
-        found_files.push_back(event->name);
-        std::cout << "Added newly found file '" << event->name << "' to found files.\n" << std::endl;
+        const fs::path name(watch_directory / event->name);
+
+        std::cout << "Watched file '" << name << "' was closed.\n" << std::endl;
+
+        // add to client's newly found files
+        out_newFiles.push_back(name);
+
+        // add to our bookkeeping list
+        auto fitr = std::find(found_files.begin(), found_files.end(), name);
+        if (fitr == found_files.end())
+        {
+          found_files.push_back(name);
+          std::cout << "Added newly found file '" << name << "' to found files.\n" << std::endl;
+        }
       }
     }
     else if (is_done_event(*event))
     {
       done = true;
-
-      // TODO: Fix hardcoded paths; client should specify
-      std::string srcspath = "/home/holstgr/Development/Inshimtu/build/testing";
-      std::string donefilepath = srcspath + ".done";
-      std::cout << "DONE Event! file '" << donefilepath << "' was modified.\n" << std::endl;
+      std::cout << "DONE Event! file '" << done_file << "' was modified.\n" << std::endl;
     }
     i += EVENT_SIZE + event->len;
   }

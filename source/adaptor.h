@@ -7,6 +7,8 @@
 #include <vector>
 #include <string>
 
+#include <boost/filesystem.hpp>
+
 #include <sys/types.h>
 
 class Attributes;
@@ -19,18 +21,19 @@ namespace FEAdaptor
 
   void Finalize();
 
-  void CoProcess(const Grid& grid, const Attributes& attributes, double time,
-                 uint timeStep, bool forceOutput);
+  void CoProcess( const Grid& grid, const Attributes& attributes, double time
+                , uint timeStep, bool forceOutput);
 }
 
 class Catalyst
 {
 public:
-  Catalyst(const std::vector<std::string>& scripts);
+  Catalyst( const std::vector<boost::filesystem::path>& scripts
+          , uint delay = 5);
   ~Catalyst();
 
-  void coprocess(vtkImageData* data,
-                 double time, uint timeStep, bool forceOutput);
+  void coprocess( vtkImageData* data
+                , double time, uint timeStep, bool forceOutput);
 
 private:
   vtkNew<vtkCPProcessor> processor;

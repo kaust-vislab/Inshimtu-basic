@@ -34,6 +34,10 @@
 #include <errno.h>
 #include <sys/types.h>
 
+
+namespace fs = boost::filesystem;
+
+
 Inporter::Inporter(Catalyst& coprocessor)
   : coprocessor(coprocessor)
   , timeStep(0)
@@ -48,11 +52,11 @@ Inporter::~Inporter()
   std::cout << "FINISHED Inporter. Time:" << timeStep << std::endl;
 }
 
-void Inporter::process(const std::vector<std::string>& newfiles)
+void Inporter::process(const std::vector<fs::path>& newfiles)
 {
-  std::vector<std::string> processFiles;
+  std::vector<fs::path> processFiles;
 
-  for(const std::string& name : newfiles)
+  for(const fs::path& name : newfiles)
   {
     auto wfitr = std::find(workingFiles.begin(), workingFiles.end(), name);
     auto cfitr = std::find(completedFiles.begin(), completedFiles.end(), name);
@@ -78,25 +82,21 @@ void Inporter::process(const std::vector<std::string>& newfiles)
 
         std::cout << "Inporter: Updating data and Catalyst..." << std::endl;
 
-        // TODO: Fix hardcoded paths; client should specify
-        const std::string srcspath = "/home/holstgr/Development/Inshimtu/build/testing";
-        const std::string filepath = srcspath + "/" + name;
+        vtkSmartPointer<vtkImageData> data = processXMLImageDataFile(name);
 
-        vtkSmartPointer<vtkImageData> data = processXMLImageDataFile(filepath);
-
-        if (vtkMPASReader::CanReadFile(filepath.c_str()))
+        if (vtkMPASReader::CanReadFile(name.c_str()))
         {
-          vtkSmartPointer<vtkUnstructuredGrid> datagrid = processMPASDataFile(filepath);
+          vtkSmartPointer<vtkUnstructuredGrid> datagrid = processMPASDataFile(name);
         }
-        else if (vtkNetCDFCFReader::CanReadFile(filepath.c_str()))
+        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
         {
-          vtkSmartPointer<vtkDataObject> dataobj2 = processNetCDFCFDataFile(filepath);
+          vtkSmartPointer<vtkDataObject> dataobj2 = processNetCDFCFDataFile(name);
         }
         else
         {
           // TODO: test if filepath is an NC file?
-          vtkSmartPointer<vtkDataObject> data1 = processNetCDFDataFile(filepath);
-          vtkSmartPointer<vtkImageData> data2 = processRawNetCDFDataFile(filepath);
+          //vtkSmartPointer<vtkDataObject> data1 = processNetCDFDataFile(name);
+          //vtkSmartPointer<vtkImageData> data2 = processRawNetCDFDataFile(name);
         }
 
         completedFiles.push_back(name);
@@ -119,7 +119,7 @@ void Inporter::process(const std::vector<std::string>& newfiles)
   }
 }
 
-void Inporter::processDataFile(const std::string& filepath)
+void Inporter::processDataFile(const fs::path& filepath)
 {
   vtkNew<vtkDataReader> reader;
   vtkNew<vtkInformation> metadata;
@@ -200,7 +200,7 @@ void Inporter::processDataFile(const std::string& filepath)
   reader->CloseVTKFile();
 }
 
-vtkSmartPointer<vtkImageData> Inporter::processXMLImageDataFile(const std::string& filepath)
+vtkSmartPointer<vtkImageData> Inporter::processXMLImageDataFile(const fs::path& filepath)
 {
   vtkNew<vtkXMLImageDataReader> reader;
   vtkNew<vtkInformation> metadata;
@@ -217,7 +217,7 @@ vtkSmartPointer<vtkImageData> Inporter::processXMLImageDataFile(const std::strin
   return data;
 }
 
-vtkSmartPointer<vtkUnstructuredGrid> Inporter::processMPASDataFile(const std::string& filepath)
+vtkSmartPointer<vtkUnstructuredGrid> Inporter::processMPASDataFile(const fs::path& filepath)
 {
   vtkNew<vtkMPASReader> reader;
 
@@ -233,7 +233,7 @@ vtkSmartPointer<vtkUnstructuredGrid> Inporter::processMPASDataFile(const std::st
   return data;
 }
 
-vtkSmartPointer<vtkDataObject> Inporter::processNetCDFCFDataFile(const std::string& filepath)
+vtkSmartPointer<vtkDataObject> Inporter::processNetCDFCFDataFile(const fs::path& filepath)
 {
   vtkNew<vtkNetCDFCFReader> reader;
 
@@ -249,7 +249,7 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFCFDataFile(const std::stri
   return data;
 }
 
-vtkSmartPointer<vtkDataObject> Inporter::processNetCDFDataFile(const std::string& filepath)
+vtkSmartPointer<vtkDataObject> Inporter::processNetCDFDataFile(const fs::path& filepath)
 {
   vtkNew<vtkNetCDFReader> reader;
 
@@ -265,7 +265,7 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFDataFile(const std::string
   return data;
 }
 
-vtkSmartPointer<vtkImageData> Inporter::processRawNetCDFDataFile(const std::string& filepath)
+vtkSmartPointer<vtkImageData> Inporter::processRawNetCDFDataFile(const fs::path& filepath)
 {
 // https://www.unidata.ucar.edu/software/netcdf/docs/simple_xy_nc4_rd_8c-example.html
 // https://www.unidata.ucar.edu/software/netcdf/docs/pres_temp_4D_rd_8c-example.html
@@ -306,7 +306,7 @@ vtkSmartPointer<vtkImageData> Inporter::processRawNetCDFDataFile(const std::stri
   return data;
 }
 
-vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const std::string& filepath)
+vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const fs::path& filepath)
 {
 
   std::cout << "Processing HDF5 DataFile:'" << filepath << "'" << std::endl;

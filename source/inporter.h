@@ -9,6 +9,8 @@
 #include <vector>
 #include <string>
 
+#include <boost/filesystem.hpp>
+
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -20,14 +22,14 @@ public:
   Inporter(Catalyst& coprocessor);
   ~Inporter();
 
-  void process(const std::vector<std::string>& newfiles);
+  void process(const std::vector<boost::filesystem::path>& newfiles);
 
 protected:
 
   Catalyst& coprocessor;
 
-  std::vector<std::string> workingFiles;
-  std::vector<std::string> completedFiles;
+  std::vector<boost::filesystem::path> workingFiles;
+  std::vector<boost::filesystem::path> completedFiles;
 
   // time
   uint timeStep;
@@ -36,14 +38,14 @@ protected:
 
 private:
 
-  void processDataFile(const std::string& filepath);
+  void processDataFile(const boost::filesystem::path& filepath);
 
-  vtkSmartPointer<vtkImageData> processXMLImageDataFile(const std::string& filepath);
-  vtkSmartPointer<vtkUnstructuredGrid> processMPASDataFile(const std::string& filepath);
-  vtkSmartPointer<vtkDataObject> processNetCDFCFDataFile(const std::string& filepath);
-  vtkSmartPointer<vtkDataObject> processNetCDFDataFile(const std::string& filepath);
-  vtkSmartPointer<vtkImageData> processRawNetCDFDataFile(const std::string& filepath);
-  vtkSmartPointer<vtkImageData> processHDF5DataFile(const std::string& filepath);
+  vtkSmartPointer<vtkImageData> processXMLImageDataFile(const boost::filesystem::path& filepath);
+  vtkSmartPointer<vtkUnstructuredGrid> processMPASDataFile(const boost::filesystem::path& filepath);
+  vtkSmartPointer<vtkDataObject> processNetCDFCFDataFile(const boost::filesystem::path& filepath);
+  vtkSmartPointer<vtkDataObject> processNetCDFDataFile(const boost::filesystem::path& filepath);
+  vtkSmartPointer<vtkImageData> processRawNetCDFDataFile(const boost::filesystem::path& filepath);
+  vtkSmartPointer<vtkImageData> processHDF5DataFile(const boost::filesystem::path& filepath);
 
 };
 

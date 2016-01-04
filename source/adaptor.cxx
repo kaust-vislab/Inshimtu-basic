@@ -16,13 +16,18 @@
 #include <vtkPoints.h>
 #include <vtkPointData.h>
 
-Catalyst::Catalyst(const std::vector<std::string>& scripts)
+
+namespace fs = boost::filesystem;
+
+
+Catalyst::Catalyst( const std::vector<boost::filesystem::path>& scripts
+                  , uint delay)
 {
   std::cout << "Starting Catalyst..." << std::endl;
 
   processor->Initialize();
 
-  for (const std::string& script : scripts)
+  for (const fs::path& script : scripts)
   {
     vtkNew<vtkCPPythonScriptPipeline> pipeline;
 
@@ -36,7 +41,7 @@ Catalyst::Catalyst(const std::vector<std::string>& scripts)
 
   std::cout << "\t\t...Done" << std::endl;
   std::cout << "Please connect in Paraview" << std::endl;
-  sleep(2);
+  sleep(delay);
 }
 
 void Catalyst::coprocess(vtkImageData* data,

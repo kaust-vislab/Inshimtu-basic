@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 
+#include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
+
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
@@ -13,19 +16,25 @@
 class INotify
 {
 public:
-  INotify();
+  INotify( const boost::filesystem::path& watch_directory
+         , const boost::regex& watch_files_filter
+         , const boost::filesystem::path& done_file);
   ~INotify();
 
-  void processEvents(std::vector<std::string>& out_newFiles);
+  void processEvents(std::vector<boost::filesystem::path>& out_newFiles);
 
   bool isDone() const { return done_descriptor < 0; }
 
 protected:
   int inotify_descriptor;
-  int done_descriptor;
   int watch_descriptor;
+  int done_descriptor;
 
-  std::vector<std::string> found_files;
+  const boost::filesystem::path watch_directory;
+  const boost::regex watch_files_filter;
+  const boost::filesystem::path done_file;
+
+  std::vector<boost::filesystem::path> found_files;
 
 private:
 
