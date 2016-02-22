@@ -13,7 +13,7 @@
 
 class Attributes;
 class Grid;
-class vtkImageData;
+class vtkDataObject;
 
 namespace FEAdaptor
 {
@@ -32,7 +32,7 @@ public:
           , uint delay = 5);
   ~Catalyst();
 
-  void coprocess( vtkImageData* data
+  void coprocess( vtkDataObject* data
                 , double time, uint timeStep, bool forceOutput);
 
 private:

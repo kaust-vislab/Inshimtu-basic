@@ -28,6 +28,11 @@ namespace fs = boost::filesystem;
 
 namespace
 {
+const uint32_t inshimtu_version_major = 0;
+const uint32_t inshimtu_version_minor = 0;
+const uint32_t inshimtu_version_patch = 2;
+
+
 const po::variables_map handleOptions(int argc, const char* const argv[])
 {
   po::variables_map opts;
@@ -41,7 +46,7 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
     ("done,d", po::value<std::string>()->required(), "pre-existing termination trigger; done file; file must be outside watch directory")
     ("initial,i", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-seprated list of pre-exisiting files to process (unquoted for shell expansion)")
     ("scripts,s", po::value<std::vector<std::string>>()->required(), "list of Catalyst scripts for visualization processing")
-    ("pause,p", po::value<uint>()->default_value(5), "initial delay in seconds to wait for ParaView to connect before processing commences")
+    ("pause,p", po::value<uint>()->default_value(0), "initial delay in seconds to wait for ParaView to connect before processing commences")
    ;
 
   po::options_description helpDesc("help options");
@@ -61,7 +66,10 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
 
   if (opts.find("version") != opts.end())
   {
-    std::cout << "Inshimtu v0.0.1"
+    std::cout << "Inshimtu v"
+              << inshimtu_version_major << "."
+              << inshimtu_version_minor << "."
+              << inshimtu_version_patch
               << std::endl << std::endl;
     foundVersion = true;
   }
@@ -95,8 +103,25 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
                  "Run the application with the appropriate Catalyst viewer: \n"
                  "\n"
                  "``` \n"
-                 "module add kvl-applications paraview \n"
+                 "module add kvl-applications paraview/4.4.0-mpich-x86_64 \n"
                  "paraview & \n"
+                 "``` \n"
+                 "\n"
+                 "Enable Catalyst connection in ParaView: \n"
+                 "* Select Catalyst / Connect... from menu. \n"
+                 "* Click OK in Catalyst Server Port dialog to accept connections from Inshimtu. \n"
+                 "* Click Ok in Ready for Catalyst Connections dialog. \n"
+                 "* Select Catalyst / Pause Simulation from menu. \n"
+                 "* Wait for connection to establish. \n"
+                 "\n"
+                 "Note: Failure to pause the simulation will prevent the first file from displaying. \n"
+                 "\n"
+                 "The environment that runs Inshimtu requires the same ParaView "
+                 "environment it was built with, plus the ParaView Python libraries. \n"
+                 "For now, use this module to update the PYTHONPATH: \n"
+                 "\n"
+                 "``` \n"
+                 "module add dev-inshimtu \n"
                  "``` \n"
                  "\n"
                  "Basic Inshimtu: \n"
@@ -124,11 +149,6 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
                  "build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename*.vti \n"
                  "``` \n"
                  "\n"
-                 "With Inshimtu running, connect via Catalyst in ParaView: \n"
-                 "* Select Catalyst / Connect... from menu. \n"
-                 "* Click OK in Catalyst Server Port dialog to accept connections from Inshimtu. \n"
-                 "* Wait for connection to establish. \n"
-                 "\n"
                  "To demonstrate, copy the data files into the input directory (to simulate their creation via simulation): \n"
                  "\n"
                  "``` \n"
@@ -139,12 +159,14 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
                  "\n"
                  "Note: Alternatively, specify the files to process via the --initial files option, shown above.\n"
                  "\n"
-                 "While the file creation (copying) is being performed, do the following in ParaView: \n"
+                 "Post-Connection: While the file creation (copying) is being performed, do the following in ParaView: \n"
                  "\n"
                  "* Toggle Disclosure rectangle on catalyst/PVTrivialProducer1 source in Pipeline Browser to view data. \n"
                  "* Click Apply button for Extract:PVTrivialProducer1 filter. \n"
-                 "* Make Extract:PVTrivialProducer1 filter visible."
-              << std::endl << std::endl;
+                 "* Make Extract:PVTrivialProducer1 filter visible.\n"
+                 "* Set Variable and Representation. \n"
+                 "* Select Catalyst / Continue from menu.\n"
+              << std::endl;
     foundHelp = true;
   }
 

@@ -11,6 +11,7 @@
 #include <vtkCPPythonScriptPipeline.h>
 #include <vtkDoubleArray.h>
 #include <vtkFloatArray.h>
+#include <vtkDataObject.h>
 #include <vtkImageData.h>
 #include <vtkNew.h>
 #include <vtkPoints.h>
@@ -44,7 +45,7 @@ Catalyst::Catalyst( const std::vector<boost::filesystem::path>& scripts
   sleep(delay);
 }
 
-void Catalyst::coprocess(vtkImageData* data,
+void Catalyst::coprocess(vtkDataObject* data,
                double time, uint timeStep, bool forceOutput)
 {
   vtkNew<vtkCPDataDescription> dataDescription;

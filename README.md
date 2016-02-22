@@ -2,6 +2,18 @@
 
 An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst).
 
+##TODOs
+### Testing Example...
+build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i /lustre/project/k1033/Projects/hari/makkah2_wrfout_d02_2015.qsnow_qrain_qvapor.nc
+
+build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename_1_0.vti
+
+build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename_*.vti
+
+### Notes
+
+
+
 ##Building
 
 ```
@@ -24,8 +36,25 @@ touch build/testing.done
 Run the application with the appropriate Catalyst viewer:
 
 ```
-module add kvl-applications paraview
+module add kvl-applications paraview/4.4.0-mpich-x86_64
 paraview &
+```
+
+Enable Catalyst connection in ParaView:
+
+* Select Catalyst / Connect... from menu.
+* Click OK in Catalyst Server Port dialog to accept connections from Inshimtu.
+* Click Ok in Ready for Catalyst Connections dialog.
+* Select Catalyst / Pause Simulation from menu.
+* Wait for connection to establish, and follow the post-connection steps below.
+
+Note: Failure to pause the simulation will prevent the first file from displaying.
+
+ 
+The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.  For now, use this module to update the PYTHONPATH:
+
+```
+module add dev-inshimtu
 ```
 
 Basic Inshimtu:
@@ -54,12 +83,6 @@ Pre-existing files + Basic Inshimtu:
 build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename*.vti
 ```
 
-With Inshimtu running, connect via Catalyst in ParaView:
-
-* Select Catalyst / Connect... from menu.
-* Click OK in Catalyst Server Port dialog to accept connections from Inshimtu.
-* Wait for connection to establish.
- 
 To demonstrate, copy the data files into the input directory (to simulate their creation via simulation):
 
 ```
@@ -68,11 +91,13 @@ cp -v build/original/*.vti build/testing/
 touch build/testing.done
 ```
 
-While the file creation (copying) is being performed, do the following in ParaView:
+Post-Conntection: While the file creation (copying) is being performed, do the following in ParaView:
 
 * Toggle Disclosure rectangle on catalyst/PVTrivialProducer1 source in Pipeline Browser to view data.
 * Click Apply button for Extract:PVTrivialProducer1 filter.
 * Make Extract:PVTrivialProducer1 filter visible.
+* Set Variable and Representation
+* Select Catalyst / Continue from menu.
 
 Note: Alternatively, specify the files to process via the --initial files option, shown above.\n\ 
 
