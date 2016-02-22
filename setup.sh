@@ -1,5 +1,5 @@
 #!/usr/bin/sh -e
-module add kvl-applications paraview
+module add kvl-applications paraview/4.4.0-mpich-x86_64
 
 export INSHIMTU_DIR=$(cd `dirname $0` && pwd)
 
