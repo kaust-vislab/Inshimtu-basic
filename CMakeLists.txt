@@ -49,6 +49,9 @@ find_package(Boost 1.53 REQUIRED COMPONENTS
 )
 include_directories(${Boost_INCLUDE_DIRS})
 
+find_package(HDF5 1.8 REQUIRED)
+include_directories(${HDF5_INCLUDE_DIRS})
+
 
 #add_subdirectory("source")
 set(Executable_SRCS
@@ -67,13 +70,14 @@ set_target_properties(Inshimtu PROPERTIES
     CXX_STANDARD_REQUIRED YES
 )
 
-target_link_libraries(Inshimtu
+
+target_link_libraries(Inshimtu LINK_PRIVATE
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
   vtkNetCDF
-  hdf5
   ${Boost_LIBRARIES}
+  ${HDF5_LIBRARIES}
 )
 vtk_mpi_link(Inshimtu)
 
