@@ -101,6 +101,13 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
   bool done = false;
   int i = 0;
   char buffer[BUF_LEN];
+
+  if (!isReady())
+  {
+    // nothing yet
+    return;
+  }
+
   const int length = read( inotify_descriptor, buffer, BUF_LEN );
 
   if ( length < 0 )
@@ -145,6 +152,29 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
     remove_watches();
   }
 }
+
+// TODO: Generalize how done is signalled (not just by writing a file,
+//       but other options too, e.g., co-process has ended)
+bool INotify::isDone() const
+{
+  return done_descriptor < 0;
+}
+
+bool INotify::isReady() const
+{
+  const __time_t secs = 1;
+  timeval timeout{secs,0};
+  fd_set r_fds, w_fds, x_fds;
+  FD_ZERO(&r_fds);
+  FD_ZERO(&w_fds);
+  FD_ZERO(&x_fds);
+  FD_SET(inotify_descriptor, &r_fds);
+
+  const int result = select(inotify_descriptor+1, &r_fds, &w_fds, &x_fds, &timeout);
+
+  return result > 0;
+}
+
 
 void INotify::remove_watches()
 {

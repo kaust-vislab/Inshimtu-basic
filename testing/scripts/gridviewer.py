@@ -50,8 +50,7 @@ def RequestDataDescription(datadescription):
             datadescription.GetInputDescription(i).GenerateMeshOn()
         return
 
-    # setup requests for all inputs based on the requirements of the
-    # pipeline.
+    # setup requests for all inputs based on the requirements of the pipeline.
     coprocessor.LoadRequestedData(datadescription)
 
 # ------------------------ Processing method ------------------------

@@ -83,6 +83,7 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
 
         std::cout << "Inporter: Updating data and Catalyst..." << std::endl;
 
+        // TODO: don't get the data now, pass in a lamda to delay reading until necessary
         vtkSmartPointer<vtkDataObject> data;
 
         if (vtkNew<vtkXMLImageDataReader>()->CanReadFile(name.c_str()))
@@ -111,6 +112,7 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
 
         if (data)
         {
+          // TODO: don't get the data now, pass in a lamda to delay reading until necessary
           coprocessor.coprocess(data.Get(), time, timeStep, timeStep >= maxTimeSteps-1);
         }
         else

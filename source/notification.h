@@ -23,7 +23,7 @@ public:
 
   void processEvents(std::vector<boost::filesystem::path>& out_newFiles);
 
-  bool isDone() const { return done_descriptor < 0; }
+  bool isDone() const;
 
 protected:
   int inotify_descriptor;
@@ -37,6 +37,8 @@ protected:
   std::vector<boost::filesystem::path> found_files;
 
 private:
+
+  bool isReady() const;
 
   static bool is_closed_file(const struct inotify_event& event)
   {

@@ -14,22 +14,14 @@
 class Attributes;
 class Grid;
 class vtkDataObject;
-
-namespace FEAdaptor
-{
-  void Initialize(int numScripts, const char* scripts[]);
-
-  void Finalize();
-
-  void CoProcess( const Grid& grid, const Attributes& attributes, double time
-                , uint timeStep, bool forceOutput);
-}
+class vtkCommunicatorOpaqueComm;
 
 class Catalyst
 {
 public:
-  Catalyst( const std::vector<boost::filesystem::path>& scripts
-          , uint delay = 5);
+  Catalyst( vtkMPICommunicatorOpaqueComm& communicator
+          , const std::vector<boost::filesystem::path>& scripts
+          , uint delay = 0);
   ~Catalyst();
 
   void coprocess( vtkDataObject* data

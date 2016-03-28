@@ -21,12 +21,13 @@
 namespace fs = boost::filesystem;
 
 
-Catalyst::Catalyst( const std::vector<boost::filesystem::path>& scripts
+Catalyst::Catalyst( vtkMPICommunicatorOpaqueComm& communicator
+                  , const std::vector<boost::filesystem::path>& scripts
                   , uint delay)
 {
   std::cout << "Starting Catalyst..." << std::endl;
 
-  processor->Initialize();
+  processor->Initialize(communicator);
 
   for (const fs::path& script : scripts)
   {
@@ -61,6 +62,7 @@ void Catalyst::coprocess(vtkDataObject* data,
 
   if (processor->RequestDataDescription(dataDescription.GetPointer()) != 0)
   {
+    // TODO: IMPORTANT! this is where the data should be loaded, calculated (not passed into coprocess)
     dataDescription->GetInputDescriptionByName("input")->SetGrid(data);
     processor->CoProcess(dataDescription.GetPointer());
 
@@ -74,5 +76,7 @@ void Catalyst::coprocess(vtkDataObject* data,
 
 Catalyst::~Catalyst()
 {
+  processor->Finalize();
+
   std::cout << "FINALIZED Catalyst." << std::endl;
 }

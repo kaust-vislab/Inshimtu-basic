@@ -56,11 +56,13 @@ include_directories(${HDF5_INCLUDE_DIRS})
 #add_subdirectory("source")
 set(Executable_SRCS
   source/adaptor.cxx
-  source/inshimtu.cxx
   source/application.cxx
-  source/notification.cxx
+  source/help.cxx
   source/inporter.cxx
+  source/inshimtu.cxx
   source/logger.cxx
+  source/notification.cxx
+  source/options.cxx
 )
 
 add_executable(Inshimtu ${Executable_SRCS})
