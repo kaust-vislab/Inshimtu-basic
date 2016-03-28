@@ -68,8 +68,6 @@ int main(int argc, char* argv[])
   do
   {
     // TODO: inporter nodes only
-    // TODO: Fix coordination issue where some nodes have a changed file, and some don't
-    //       The issue is that collectFiles (via MPI_Allreduce) is waiting for all nodes to report
     if (!app.hasFiles(newfiles))
     {
       // TODO: collect all notifications (MPI lock-step)
