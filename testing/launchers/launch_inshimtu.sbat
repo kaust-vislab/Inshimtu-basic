@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --partition=workq
+#SBATCH --job-name=inshimtu
+#SBATCH --time=00:15:00
+#SBATCH --output=inshimtu.%j.out
+#SBATCH --error=inshimtu.%j.err                                     
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+
+INSHIMTU_ROOT="/scratch/holstgr/sw/xc40/inshimtu"
+INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+
+# NOTE: DataWarp BurstBuffer is not currently enabled on Shaheen (remove DW_JOB_STRIPED overload when working)
+##DW jobdw access_mode=striped capacity=10GiB type=scratch
+##DW stage_in destination=$DW_JOB_STRIPED source=/scratch/holstgr/sw/xc40/inshimtu/build/testing type=directory
+##DW stage_in destination=$DW_JOB_STRIPED source=/scratch/holstgr/sw/xc40/inshimtu/build/testing.done type=file
+DW_JOB_STRIPED="/scratch/holstgr/sw/xc40/inshimtu/build"
+
+module add paraview/4.3.1 cray-hdf5
+
+#srun "$INSHIMTU_DIR/Inshimtu" --help-example
+srun "$INSHIMTU_DIR/Inshimtu" -w $DW_JOB_STRIPED/testing -d $DW_JOB_STRIPED/testing.done -s "$INSHIMTU_ROOT/testing/scripts/gridviewer_glendon_22222.py" -i $DW_JOB_STRIPED/testing/filename_*.vti
+
+
