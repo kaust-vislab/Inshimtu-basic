@@ -18,11 +18,11 @@ NODES=5
 HOSTS=$(echo $NODES $AVAILABLE_HOSTS | awk '{ split($2,a,","); hs=a[1]; for (x=2; x<=$1; x++) hs=hs "," a[x]; print hs; }')
 
 echo "Lanching Inshimtu from directory: ${INSHIMTU_DIR}/build.kvl"
-#"${INSHIMTU_EXEC}" -w "${INSHIMTU_DIR}/build/testing" -d "${INSHIMTU_DIR}/build/testing.done" -s "${INSHIMTU_DIR}/testing/scripts/gridviewer_glendon_22222.py" -i ${INSHIMTU_DIR}/build/testing/filename_*.vti
+#"${INSHIMTU_EXEC}" -w "${INSHIMTU_DIR}/build/testing" -d "${INSHIMTU_DIR}/build/testing.done" -s "${INSHIMTU_DIR}/testing/pipelines/gridviewer_glendon_22222.py" -i ${INSHIMTU_DIR}/build/testing/filename_*.vti
 
 #mpiexec -np 2 -ppn 2 "${INSHIMTU_EXEC}" -h
 
-#mpiexec -np $NODES -ppn 1 -hosts $HOSTS "${INSHIMTU_EXEC}" -w "${INSHIMTU_DIR}/build/testing" -d "${INSHIMTU_DIR}/build/testing.done" -s "${INSHIMTU_DIR}/testing/scripts/gridviewer_glendon_22222.py" -i ${INSHIMTU_DIR}/build/testing/filename_*.vti
+#mpiexec -np $NODES -ppn 1 -hosts $HOSTS "${INSHIMTU_EXEC}" -w "${INSHIMTU_DIR}/build/testing" -d "${INSHIMTU_DIR}/build/testing.done" -s "${INSHIMTU_DIR}/testing/pipelines/gridviewer_glendon_22222.py" -i ${INSHIMTU_DIR}/build/testing/filename_*.vti
 
-mpiexec -np $NODES -ppn 1 -hosts $HOSTS "${INSHIMTU_EXEC}" -w "${INSHIMTU_DIR}/build/testing" -d "${INSHIMTU_DIR}/build/testing.done" -s "${INSHIMTU_DIR}/testing/scripts/gridviewer_glendon_22222.py"
+mpiexec -np $NODES -ppn 1 -hosts $HOSTS "${INSHIMTU_EXEC}" -w "${INSHIMTU_DIR}/build/testing" -d "${INSHIMTU_DIR}/build/testing.done" -s "${INSHIMTU_DIR}/testing/pipelines/gridviewer_glendon_22222.py"
 

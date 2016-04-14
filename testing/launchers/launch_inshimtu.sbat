@@ -19,6 +19,6 @@ DW_JOB_STRIPED="/scratch/holstgr/sw/xc40/inshimtu/build"
 module add paraview/4.3.1 cray-hdf5
 
 #srun "$INSHIMTU_DIR/Inshimtu" --help-example
-srun "$INSHIMTU_DIR/Inshimtu" -w $DW_JOB_STRIPED/testing -d $DW_JOB_STRIPED/testing.done -s "$INSHIMTU_ROOT/testing/scripts/gridviewer_glendon_22222.py" -i $DW_JOB_STRIPED/testing/filename_*.vti
+srun "$INSHIMTU_DIR/Inshimtu" -w $DW_JOB_STRIPED/testing -d $DW_JOB_STRIPED/testing.done -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" -i $DW_JOB_STRIPED/testing/filename_*.vti
 
 

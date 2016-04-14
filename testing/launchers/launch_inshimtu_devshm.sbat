@@ -19,7 +19,7 @@ srun mkdir "$DEVSHM_DIR"
 srun cp -r "$SRC_DIR/testing" "$DEVSHM_DIR"
 srun cp "$SRC_DIR/testing.done" "$DEVSHM_DIR"
 
-srun "$INSHIMTU_DIR/Inshimtu" -w $DEVSHM_DIR/testing -d $DEVSHM_DIR/testing.done -s "$INSHIMTU_ROOT/testing/scripts/gridviewer_glendon_22222.py" -i $DEVSHM_DIR/testing/filename_*.vti
+srun "$INSHIMTU_DIR/Inshimtu" -w $DEVSHM_DIR/testing -d $DEVSHM_DIR/testing.done -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" -i $DEVSHM_DIR/testing/filename_*.vti
 
 #srun cp -r "$DEVSHM_DIR/output" "$OUT_DIR"
 #srun rm -rf "$DEVSHM_DIR"
