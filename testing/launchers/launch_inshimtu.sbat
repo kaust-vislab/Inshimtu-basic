@@ -1,14 +1,18 @@
 #!/bin/bash
 #SBATCH --partition=workq
 #SBATCH --job-name=inshimtu
-#SBATCH --time=00:15:00
+#SBATCH --time=00:05:00
 #SBATCH --output=inshimtu.%j.out
 #SBATCH --error=inshimtu.%j.err                                     
-#SBATCH --nodes=1
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
+
 
 INSHIMTU_ROOT="/scratch/holstgr/sw/xc40/inshimtu"
 INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+
+SRC_DIR="/scratch/holstgr/sw/xc40/inshimtu/build"
+DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
 # NOTE: DataWarp BurstBuffer is not currently enabled on Shaheen (remove DW_JOB_STRIPED overload when working)
 ##DW jobdw access_mode=striped capacity=10GiB type=scratch
@@ -16,9 +20,38 @@ INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
 ##DW stage_in destination=$DW_JOB_STRIPED source=/scratch/holstgr/sw/xc40/inshimtu/build/testing.done type=file
 DW_JOB_STRIPED="/scratch/holstgr/sw/xc40/inshimtu/build"
 
+srun mkdir "$DEVSHM_DIR"
+srun cp -r "$SRC_DIR/testing" "$DEVSHM_DIR"
+srun cp "$SRC_DIR/testing.done" "$DEVSHM_DIR"
+srun ls -lR "$DEVSHM_DIR"
+
 module add paraview/4.3.1 cray-hdf5
 
 #srun "$INSHIMTU_DIR/Inshimtu" --help-example
-srun "$INSHIMTU_DIR/Inshimtu" -w $DW_JOB_STRIPED/testing -d $DW_JOB_STRIPED/testing.done -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" -i $DW_JOB_STRIPED/testing/filename_*.vti
+#srun "$INSHIMTU_DIR/Inshimtu" -w "$DW_JOB_STRIPED/testing" -d "$DW_JOB_STRIPED/testing.done" -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" -i "$DW_JOB_STRIPED/testing/filename_*.vti"
 
+srun /bin/sh -c 'function touch_file() {
+  local MaxSecs=250
+  local MinSecs=15
+  local Sleeptime=$((( RANDOM % ($MaxSecs - $MinSecs ) + $MinSecs)))
+  local Hostname=$(hostname)
+  local Filename="/dev/shm/holstgr-inshimtu-testing/testing/filename_$(( RANDOM % 10 ))_0.vti"
+
+  echo "$(date +'%T:%N') Node: $Hostname, waiting for $Sleeptime seconds..."
+  sleep $Sleeptime
+  echo "$(date +'%T:%N') Node: $Hostname, touching file: $Filename"
+  touch "$Filename"
+}
+touch_file &
+touch_file &
+wait
+' &
+
+srun /bin/sh -c 'sleep $((( RANDOM % 10 ) + 275)) && touch "/dev/shm/holstgr-inshimtu-testing/testing.done"' &
+
+srun "$INSHIMTU_DIR/Inshimtu" -w "$DEVSHM_DIR/testing" -d "$DEVSHM_DIR/testing.done" -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py"
+
+#srun /bin/sh -c 'sleep $((( RANDOM % 10 ) + 1)) && echo "run 1 " $(hostname)' &
+
+wait
 
