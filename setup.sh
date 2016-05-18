@@ -7,10 +7,7 @@ case "$OSVERSION" in
 "CentOS"*)
   module add kvl-applications paraview/4.4.0-mpich-x86_64
 
-  # Needed because paraview/4.4.0-mpich-x86_64 doesn't set PYTHONPATHs correctly 
-  module add dev-inshimtu
-
-  echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.kvl"
   mkdir "${INSHIMTU_DIR}/build.kvl"
   cd "${INSHIMTU_DIR}/build.kvl"
 
@@ -41,7 +38,7 @@ case "$OSVERSION" in
   module sw PrgEnv-gnu PrgEnv-cray
   module add paraview/4.3.1
   
-  echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.shaheen"
   mkdir "${INSHIMTU_DIR}/build.shaheen"
   cd "${INSHIMTU_DIR}/build.shaheen"
 
