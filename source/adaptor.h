@@ -11,8 +11,6 @@
 
 #include <sys/types.h>
 
-class Attributes;
-class Grid;
 class vtkDataObject;
 class vtkCommunicatorOpaqueComm;
 
