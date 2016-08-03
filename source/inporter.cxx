@@ -94,6 +94,11 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
         {
           data = processMPASDataFile(name);
         }
+        // TODO: improved test to determine if we should process as a raw netcdf
+        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
+        {
+          data = processRawNetCDFDataFile(name);
+        }
         else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
         {
           data = processNetCDFCFDataFile(name);
@@ -101,8 +106,7 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
         else
         {
           // TODO: test if filepath is an NC file?
-          //vtkSmartPointer<vtkDataObject> data1 = processNetCDFDataFile(name);
-          //vtkSmartPointer<vtkImageData> data2 = processRawNetCDFDataFile(name);
+          data = processNetCDFDataFile(name);
         }
 
         completedFiles.push_back(name);
@@ -217,7 +221,6 @@ void Inporter::processDataFile(const fs::path& filepath)
 vtkSmartPointer<vtkImageData> Inporter::processXMLImageDataFile(const fs::path& filepath)
 {
   vtkNew<vtkXMLImageDataReader> reader;
-  vtkNew<vtkInformation> metadata;
 
   std::cout << "Processing XMLImage Datafile:'" << filepath << "'" << std::endl;
 
@@ -251,7 +254,7 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFCFDataFile(const fs::path&
 {
   vtkNew<vtkNetCDFCFReader> reader;
 
-  std::cout << "Processing NetCDF Datafile:'" << filepath << "'" << std::endl;
+  std::cout << "Processing NetCDF Datafile:'" << filepath << "' with vtkNetCDFCFReader" << std::endl;
 
   reader->SetFileName(filepath.c_str());
   reader->Update();
@@ -267,7 +270,7 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFDataFile(const fs::path& f
 {
   vtkNew<vtkNetCDFReader> reader;
 
-  std::cout << "Processing NetCDF Datafile:'" << filepath << "'" << std::endl;
+  std::cout << "Processing NetCDF Datafile:'" << filepath << "' with vtkNetCDFReader" << std::endl;
 
   reader->SetFileName(filepath.c_str());
   reader->Update();
@@ -284,7 +287,7 @@ vtkSmartPointer<vtkImageData> Inporter::processRawNetCDFDataFile(const fs::path&
 // https://www.unidata.ucar.edu/software/netcdf/docs/simple_xy_nc4_rd_8c-example.html
 // https://www.unidata.ucar.edu/software/netcdf/docs/pres_temp_4D_rd_8c-example.html
 
-  std::cout << "Processing NetCDF Datafile:'" << filepath << "'" << std::endl;
+  std::cout << "Processing NetCDF Datafile:'" << filepath << "' with netcdf library" << std::endl;
 
   // TODO: read header to get data variables and dimensions; dynamically allocate correct vtk*Data type.
   const int NX = 10;

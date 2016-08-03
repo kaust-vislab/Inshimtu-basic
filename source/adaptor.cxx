@@ -20,7 +20,7 @@
 
 namespace fs = boost::filesystem;
 
-
+// TODO: split Catalyst into Processor and Adaptor(s); similar to KARFS insitu
 Catalyst::Catalyst( vtkMPICommunicatorOpaqueComm& communicator
                   , const std::vector<boost::filesystem::path>& scripts
                   , uint delay)

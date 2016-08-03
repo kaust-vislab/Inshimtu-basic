@@ -34,7 +34,7 @@ coprocessor = CreateCoProcessor()
 
 #--------------------------------------------------------------
 # Enable Live-Visualizaton with ParaView
-coprocessor.EnableLiveVisualization(True)
+coprocessor.EnableLiveVisualization(True, frequency = 1)
 
 
 # ---------------------- Data Selection method ----------------------

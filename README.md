@@ -86,12 +86,12 @@ build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridvie
 To demonstrate, copy the data files into the input directory (to simulate their creation via simulation):
 
 ```
-unalias cp
-cp -v build/original/*.vti build/testing/
+# \cp is equivalent to unaliased cp
+\cp -v build/original/*.vti build/testing/
 touch build/testing.done
 ```
 
-Post-Conntection: While the file creation (copying) is being performed, do the following in ParaView:
+Post-Connection: While the file creation (copying) is being performed, do the following in ParaView:
 
 * Toggle Disclosure rectangle on catalyst/PVTrivialProducer1 source in Pipeline Browser to view data.
 * Click Apply button for Extract:PVTrivialProducer1 filter.
@@ -99,6 +99,7 @@ Post-Conntection: While the file creation (copying) is being performed, do the f
 * Set Variable and Representation
 * Select Catalyst / Continue from menu.
 
-Note: Alternatively, specify the files to process via the --initial files option, shown above.\n\ 
+Note: Alternatively, specify the files to process via the --initial files option, shown above.
+
 
 

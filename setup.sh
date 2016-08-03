@@ -1,4 +1,4 @@
-#!/usr/bin/sh -e
+#!/bin/sh -e
 
 export INSHIMTU_DIR=$(cd `dirname $0` && pwd)
 
