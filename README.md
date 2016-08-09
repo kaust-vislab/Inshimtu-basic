@@ -51,7 +51,7 @@ Enable Catalyst connection in ParaView:
 Note: Failure to pause the simulation will prevent the first file from displaying.
 
  
-The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.  For now, use this module to update the PYTHONPATH:
+The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.  PYTHONPATH is set in the paraview module.
 
 ```
 module add dev-inshimtu
@@ -82,6 +82,14 @@ Pre-existing files + Basic Inshimtu:
 ```
 build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename*.vti
 ```
+
+Variable Support: 
+* Processes only specified variables via variable sets;
+* Stops when build/testing.done file is touched;
+* Uses the Catalyst script in gridviewer.py to transfer data to ParaView.
+``` 
+build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -f 'wrfout*.nc' -v U,V,W,QVAPOR
+``` 
 
 To demonstrate, copy the data files into the input directory (to simulate their creation via simulation):
 

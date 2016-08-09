@@ -12,13 +12,25 @@ from paraview import coprocessing
 def CreateCoProcessor():
   def _CreatePipeline(coprocessor, datadescription):
     class Pipeline:
-      # NOTE: only include producers for variables that belong to a single description on the simulation side
+      adaptorinput = coprocessor.CreateProducer( datadescription, "input" )
 
-      #adaptor_input = coprocessor.CreateProducer( datadescription, "input" )
-      adaptor_QVAPOR = coprocessor.CreateProducer( datadescription, "QVAPOR" )
-      #adaptor_U = coprocessor.CreateProducer( datadescription, "U" )
-      #adaptor_V = coprocessor.CreateProducer( datadescription, "V" )
-      #adaptor_W = coprocessor.CreateProducer( datadescription, "W" )
+      grid = adaptorinput.GetClientSideObject().GetOutputDataObject(0)
+      if  grid.IsA('vtkImageData') or grid.IsA('vtkUniformGrid'):
+        writer = coprocessor.CreateWriter( XMLPImageDataWriter, "dataoutfile_%t.pvti", 1 )
+      elif  grid.IsA('vtkRectilinearGrid'):
+        writer = coprocessor.CreateWriter( XMLPRectilinearGridWriter, "dataoutfile_%t.pvtr", 1 )
+      elif  grid.IsA('vtkStructuredGrid'):
+        writer = coprocessor.CreateWriter( XMLPStructuredGridWriter, "dataoutfile_%t.pvts", 1 )
+      elif  grid.IsA('vtkPolyData'):
+        writer = coprocessor.CreateWriter( XMLPPolyDataWriter, "dataoutfile_%t.pvtp", 1 )
+      elif  grid.IsA('vtkUnstructuredGrid'):
+        writer = coprocessor.CreateWriter( XMLPUnstructuredGridWriter, "dataoutfile_%t.pvtu", 1 )
+      elif  grid.IsA('vtkUniformGridAMR'):
+        writer = coprocessor.CreateWriter( XMLHierarchicalBoxDataWriter, "dataoutfile_%t.vthb", 1 )
+      elif  grid.IsA('vtkMultiBlockDataSet'):
+        writer = coprocessor.CreateWriter( XMLMultiBlockDataWriter, "dataoutfile_%t.vtm", 1 )
+      else:
+        print "Don't know how to create a writer for a ", grid.GetClassName()
 
     return Pipeline()
 
@@ -27,12 +39,7 @@ def CreateCoProcessor():
       self.Pipeline = _CreatePipeline(self, datadescription)
 
   coprocessor = CoProcessor()
-  freqs = { 'input': [1]
-          , 'QVAPOR': [1]
-          , 'U': [1]
-          , 'V': [1]
-          , 'W': [1]
-          }
+  freqs = {'input': [1]}
   coprocessor.SetUpdateFrequencies(freqs)
   return coprocessor
 
@@ -45,7 +52,7 @@ coprocessor = CreateCoProcessor()
 
 #--------------------------------------------------------------
 # Enable Live-Visualizaton with ParaView
-coprocessor.EnableLiveVisualization(True, frequency = 1)
+coprocessor.EnableLiveVisualization(False)
 
 
 # ---------------------- Data Selection method ----------------------
@@ -73,6 +80,12 @@ def DoCoProcessing(datadescription):
     # Update the coprocessor by providing it the newly generated simulation data.
     # If the pipeline hasn't been setup yet, this will setup the pipeline.
     coprocessor.UpdateProducers(datadescription)
+
+    # Write output data, if appropriate.
+    coprocessor.WriteData(datadescription);
+
+    # Write image capture (Last arg: rescale lookup table), if appropriate.
+    coprocessor.WriteImages(datadescription, rescale_lookuptable=False)
 
     # Live Visualization, if enabled.
     coprocessor.DoLiveVisualization(datadescription, "localhost", 22222)

@@ -20,12 +20,11 @@
 
 namespace fs = boost::filesystem;
 
-// TODO: split Catalyst into Processor and Adaptor(s); similar to KARFS insitu
-Catalyst::Catalyst( vtkMPICommunicatorOpaqueComm& communicator
-                  , const std::vector<boost::filesystem::path>& scripts
-                  , uint delay)
+Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
+                    , const std::vector<boost::filesystem::path>& scripts
+                    , uint delay)
 {
-  std::cout << "Starting Catalyst..." << std::endl;
+  std::cout << "Starting Catalyst Processor..." << std::endl;
 
   processor->Initialize(communicator);
 
@@ -46,37 +45,55 @@ Catalyst::Catalyst( vtkMPICommunicatorOpaqueComm& communicator
   sleep(delay);
 }
 
-void Catalyst::coprocess(vtkDataObject* data,
-               double time, uint timeStep, bool forceOutput)
-{
-  vtkNew<vtkCPDataDescription> dataDescription;
-
-  std::cout << "Catalyst: coprocessing..." << std::endl;
-
-  dataDescription->AddInput("input");
-  dataDescription->SetTimeData(time, timeStep);
-  if (forceOutput)
-  {
-    dataDescription->ForceOutputOn();
-  }
-
-  if (processor->RequestDataDescription(dataDescription.GetPointer()) != 0)
-  {
-    // TODO: IMPORTANT! this is where the data should be loaded, calculated (not passed into coprocess)
-    dataDescription->GetInputDescriptionByName("input")->SetGrid(data);
-    processor->CoProcess(dataDescription.GetPointer());
-
-    std::cout << "RequestDataDescription done." << std::endl;
-  }
-  else
-    std::cerr << "FAILED: RequestDataDescription" << std::endl;
-
-  std::cout << "\t...Done coprocessing." << std::endl;
-}
-
-Catalyst::~Catalyst()
+Processor::~Processor()
 {
   processor->Finalize();
 
-  std::cout << "FINALIZED Catalyst." << std::endl;
+  std::cout << "FINALIZED Catalyst Processor." << std::endl;
+}
+
+
+Adaptor::Adaptor( Processor& processor_
+                , const std::vector<std::string>& names_
+                , uint timeStep, double time, bool forceOutput)
+  : processor(processor_)
+  , names(names_)
+  , requireProcessing(false)
+{
+  for (const auto& name : names)
+  {
+    description->AddInput(name.c_str());
+  }
+
+  description->SetTimeData(time, timeStep);
+
+  if (forceOutput)
+  {
+    description->ForceOutputOn();
+  }
+
+  requireProcessing = (processor.processor->RequestDataDescription(description.GetPointer()) != 0);
+}
+
+Adaptor::~Adaptor()
+{
+}
+
+bool Adaptor::doesRequireProcessing() const
+{
+  return requireProcessing;
+}
+
+void Adaptor::setData(vtkDataObject* data, const std::string& name_, int global_extent[6])
+{
+  vtkCPInputDataDescription* inputDescription = description->GetInputDescriptionByName(name_.c_str());
+  assert(inputDescription != nullptr);
+
+  inputDescription->SetGrid(data);
+  inputDescription->SetWholeExtent(global_extent);
+}
+
+void Adaptor::coprocess()
+{
+  processor.processor->CoProcess(description.GetPointer());
 }

@@ -20,7 +20,7 @@ namespace help
 {
 const uint32_t inshimtu_version_major = 0;
 const uint32_t inshimtu_version_minor = 0;
-const uint32_t inshimtu_version_patch = 2;
+const uint32_t inshimtu_version_patch = 3;
 
 
 void printVersion()
@@ -39,7 +39,7 @@ void printHelpVerbose()
             << std::endl << std::endl
             << "The 'inporting' process watches an existing directory (--watch) for inotify changes, "
                "reads in  modified files matching the filter (--files) after they are closed, "
-               "imports them into appropriate VTK formats, "
+               "imports the specified variables (--variables) from them into appropriate VTK formats, "
                "and then exports them via Catalyst scripts (--scripts) to ParaView. "
                "This process continues until the termination file (--done) is touched."
             << std::endl << std::endl;
@@ -106,11 +106,18 @@ void printHelpExample()
                "build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename*.vti \n"
                "``` \n"
                "\n"
+               "Variable Support: \n"
+               "* Processes only specified variables via variable sets;\n"
+               "* Stops when build/testing.done file is touched;\n"
+               "* Uses the Catalyst script in gridviewer.py to transfer data to ParaView.\n"
+               "``` \n"
+               "build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -f 'wrfout*.nc' -v U,V,W,QVAPOR\n"
+               "``` \n"
+               "\n"
                "To demonstrate, copy the data files into the input directory (to simulate their creation via simulation): \n"
                "\n"
                "``` \n"
-               "unalias cp \n"
-               "cp -v build/original/*.vti build/testing/ \n"
+               "\\cp -v build/original/*.vti build/testing/ \n"
                "touch build/testing.done \n"
                "``` \n"
                "\n"

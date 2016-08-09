@@ -52,15 +52,16 @@ int main(int argc, char* argv[])
   }
 
   // TODO: Inporter nodes; collect and process files
-  std::unique_ptr<Catalyst> catalyst;
+  std::unique_ptr<Processor> processor;
   std::unique_ptr<Inporter> inporter;
 
   if (app.isInporter())
   {
-    catalyst.reset(new Catalyst( app.getCommunicator()
-                               , options::collectScripts(opts)
-                               , options::getStartupDelay(opts)));
-    inporter.reset(new Inporter(*catalyst.get()));
+    processor.reset(new Processor( app.getCommunicator()
+                                 , options::collectScripts(opts)
+                                 , options::getStartupDelay(opts)));
+    inporter.reset(new Inporter( *processor.get()
+                               , options::collectVariables(opts)));
   }
 
   std::cout << "READY" << std::endl;

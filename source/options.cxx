@@ -35,12 +35,13 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
   po::options_description basicDesc("basic usage options");
   basicDesc.add_options()
     ("help,h", "help message describing command line options")
-    ("version,v", "output version number")
+    ("version,V", "output version number")
     ("watch,w", po::value<std::string>()->required(), "pre-existing inporting source directory to watch")
     ("files,f", po::value<std::string>()->default_value(".*"), "regular expression of watch directory files to process (ensure expression is 'quoted')")
     ("done,d", po::value<std::string>()->required(), "pre-existing termination trigger; done file; file must be outside watch directory")
-    ("initial,i", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-seprated list of pre-exisiting files to process (unquoted for shell expansion)")
+    ("initial,i", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of pre-exisiting files to process (unquoted for shell expansion)")
     ("scripts,s", po::value<std::vector<std::string>>()->required(), "list of Catalyst scripts for visualization processing")
+    ("variables,v", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of comma-separated variable sets to process")
     ("pause,p", po::value<uint>()->default_value(0), "initial delay in seconds to wait for ParaView to connect before processing commences")
    ;
 
@@ -129,6 +130,18 @@ const std::vector<fs::path> collectInitialFiles(const po::variables_map& opts)
   }
 
   return files;
+}
+
+const std::vector<std::string> collectVariables(const po::variables_map& opts)
+{
+  std::vector<std::string> vars;
+
+  if (opts.find("variables") != opts.end())
+  {
+    vars = opts["variables"].as<std::vector<std::string>>();
+  }
+
+  return vars;
 }
 
 const fs::path getWatchDirectory(const po::variables_map& opts)

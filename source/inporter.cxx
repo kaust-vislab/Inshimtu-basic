@@ -35,12 +35,16 @@
 #include <errno.h>
 #include <sys/types.h>
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 namespace fs = boost::filesystem;
 
 
-Inporter::Inporter(Catalyst& coprocessor)
-  : coprocessor(coprocessor)
+Inporter::Inporter( Processor& processor_
+                  , const std::vector<std::string>& variables_)
+  : processor(processor_)
+  , variables(variables_)
   , timeStep(0)
   , maxTimeSteps(100)
   , lengthTimeStep(0.01)
@@ -74,7 +78,34 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
     {
       if (wfitr == workingFiles.end())
       {
-        double time = timeStep * lengthTimeStep;
+        const double time = timeStep * lengthTimeStep;
+        const bool forceOutput = timeStep >= maxTimeSteps-1;
+        std::vector<std::unique_ptr<Adaptor>> inporters;
+
+        // Create inporters
+        {
+          for (const auto &v : variables)
+          {
+            std::cout << "Creating RawNetCDFDataFileInporter for: '" << v << "'" << std::endl;
+
+            std::vector<std::string> vars;
+            boost::split(vars, v, boost::is_any_of(","), boost::token_compress_on);
+
+            inporters.push_back(std::unique_ptr<Adaptor>(new RawNetCDFDataFileInporter(
+                                                 processor
+                                               , vars
+                                               , timeStep, time, true || forceOutput)));
+          }
+          // TODO: fix: restore
+          /*
+          std::cout << "Creating XMLImageDataFileInporter for: '" << "input" << "'" << std::endl;
+
+          inporters.push_back(std::unique_ptr<Adaptor>(new XMLImageDataFileInporter(
+                                               processor
+                                             , "input"
+                                             , timeStep, time, true || forceOutput)));
+          */
+        }
 
         // new file is new
         std::cout << "New working file: '" << name << "'" << std::endl;
@@ -83,48 +114,16 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
 
         std::cout << "Inporter: Updating data and Catalyst..." << std::endl;
 
-        // TODO: don't get the data now, pass in a lamda to delay reading until necessary
-        vtkSmartPointer<vtkDataObject> data;
-
-        if (vtkNew<vtkXMLImageDataReader>()->CanReadFile(name.c_str()))
+        // Inport file
+        for (auto &inporter : inporters)
         {
-          data = processXMLImageDataFile(name);
-        }
-        else if (vtkMPASReader::CanReadFile(name.c_str()))
-        {
-          data = processMPASDataFile(name);
-        }
-        // TODO: improved test to determine if we should process as a raw netcdf
-        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
-        {
-          data = processRawNetCDFDataFile(name);
-        }
-        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
-        {
-          data = processNetCDFCFDataFile(name);
-        }
-        else
-        {
-          // TODO: test if filepath is an NC file?
-          data = processNetCDFDataFile(name);
+          inporter->process(name);
         }
 
         completedFiles.push_back(name);
-
-        //attributes.UpdateFields(time);
-        std::cout << "\t\t...Done UpdateFields" << std::endl;
-
-        if (data)
-        {
-          // TODO: don't get the data now, pass in a lamda to delay reading until necessary
-          coprocessor.coprocess(data.Get(), time, timeStep, timeStep >= maxTimeSteps-1);
-        }
-        else
-        {
-          std::cerr << "WARNING: could not process input file '" << name << "'" << std::endl;
-        }
-
         ++timeStep;
+
+        std::cout << "\t\t...Done UpdateFields" << std::endl;
       }
       else
       {
@@ -137,88 +136,143 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
   }
 }
 
-void Inporter::processDataFile(const fs::path& filepath)
+
+RawNetCDFDataFileInporter::RawNetCDFDataFileInporter(
+    Processor& processor
+  , const std::vector<std::string>& names
+  , uint timeStep, double time, bool forceOutput)
+  : Adaptor(processor, names, timeStep, time, forceOutput)
 {
-  vtkNew<vtkDataReader> reader;
-  vtkNew<vtkInformation> metadata;
-
-  std::cout << "Processing Datafile:'" << filepath << "'" << std::endl;
-
-  // TODO: handle read result errors
-  reader->SetFileName(filepath.c_str());
-  bool ok = reader->OpenVTKFile();
-
-  if (!ok)
-  {
-    std::cerr << "Invalid Datafile:'" << filepath << "'" << std::endl;
-    return;
-  }
-
-  ok = ok && reader->ReadHeader();
-
-  if (!ok)
-  {
-    std::cerr << "Invalid Datafile:'" << filepath << "'" << std::endl;
-    return;
-  }
-
-  ok = ok && reader->ReadMetaData(metadata.Get());
-
-  if (!ok)
-  {
-    std::cerr << "Invalid Datafile:'" << filepath << "'" << std::endl;
-    return;
-  }
-
-  const int numScalars = reader->GetNumberOfScalarsInFile();
-  const int numVectors = reader->GetNumberOfVectorsInFile();
-  const int numTensors = reader->GetNumberOfTensorsInFile();
-  const int numNormals = reader->GetNumberOfNormalsInFile();
-  const int numCoords = reader->GetNumberOfTCoordsInFile();
-  const int numFields = reader->GetNumberOfFieldDataInFile();
-
-  std::cout << "numScalars:" << numScalars << std::endl;
-  for(int i=0;i<numScalars;++i)
-  {
-    std::cout << "  " << reader->GetScalarsNameInFile(i) << std::endl;
-  }
-
-  std::cout << "numVectors:" << numVectors << std::endl;
-  for(int i=0;i<numVectors;++i)
-  {
-    std::cout << "  " << reader->GetVectorsNameInFile(i) << std::endl;
-  }
-
-  std::cout << "numTensors:" << numTensors << std::endl;
-  for(int i=0;i<numTensors;++i)
-  {
-    std::cout << "  " << reader->GetTensorsNameInFile(i) << std::endl;
-  }
-
-  std::cout << "numNormals:" << numNormals << std::endl;
-  for(int i=0;i<numNormals;++i)
-  {
-    std::cout << "  " << reader->GetNormalsNameInFile(i) << std::endl;
-  }
-
-  std::cout << "numCoords:" << numCoords << std::endl;
-  for(int i=0;i<numCoords;++i)
-  {
-    std::cout << "  " << reader->GetTCoordsNameInFile(i) << std::endl;
-  }
-
-  std::cout << "numFields:" << numFields << std::endl;
-  for(int i=0;i<numFields;++i)
-  {
-    std::cout << "  " << reader->GetFieldDataNameInFile(i) << std::endl;
-  }
-
-  metadata->PrintSelf(std::cout, vtkIndent());
-
-  reader->CloseVTKFile();
 }
 
-vtkSmartPointer<vtkImageData> Inporter::processXMLImageDataFile(const fs::path& filepath)
+void RawNetCDFDataFileInporter::process(const boost::filesystem::path& file)
+{
+  if ( doesRequireProcessing()
+    && vtkNetCDFCFReader::CanReadFile(file.c_str()))
+  {
+    int global_extent[6];
+
+    for (const auto& name: names)
+    {
+      vtkSmartPointer<vtkDataObject> data;
+
+      data = processRawNetCDFDataFile(file, name, global_extent);
+
+      if (data)
+      {
+        setData(data, name, global_extent);
+      }
+      else
+      {
+        std::cerr << "WARNING: could not process variable '" << name
+                  << "' from input file '" << file << "'" << std::endl;
+      }
+    }
+    coprocess();
+  }
+}
+
+vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFile(
+    const fs::path& filepath
+  , const std::string& varname
+  , int global_extent_out[6])
+{
+  std::cout << "Processing variable '" << varname
+            << "' from NetCDF Datafile:'" << filepath << "' with netcdf library"
+            << std::endl;
+
+  int ncid, varid; // netCDF ID for the file and data variable.
+  int ndims;
+  int dimids[NC_MAX_VAR_DIMS]; // netCDF ID for dimensions.
+  nc_type vartype;
+  size_t lenX, lenY, lenZ;
+  int retval; // Error handling
+
+  // Open the file. NC_NOWRITE tells netCDF we want read-only access to the file.
+  retval = nc_open(filepath.c_str(), NC_NOWRITE, &ncid); assert(retval == 0);
+
+  // Get the varid of the data variable, based on its name.
+  retval = nc_inq_varid(ncid, varname.c_str(), &varid); assert(retval == 0);
+
+  retval = nc_inq_varndims(ncid, varid, &ndims); assert(retval == 0);
+  retval = nc_inq_vardimid(ncid, varid, dimids); assert(retval == 0);
+  retval = nc_inq_vartype(ncid, varid, &vartype); assert(retval == 0);
+
+  assert(vartype == NC_FLOAT);
+  assert(ndims >= 3);
+
+  retval = nc_inq_dimlen(ncid, dimids[ndims-1], &lenX); assert(retval == 0);
+  retval = nc_inq_dimlen(ncid, dimids[ndims-2], &lenY); assert(retval == 0);
+  retval = nc_inq_dimlen(ncid, dimids[ndims-3], &lenZ); assert(retval == 0);
+
+  // TODO: find local offset for per-rank files.
+  int local_offset[3] = {0, 0, 0};
+  int local_size[3] = {static_cast<int>(lenX), static_cast<int>(lenY), static_cast<int>(lenZ)};
+  int local_extent[6] = { local_offset[0], local_offset[0]+local_size[0]-1
+                        , local_offset[1], local_offset[1]+local_size[1]-1
+                        , local_offset[2], local_offset[2]+local_size[2]-1
+                        };
+  // TODO: acquire accurate global_extent
+  {
+    for (int i=0; i<6; ++i)
+      global_extent_out[i] = local_extent[i];
+  }
+
+  vtkSmartPointer<vtkImageData> data = vtkImageData::New();
+  data->SetDimensions(local_size);
+  data->SetExtent(local_extent);
+  data->AllocateScalars(VTK_FLOAT, 1);
+  data->GetPointData()->GetScalars()->SetName(varname.c_str());
+
+  // Read the data.
+  retval = nc_get_var_float(ncid, varid, static_cast<float*>(data->GetScalarPointer()));
+  assert(retval == 0);
+
+  // Close the file, freeing all resources.
+  retval = nc_close(ncid);
+  assert(retval == 0);
+
+  return data;
+}
+
+
+XMLImageDataFileInporter::XMLImageDataFileInporter(
+    Processor& processor
+  , const std::vector<std::string>& names
+  , uint timeStep, double time, bool forceOutput)
+  : Adaptor(processor, names, timeStep, time, forceOutput)
+{
+}
+
+void XMLImageDataFileInporter::process(const boost::filesystem::path& file)
+{
+  if ( doesRequireProcessing()
+    && vtkNew<vtkXMLImageDataReader>()->CanReadFile(file.c_str()))
+  {
+    assert(!names.empty());
+    const std::string& name(names[0]);
+
+    int global_extent[6];
+    vtkSmartPointer<vtkDataObject> data;
+
+    data = processXMLImageDataFile(file, name, global_extent);
+
+    if (data)
+    {
+      setData(data, name, global_extent);
+      coprocess();
+    }
+    else
+    {
+      std::cerr << "WARNING: could not process input file '" << file << "'" << std::endl;
+    }
+  }
+}
+
+vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
+    const fs::path& filepath
+  , const std::string& //varname
+  , int global_extent_out[6])
 {
   vtkNew<vtkXMLImageDataReader> reader;
 
@@ -229,10 +283,40 @@ vtkSmartPointer<vtkImageData> Inporter::processXMLImageDataFile(const fs::path& 
 
   vtkSmartPointer<vtkImageData> data = reader->GetOutput();
 
+  // TODO: acquire accurate global_extent
+  {
+    int *local_extent = data->GetExtent();
+    for (int i=0; i<6; ++i)
+      global_extent_out[i] = local_extent[i];
+  }
+
   reader->PrintSelf(std::cout, vtkIndent());
 
   return data;
 }
+
+
+// TODO: Untested
+/*
+         // TODO: don't get the data now, pass in a lamda to delay reading until necessary
+        vtkSmartPointer<vtkDataObject> data;
+
+        if (vtkNew<vtkXMLImageDataReader>()->CanReadFile(name.c_str()))
+        {
+          data = processXMLImageDataFile(name);
+        }
+        else if (vtkMPASReader::CanReadFile(name.c_str()))
+        {
+          data = processMPASDataFile(name);
+        }
+        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
+        {
+          data = processNetCDFCFDataFile(name);
+        }
+        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
+        {
+          data = processNetCDFDataFile(name);
+        }
 
 vtkSmartPointer<vtkUnstructuredGrid> Inporter::processMPASDataFile(const fs::path& filepath)
 {
@@ -282,46 +366,6 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFDataFile(const fs::path& f
   return data;
 }
 
-vtkSmartPointer<vtkImageData> Inporter::processRawNetCDFDataFile(const fs::path& filepath)
-{
-// https://www.unidata.ucar.edu/software/netcdf/docs/simple_xy_nc4_rd_8c-example.html
-// https://www.unidata.ucar.edu/software/netcdf/docs/pres_temp_4D_rd_8c-example.html
-
-  std::cout << "Processing NetCDF Datafile:'" << filepath << "' with netcdf library" << std::endl;
-
-  // TODO: read header to get data variables and dimensions; dynamically allocate correct vtk*Data type.
-  const int NX = 10;
-  const int NY = 6;
-
-  vtkSmartPointer<vtkImageData> data = vtkImageData::New();
-  data->SetDimensions(NX, NY, 0);
-  data->PrepareForNewData();
-
-  // netCDF ID for the file and data variable.
-  int ncid, varid;
-
-  // Error handling
-  int retval;
-
-  // Open the file. NC_NOWRITE tells netCDF we want read-only access to the file.
-  retval = nc_open(filepath.c_str(), NC_NOWRITE, &ncid);
-  assert(retval == 0);
-
-  // Get the varid of the data variable, based on its name.
-  retval = nc_inq_varid(ncid, "data", &varid);
-  assert(retval == 0);
-
-  // Read the data.
-  retval = nc_get_var_int(ncid, varid, static_cast<int*>(data->GetScalarPointer()));
-  // retval = nc_get_var_float(ncid, varid, &data[0][0])
-  assert(retval == 0);
-
-  // Close the file, freeing all resources.
-  retval = nc_close(ncid);
-  assert(retval == 0);
-
-  return data;
-}
 
 vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const fs::path& filepath)
 {
@@ -423,4 +467,4 @@ vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const fs::path& file
   return image;
 }
 
-
+*/

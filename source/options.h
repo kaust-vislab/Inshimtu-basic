@@ -33,6 +33,8 @@ const std::vector<fs::path> collectScripts(const po::variables_map& opts);
 
 const std::vector<fs::path> collectInitialFiles(const po::variables_map& opts);
 
+const std::vector<std::string> collectVariables(const po::variables_map& opts);
+
 const fs::path getWatchDirectory(const po::variables_map& opts);
 
 const fs::path getDoneFile(const po::variables_map& opts);
