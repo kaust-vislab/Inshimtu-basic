@@ -53,18 +53,11 @@ Processor::~Processor()
 }
 
 
-Adaptor::Adaptor( Processor& processor_
-                , const std::vector<std::string>& names_
-                , uint timeStep, double time, bool forceOutput)
+Descriptor::Descriptor( Processor& processor_
+                      , uint timeStep, double time, bool forceOutput)
   : processor(processor_)
-  , names(names_)
   , requireProcessing(false)
 {
-  for (const auto& name : names)
-  {
-    description->AddInput(name.c_str());
-  }
-
   description->SetTimeData(time, timeStep);
 
   if (forceOutput)
@@ -75,25 +68,42 @@ Adaptor::Adaptor( Processor& processor_
   requireProcessing = (processor.processor->RequestDataDescription(description.GetPointer()) != 0);
 }
 
+Descriptor::~Descriptor()
+{
+  if (requireProcessing)
+  {
+    processor.processor->CoProcess(description.GetPointer());
+  }
+}
+
+bool Descriptor::doesRequireProcessing() const
+{
+  return requireProcessing;
+}
+
+
+Adaptor::Adaptor( Descriptor& descriptor_
+                , const std::string& name_)
+  : descriptor(descriptor_)
+  , name(name_)
+{
+  descriptor.description->AddInput(name.c_str());
+}
+
 Adaptor::~Adaptor()
 {
 }
 
 bool Adaptor::doesRequireProcessing() const
 {
-  return requireProcessing;
+  return descriptor.doesRequireProcessing();
 }
 
-void Adaptor::setData(vtkDataObject* data, const std::string& name_, int global_extent[6])
+void Adaptor::coprocess(vtkDataObject* data, int global_extent[6])
 {
-  vtkCPInputDataDescription* inputDescription = description->GetInputDescriptionByName(name_.c_str());
+  vtkCPInputDataDescription* inputDescription = descriptor.description->GetInputDescriptionByName(name.c_str());
   assert(inputDescription != nullptr);
 
   inputDescription->SetGrid(data);
   inputDescription->SetWholeExtent(global_extent);
-}
-
-void Adaptor::coprocess()
-{
-  processor.processor->CoProcess(description.GetPointer());
 }

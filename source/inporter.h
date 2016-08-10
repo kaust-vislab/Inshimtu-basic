@@ -26,7 +26,6 @@ public:
   void process(const std::vector<boost::filesystem::path>& newfiles);
 
 protected:
-
   Processor& processor;
 
   std::vector<boost::filesystem::path> workingFiles;
@@ -38,14 +37,22 @@ protected:
   uint timeStep;
   const uint maxTimeSteps;
   const double lengthTimeStep;
+
+private:
+  void createInporters( Descriptor& descriptor, const boost::filesystem::path& filename
+                      , std::vector<std::unique_ptr<Adaptor>>& outInporters);
+
 };
+
 
 class RawNetCDFDataFileInporter : public Adaptor
 {
 public:
-  RawNetCDFDataFileInporter( Processor& processor
-                           , const std::vector<std::string>& names
-                           , uint timeStep, double time, bool forceOutput);
+  static bool canProcess(const boost::filesystem::path& file);
+
+public:
+  RawNetCDFDataFileInporter( Descriptor& descriptor
+                           , const std::string& name);
 
   void process(const boost::filesystem::path& file) override;
 
@@ -59,9 +66,11 @@ protected:
 class XMLImageDataFileInporter : public Adaptor
 {
 public:
-  XMLImageDataFileInporter( Processor& processor
-                          , const std::vector<std::string>& names
-                          , uint timeStep, double time, bool forceOutput);
+  static bool canProcess(const boost::filesystem::path& file);
+
+public:
+  XMLImageDataFileInporter( Descriptor& descriptor
+                          , const std::string& name);
 
   void process(const boost::filesystem::path& file) override;
 

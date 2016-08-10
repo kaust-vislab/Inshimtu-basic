@@ -4,11 +4,17 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti
 
 ##TODOs
 ### Testing Example...
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i /lustre/project/k1033/Projects/hari/makkah2_wrfout_d02_2015.qsnow_qrain_qvapor.nc
 
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename_1_0.vti
+build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti -v input
 
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename_*.vti
+build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/WSM3/WSM3_wrfout_d01_2015-*.nc -v U,V,W,QVAPOR
+
+build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i /lustre/project/k1033/Projects/hari/makkah2_wrfout_d02_2015.qsnow_qrain_qvapor.nc
+
+build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_1_0.vti
+
+build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti
+
 
 ### Notes
 

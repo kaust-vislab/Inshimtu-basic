@@ -24,34 +24,46 @@ public:
   ~Processor();
 
 private:
-friend class Adaptor;
+friend class Descriptor;
   vtkNew<vtkCPProcessor> processor;
+};
+
+class Descriptor
+{
+public:
+  Descriptor( Processor& processor
+            , uint timeStep, double time, bool forceOutput);
+  virtual ~Descriptor();
+
+  bool doesRequireProcessing() const;
+
+private:
+  Processor& processor;
+
+protected:
+friend class Adaptor;
+  vtkNew<vtkCPDataDescription> description;
+  bool requireProcessing;
 };
 
 
 class Adaptor
 {
 public:
-  Adaptor( Processor& processor
-         , const std::vector<std::string>& names
-         , uint timeStep, double time, bool forceOutput);
+  Adaptor(Descriptor& descriptor, const std::string& name);
   virtual ~Adaptor();
-
-  bool doesRequireProcessing() const;
 
   virtual void process(const boost::filesystem::path& file) = 0;
 
 private:
-  Processor& processor;
+  Descriptor& descriptor;
 
 protected:
-  void setData(vtkDataObject* data, const std::string& name, int global_extent[6]);
-  void coprocess();
+  bool doesRequireProcessing() const;
+  void coprocess(vtkDataObject* data, int global_extent[6]);
 
 protected:
-  std::vector<std::string> names;
-  vtkNew<vtkCPDataDescription> description;
-  bool requireProcessing;
+  std::string name;
 };
 
 

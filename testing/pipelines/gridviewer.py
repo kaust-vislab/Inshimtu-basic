@@ -14,8 +14,8 @@ def CreateCoProcessor():
     class Pipeline:
       # NOTE: only include producers for variables that belong to a single description on the simulation side
 
-      #adaptor_input = coprocessor.CreateProducer( datadescription, "input" )
-      adaptor_QVAPOR = coprocessor.CreateProducer( datadescription, "QVAPOR" )
+      adaptor_input = coprocessor.CreateProducer( datadescription, "input" )
+      #adaptor_QVAPOR = coprocessor.CreateProducer( datadescription, "QVAPOR" )
       #adaptor_U = coprocessor.CreateProducer( datadescription, "U" )
       #adaptor_V = coprocessor.CreateProducer( datadescription, "V" )
       #adaptor_W = coprocessor.CreateProducer( datadescription, "W" )

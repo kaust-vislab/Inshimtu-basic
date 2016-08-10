@@ -40,7 +40,6 @@
 
 namespace fs = boost::filesystem;
 
-
 Inporter::Inporter( Processor& processor_
                   , const std::vector<std::string>& variables_)
   : processor(processor_)
@@ -79,33 +78,12 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
       if (wfitr == workingFiles.end())
       {
         const double time = timeStep * lengthTimeStep;
-        const bool forceOutput = timeStep >= maxTimeSteps-1;
+        const bool forceOutput = true || timeStep >= maxTimeSteps-1;
+        Descriptor descriptor(processor, timeStep, time, forceOutput);
         std::vector<std::unique_ptr<Adaptor>> inporters;
 
         // Create inporters
-        {
-          for (const auto &v : variables)
-          {
-            std::cout << "Creating RawNetCDFDataFileInporter for: '" << v << "'" << std::endl;
-
-            std::vector<std::string> vars;
-            boost::split(vars, v, boost::is_any_of(","), boost::token_compress_on);
-
-            inporters.push_back(std::unique_ptr<Adaptor>(new RawNetCDFDataFileInporter(
-                                                 processor
-                                               , vars
-                                               , timeStep, time, true || forceOutput)));
-          }
-          // TODO: fix: restore
-          /*
-          std::cout << "Creating XMLImageDataFileInporter for: '" << "input" << "'" << std::endl;
-
-          inporters.push_back(std::unique_ptr<Adaptor>(new XMLImageDataFileInporter(
-                                               processor
-                                             , "input"
-                                             , timeStep, time, true || forceOutput)));
-          */
-        }
+        createInporters(descriptor, name, inporters);
 
         // new file is new
         std::cout << "New working file: '" << name << "'" << std::endl;
@@ -115,7 +93,7 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
         std::cout << "Inporter: Updating data and Catalyst..." << std::endl;
 
         // Inport file
-        for (auto &inporter : inporters)
+        for (auto& inporter : inporters)
         {
           inporter->process(name);
         }
@@ -136,39 +114,69 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
   }
 }
 
+void Inporter::createInporters( Descriptor& descriptor, const fs::path& filename
+                              , std::vector<std::unique_ptr<Adaptor>>& outInporters)
+{
+  for (const auto& vsets : variables)
+  {
+    if (RawNetCDFDataFileInporter::canProcess(filename))
+    {
+      std::cout << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'" << std::endl;
+
+      std::vector<std::string> vars;
+      boost::split(vars, vsets, boost::is_any_of(","), boost::token_compress_on);
+
+      for (const auto& v : vars)
+      {
+        outInporters.push_back(
+            std::unique_ptr<Adaptor>(
+                new RawNetCDFDataFileInporter(descriptor, v)));
+      }
+    }
+    else if (XMLImageDataFileInporter::canProcess(filename))
+    {
+      std::cout << "Creating XMLImageDataFileInporter for: '" << vsets << "'" << std::endl;
+
+      outInporters.push_back(
+          std::unique_ptr<Adaptor>(
+              new XMLImageDataFileInporter(descriptor, vsets)));
+    }
+  }
+}
+
+
 
 RawNetCDFDataFileInporter::RawNetCDFDataFileInporter(
-    Processor& processor
-  , const std::vector<std::string>& names
-  , uint timeStep, double time, bool forceOutput)
-  : Adaptor(processor, names, timeStep, time, forceOutput)
+    Descriptor& descriptor
+  , const std::string& name)
+  : Adaptor(descriptor, name)
 {
+}
+
+bool RawNetCDFDataFileInporter::canProcess(const boost::filesystem::path& file)
+{
+  return vtkNetCDFCFReader::CanReadFile(file.c_str());
 }
 
 void RawNetCDFDataFileInporter::process(const boost::filesystem::path& file)
 {
-  if ( doesRequireProcessing()
-    && vtkNetCDFCFReader::CanReadFile(file.c_str()))
+  if (doesRequireProcessing() && canProcess(file))
   {
     int global_extent[6];
 
-    for (const auto& name: names)
+    vtkSmartPointer<vtkDataObject> data;
+
+    data = processRawNetCDFDataFile(file, name, global_extent);
+
+    if (data)
     {
-      vtkSmartPointer<vtkDataObject> data;
-
-      data = processRawNetCDFDataFile(file, name, global_extent);
-
-      if (data)
-      {
-        setData(data, name, global_extent);
-      }
-      else
-      {
-        std::cerr << "WARNING: could not process variable '" << name
-                  << "' from input file '" << file << "'" << std::endl;
-      }
+      coprocess(data, global_extent);
     }
-    coprocess();
+    else
+    {
+      std::cerr << "WARNING: could not process variable '" << name
+                << "' from input file '" << file << "'" << std::endl;
+    }
   }
 }
 
@@ -237,21 +245,21 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
 
 
 XMLImageDataFileInporter::XMLImageDataFileInporter(
-    Processor& processor
-  , const std::vector<std::string>& names
-  , uint timeStep, double time, bool forceOutput)
-  : Adaptor(processor, names, timeStep, time, forceOutput)
+    Descriptor& descriptor
+  , const std::string& name)
+  : Adaptor(descriptor, name)
 {
+}
+
+bool XMLImageDataFileInporter::canProcess(const boost::filesystem::path& file)
+{
+  return vtkNew<vtkXMLImageDataReader>()->CanReadFile(file.c_str());
 }
 
 void XMLImageDataFileInporter::process(const boost::filesystem::path& file)
 {
-  if ( doesRequireProcessing()
-    && vtkNew<vtkXMLImageDataReader>()->CanReadFile(file.c_str()))
+  if (doesRequireProcessing() && canProcess(file))
   {
-    assert(!names.empty());
-    const std::string& name(names[0]);
-
     int global_extent[6];
     vtkSmartPointer<vtkDataObject> data;
 
@@ -259,8 +267,7 @@ void XMLImageDataFileInporter::process(const boost::filesystem::path& file)
 
     if (data)
     {
-      setData(data, name, global_extent);
-      coprocess();
+      coprocess(data, global_extent);
     }
     else
     {
@@ -301,10 +308,6 @@ vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
          // TODO: don't get the data now, pass in a lamda to delay reading until necessary
         vtkSmartPointer<vtkDataObject> data;
 
-        if (vtkNew<vtkXMLImageDataReader>()->CanReadFile(name.c_str()))
-        {
-          data = processXMLImageDataFile(name);
-        }
         else if (vtkMPASReader::CanReadFile(name.c_str()))
         {
           data = processMPASDataFile(name);
