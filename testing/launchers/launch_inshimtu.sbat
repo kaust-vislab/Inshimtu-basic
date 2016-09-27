@@ -8,24 +8,29 @@
 #SBATCH --ntasks-per-node=1
 
 
-INSHIMTU_ROOT="/scratch/holstgr/sw/xc40/inshimtu"
+INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
 INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
 
-SRC_DIR="/scratch/holstgr/sw/xc40/inshimtu/build"
+SRC_DIR="/lustre/project/k1033/Development/Inshimtu/examples"
 DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
 # NOTE: DataWarp BurstBuffer is not currently enabled on Shaheen (remove DW_JOB_STRIPED overload when working)
 ##DW jobdw access_mode=striped capacity=10GiB type=scratch
-##DW stage_in destination=$DW_JOB_STRIPED source=/scratch/holstgr/sw/xc40/inshimtu/build/testing type=directory
-##DW stage_in destination=$DW_JOB_STRIPED source=/scratch/holstgr/sw/xc40/inshimtu/build/testing.done type=file
-DW_JOB_STRIPED="/scratch/holstgr/sw/xc40/inshimtu/build"
+##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
+##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
+DW_JOB_STRIPED="/lustre/project/k1033/Development/Inshimtu/examples"
 
 srun mkdir "$DEVSHM_DIR"
 srun cp -r "$SRC_DIR/testing" "$DEVSHM_DIR"
 srun cp "$SRC_DIR/testing.done" "$DEVSHM_DIR"
 srun ls -lR "$DEVSHM_DIR"
 
-module add paraview/4.3.1 cray-hdf5
+# Load Modules
+module use /lustre/project/k1033/software/easybuild/modules/all
+module add Boost
+module add ParaView/5.1.2-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel
+
 
 #srun "$INSHIMTU_DIR/Inshimtu" --help-example
 #srun "$INSHIMTU_DIR/Inshimtu" -w "$DW_JOB_STRIPED/testing" -d "$DW_JOB_STRIPED/testing.done" -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" -i "$DW_JOB_STRIPED/testing/filename_*.vti"

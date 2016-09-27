@@ -23,7 +23,7 @@ case "$OSVERSION" in
   # salloc
   # srun bash -i
   # cd /lustre/project/k1033/Development/Inshimtu
-  # setup.sh
+  # ./setup.sh
 
   # Enable profiling tools
   #module unload darshan

@@ -1,8 +1,5 @@
 #!/usr/bin/sh -e
-module add kvl-applications paraview/4.4.0-mpich-x86_64
-
-# Needed because paraview/4.4.0-mpich-x86_64 doesn't set PYTHONPATHs correctly 
-module add dev-inshimtu
+module add kvl-applications paraview/5.1.2-mpich-x86_64
 
 export INSHIMTU_DIR=$(dirname $(dirname $(cd `dirname $0` && pwd)))
 export INSHIMTU_EXEC="${INSHIMTU_DIR}/build.kvl/Inshimtu"
