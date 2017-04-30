@@ -5,6 +5,8 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti
 ##TODOs
 ### Testing Example...
 
+module add kvl-applications paraview/5.3.0-mpich-x86_64
+
 build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti -v input
 
 build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/WSM3/WSM3_wrfout_d01_2015-*.nc -v U,V,W,QVAPOR
@@ -16,9 +18,62 @@ build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridv
 build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti
 
 
+srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" \
+     -w "$OUTPUT_ROOT/wrfrun-output" -d "$OUTPUT_ROOT/wrfrun-output.done" \
+     -i "${OUTPUT_ROOT}/wrfrun-output/"wrfout_d*.nc \
+     -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" \
+     -v U,V,W,QVAPOR
+  &
+
+# single node
+module add mpi/mpich-x86_64
+cd /home/holstgr/Development/Inshimtu/examples
+../build.kvl/Inshimtu -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
+                      -i "$PWD/testing/GDM/"wrfout_d01_* \
+                      -s "$PWD/pipelines/viewer_P_QICE_QVAPOR.py" \
+                      -v QVAPOR,P,QICE
+
+../build.kvl/Inshimtu \
+    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
+    -i "$PWD/testing/GDM/"wrfout_d01_* \
+    -s "$PWD/pipelines/viewer_QVAPOR_glendon_22222.py" -v QVAPOR
+
+# note: much slower with decimate
+"$PWD/../build.kvl/Inshimtu" \
+    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
+    -i "$PWD/testing/GDM/"wrfout_d01_* \
+    -s "$PWD/pipelines/viewer_P_QICE_glendon_22222.py" -v P,QICE
+
+"$PWD/../build.kvl/Inshimtu" \
+    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
+    -i "$PWD/testing/GDM/"wrfout_d01_* \
+    -s "$PWD/pipelines/viewer_P_QICE_nodec_glendon_22222.py" -v P,QICE
+
+
+# MPI multi node
+module add kvl-applications paraview/5.3.0-mpich-x86_64
+cd /home/holstgr/Development/Inshimtu/examples
+mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08 \
+  "$PWD/../build.kvl/Inshimtu" \
+    -w "$PWD/testing/GDM" -d "$PWD/testing.done" -i "$PWD/testing/GDM/"wrfout_d01_* \
+    -s "$PWD/pipelines/viewer_P_QICE_QVAPOR_glendon_22222.py" -v QVAPOR,P,QICE
+
+mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08 \
+  "$PWD/../build.kvl/Inshimtu" \
+    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
+    -i "$PWD/testing/GDM/"wrfout_d01_2015-{10-28,10-29,10-30,10-31,11-01}* \
+    -s "$PWD/pipelines/viewer_P_QICE_nodec_glendon_22222.py" -v P,QICE
+
+
 ### Notes
 
+For WRF: see README.namelist
+  &time_control
+  ;; Works
+  output_ready_flag = .true.,  ; asks the model to write-out an empty file with the name 'wrfoutReady_d<domain>_<date>.
 
+  ;; Works
+  history_outname = 'wrfout_d<domain>_<date>.nc' ; you may change the output file name
 
 ##Building
 

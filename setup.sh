@@ -6,11 +6,18 @@ OSVERSION=$(echo `lsb_release -sir` | awk -F '.' '{ print $1 }')
 
 case "$OSVERSION" in
 "CentOS"*)
-  module add kvl-applications paraview/5.1.2-mpich-x86_64
+  module add kvl-applications paraview/5.3.0-mpich-x86_64
 
   echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.kvl"
   mkdir "${INSHIMTU_DIR}/build.kvl"
   cd "${INSHIMTU_DIR}/build.kvl"
+
+  # TODO: Fix CMake Error at CMakeLists.txt:45 (add_executable):
+  #   Target "Inshimtu" links to target "Qt5::X11Extras" but the target was not found.  
+  #   Perhaps a find_package() call is missing for an IMPORTED target, or an ALIAS target is missing?
+  # Fix: sed -i 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
+  # Fix: find_package(...???...)
+
 
   cmake3 ..
 
@@ -20,26 +27,37 @@ case "$OSVERSION" in
 "SUSE LINUX"*)
 
   # NOTE: Build on compute node:
-  # salloc
+  # salloc --partition=debug
   # srun bash -i
   # cd /lustre/project/k1033/Development/Inshimtu
   # ./setup.sh
 
-  # Enable profiling tools
-  #module unload darshan
-  #module load perftools-base/6.3.2 perftools/6.3.2
+  # Enable Cray profiling tools
+  module unload darshan
 
-  module use /lustre/project/k1033/software/easybuild/modules/all
-  module add CMake
-  module add Boost
-  module add ParaView/5.1.2-CrayGNU-2016.07.KSL-server-mesa
+  module swap PrgEnv-cray PrgEnv-gnu
+  module add cdt/16.07
+  module add cmake/3.6.2
+
+  module use /lustre/project/k1033/software/staging.2017.04/easybuild/modules/all
+  module add Boost/1.61.0-CrayGNU-2016.07.KSL
+  module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel
+
+  # Enable Cray profiling tools
+  module load perftools-base perftools
+  # Allinea support
+  module load allinea-reports/7.0 allinea-forge/7.0
   
+
   echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.shaheen"
   mkdir "${INSHIMTU_DIR}/build.shaheen"
   cd "${INSHIMTU_DIR}/build.shaheen"
 
-  cmake -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib" -DCMAKE_C_COMPILER="$(which gcc)" -DCMAKE_CXX_COMPILER="$(which g++)" -DBOOST_ROOT=$EBROOTBOOST ..
+  # Allinea support
+  make-profiler-libraries
+
+  cmake -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib" -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" -DBOOST_ROOT=$EBROOTBOOST ..
 
   make -j 8
 
