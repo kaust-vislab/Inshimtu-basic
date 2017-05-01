@@ -32,6 +32,15 @@ case "$OSVERSION" in
   # cd /lustre/project/k1033/Development/Inshimtu
   # ./setup.sh
 
+
+  INSHIMTU_PROFILING=true
+  if [ "$INSHIMTU_PROFILING" = true ] ; then
+    LIB_EXT="so"
+  else
+    LIB_EXT="a"
+  fi
+
+
   # Enable Cray profiling tools
   module unload darshan
 
@@ -45,30 +54,46 @@ case "$OSVERSION" in
   module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel/1.10.0.1
 
-  # Enable Cray profiling tools
-  module load perftools-base perftools
-  # Allinea support
-  module load allinea-reports/7.0 allinea-forge/7.0
-  
+  if [ "$INSHIMTU_PROFILING" = true ] ; then
+    # Enable Cray profiling tools
+    module load perftools-base perftools
+    # Allinea support
+    module load allinea-reports/7.0 allinea-forge/7.0
+  fi
+
 
   echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.shaheen"
   mkdir "${INSHIMTU_DIR}/build.shaheen"
   cd "${INSHIMTU_DIR}/build.shaheen"
 
 
-  # Allinea support
-  make-profiler-libraries
+  if [ "$INSHIMTU_PROFILING" = true ] ; then
+    # Allinea support
+    make-profiler-libraries
+  fi
 
-  cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.a" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.a" -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" -DBOOST_ROOT=$EBROOTBOOST ..
+
+  cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.${LIB_EXT}" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.${LIB_EXT}" -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" -DBOOST_ROOT=$EBROOTBOOST ..
 
   make -j 12
 
-  # NOTE: Profiling Disabled
-  # TODO: Fix ERROR: Missing required ELF section '.note.link' from the program 'Inshimtu'. 
-  #       Load the correct 'perftools' module and rebuild the program.
-  # NOTE: This error can indicate that perftools doesn't like the directory name (e.g., has a 'tmp' in it).
-  #pat_build -S Inshimtu
-  #pat_build Inshimtu
+
+  if [ "$INSHIMTU_PROFILING" = true ] ; then
+    pat_build Inshimtu
+      # TODO:
+      # To instrument a program, add these compiler options:
+      #   compilation for use with MAP - not required for Performance Reports:
+      #     -g (or '-G2' for native Cray Fortran) (and -O3 etc.)
+      #   linking (both MAP and Performance Reports):
+      #     -dynamic -L/lustre/project/k1033/Development/Inshimtu/build.shaheen -lmap-sampler-pmpi -lmap-sampler \
+      #              -Wl,--eh-frame-hdr -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
+      # Note: These libraries must be on the same NFS/Lustre/GPFS filesystem as your program.
+      # Before running your program (interactively or from a queue), set LD_LIBRARY_PATH:
+      #    export LD_LIBRARY_PATH=/lustre/project/k1033/Development/Inshimtu/build.shaheen:$LD_LIBRARY_PATH
+      #    map --profile Inshimtu ... 
+      # or add  when linking your program: 
+      #    -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
+  fi
 
   ;;
 *)
