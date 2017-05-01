@@ -37,12 +37,13 @@ case "$OSVERSION" in
 
   module swap PrgEnv-cray PrgEnv-gnu
   module add cdt/16.07
+
   module add cmake/3.6.2
 
   module use /lustre/project/k1033/software/staging.2017.04/easybuild/modules/all
   module add Boost/1.61.0-CrayGNU-2016.07.KSL
   module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
-  module add cray-hdf5-parallel
+  module add cray-hdf5-parallel/1.10.0.1
 
   # Enable Cray profiling tools
   module load perftools-base perftools
@@ -54,17 +55,20 @@ case "$OSVERSION" in
   mkdir "${INSHIMTU_DIR}/build.shaheen"
   cd "${INSHIMTU_DIR}/build.shaheen"
 
+
   # Allinea support
   make-profiler-libraries
 
-  cmake -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib" -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" -DBOOST_ROOT=$EBROOTBOOST ..
+  cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.a" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.a" -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" -DBOOST_ROOT=$EBROOTBOOST ..
 
-  make -j 8
+  make -j 12
 
   # NOTE: Profiling Disabled
-  # TODO: Fix ERROR: Missing required ELF section '.note.link' from the program 'Inshimtu'. Load the correct 'perftools' module and rebuild the program.
+  # TODO: Fix ERROR: Missing required ELF section '.note.link' from the program 'Inshimtu'. 
+  #       Load the correct 'perftools' module and rebuild the program.
   # NOTE: This error can indicate that perftools doesn't like the directory name (e.g., has a 'tmp' in it).
   #pat_build -S Inshimtu
+  #pat_build Inshimtu
 
   ;;
 *)

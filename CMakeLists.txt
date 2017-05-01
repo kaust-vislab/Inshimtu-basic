@@ -4,6 +4,13 @@ project(Inshimtu)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# NOTE: These settings fix link errors on Shaheen
+if (${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
+  set(CMAKE_EXE_LINKER_FLAGS "-dynamic -Wl,--no-as-needed -ldl")
+  set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+endif()
+
+
 find_package(ParaView 4.3.1 REQUIRED COMPONENTS
   vtkPVPythonCatalyst
   vtkIOXML
@@ -18,6 +25,7 @@ include("${PARAVIEW_USE_FILE}")
 include(vtkModuleMacros)
 include(vtkMPI)
 
+
 find_package(Boost 1.53 REQUIRED COMPONENTS
   program_options
   filesystem
@@ -26,8 +34,21 @@ find_package(Boost 1.53 REQUIRED COMPONENTS
 )
 include_directories(${Boost_INCLUDE_DIRS})
 
+
 find_package(HDF5 1.8 REQUIRED)
 include_directories(${HDF5_INCLUDE_DIRS})
+
+
+# Allinea profiler
+find_library(Allinea_map_sampler_LIBRARY NAMES map-sampler PATHS ${CMAKE_BINARY_DIR} NO_DEFAULT_PATH)
+find_library(Allinea_map_sampler_pmpi_LIBRARY NAMES map-sampler-pmpi PATHS ${CMAKE_BINARY_DIR} NO_DEFAULT_PATH)
+if (Allinea_map_sampler_LIBRARY AND Allinea_map_sampler_pmpi_LIBRARY)
+  set(Allinea_LIBRARIES
+    ${Allinea_map_sampler_LIBRARY}
+    ${Allinea_map_sampler_pmpi_LIBRARY}
+  )
+  message("Found Allinea_LIBRARIES: ${Allinea_LIBRARIES}")
+endif()
 
 
 #add_subdirectory("source")
@@ -56,7 +77,10 @@ target_link_libraries(Inshimtu LINK_PRIVATE
   vtkIONetCDF
   vtkNetCDF
   ${Boost_LIBRARIES}
-  ${HDF5_LIBRARIES}
+# TODO: Fix configuration error (found library, but not CPP version):
+#    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
+#  ${HDF5_LIBRARIES}
+  ${Allinea_LIBRARIES}
 )
 vtk_mpi_link(Inshimtu)
 
