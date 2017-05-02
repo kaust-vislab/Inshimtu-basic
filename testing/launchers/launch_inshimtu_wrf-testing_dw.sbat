@@ -1,0 +1,65 @@
+#!/bin/bash
+#SBATCH --partition=workq
+#SBATCH --job-name=wrf-inshimtu
+#SBATCH --time=00:25:00
+#SBATCH --output=wrf-inshimtu.%j.out
+#SBATCH --error=wrf-inshimtu.%j.err
+#SBATCH --nodes=2
+#DW jobdw access_mode=striped capacity=100GiB type=scratch
+#DW stage_in source=/project/k1033/Projects/wrf2pv-testing/test-example/wrfrun-output destination=$DW_JOB_STRIPED/wrfrun-output type=directory
+#DW stage_in source=/project/k1033/Projects/wrf2pv-testing/test-example/wrfrun-output.done destination=$DW_JOB_STRIPED/wrfrun-output.done  type=file
+
+#???#DW stage_out source=$DW_JOB_STRIPED/wrfrun-output/vis-results destination=/project/k1033/Projects/wrf2pv-testing/test-example/vis-results type=directory 
+
+WRF_ROOT="/project/k1033/Projects/wrf2pv-testing/hari-original/wrf-3.7.1/main"
+INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
+INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+
+WRFRUN_OUTPUT_DIR="$DW_JOB_STRIPED/wrfrun-output"
+WRFRUN_DONE_FILE="$DW_JOB_STRIPED/wrfrun-output.done"
+
+cd "$WRFRUN_OUTPUT_DIR"
+
+
+# MPI IO Directives
+
+# Displays all settings used by the MPI during execution
+export MPICH_ENV_DISPLAY=1
+# Displays MPI version
+export MPICH_VERSION_DISPLAY=1
+# Display ranks performing IO aggregation when using collective buffering
+export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
+# Display read/write operations statistics after collective buffering
+export MPICH_MPIIO_STATS=2
+#Displays all the available I/O hints and their values
+export MPICH_MPIIO_HINTS_DISPLAY=1
+# Set per-file striping (lustre / burst buffer)
+#export MPICH_MPIIO_HINTS=“wrfinput*:striping_factor=64,\
+#wrfrst*:striping_factor=144,\
+#wrfout*:striping_factor=144:cb_nodes=20:striping_units=striping_unit=2097152”
+
+
+# Load Modules
+module use /lustre/project/k1033/sw/easybuild/modules/all
+module add Boost/1.61.0-CrayGNU-2016.07.KSL
+module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel/1.10.0.1
+
+# Note: For profiling support (if Inshimtu built with profiling)
+export LD_LIBRARY_PATH="$INSHIMTU_DIR":$LD_LIBRARY_PATH
+
+
+# Launch Inshimtu (background)
+srun --ntasks-per-node=1 \
+     "$INSHIMTU_DIR/Inshimtu" -w "$WRFRUN_OUTPUT_DIR" \
+                              -d "$WRFRUN_DONE_FILE" \
+                              -f 'wrfout_d.*.nc' \
+                              -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" \
+                              -v U,V,W,QVAPOR \
+  &
+
+# Launch WRF
+srun --ntasks-per-node=31 "$WRF_ROOT/wrf.exe"
+
+# Notify Inshimtu of completion
+sleep 10 && touch "$WRFRUN_DONE_FILE"
