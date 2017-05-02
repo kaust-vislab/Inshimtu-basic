@@ -49,7 +49,7 @@ case "$OSVERSION" in
 
   module add cmake/3.6.2
 
-  module use /lustre/project/k1033/software/staging.2017.04/easybuild/modules/all
+  module use /lustre/project/k1033/sw/easybuild/modules/all
   module add Boost/1.61.0-CrayGNU-2016.07.KSL
   module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel/1.10.0.1
@@ -80,19 +80,19 @@ case "$OSVERSION" in
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     pat_build Inshimtu
-      # TODO:
-      # To instrument a program, add these compiler options:
-      #   compilation for use with MAP - not required for Performance Reports:
-      #     -g (or '-G2' for native Cray Fortran) (and -O3 etc.)
-      #   linking (both MAP and Performance Reports):
-      #     -dynamic -L/lustre/project/k1033/Development/Inshimtu/build.shaheen -lmap-sampler-pmpi -lmap-sampler \
-      #              -Wl,--eh-frame-hdr -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
-      # Note: These libraries must be on the same NFS/Lustre/GPFS filesystem as your program.
-      # Before running your program (interactively or from a queue), set LD_LIBRARY_PATH:
-      #    export LD_LIBRARY_PATH=/lustre/project/k1033/Development/Inshimtu/build.shaheen:$LD_LIBRARY_PATH
-      #    map --profile Inshimtu ... 
-      # or add  when linking your program: 
-      #    -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
+    # TODO:
+    # To instrument a program, add these compiler options:
+    #   compilation for use with MAP - not required for Performance Reports:
+    #     -g (or '-G2' for native Cray Fortran) (and -O3 etc.)
+    #   linking (both MAP and Performance Reports):
+    #     -dynamic -L/lustre/project/k1033/Development/Inshimtu/build.shaheen -lmap-sampler-pmpi -lmap-sampler \
+    #              -Wl,--eh-frame-hdr -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
+    # Note: These libraries must be on the same NFS/Lustre/GPFS filesystem as your program.
+    # Before running your program (interactively or from a queue), set LD_LIBRARY_PATH:
+    #    export LD_LIBRARY_PATH=/lustre/project/k1033/Development/Inshimtu/build.shaheen:$LD_LIBRARY_PATH
+    #    map --profile Inshimtu ... 
+    # or add  when linking your program: 
+    #    -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
   fi
 
   ;;

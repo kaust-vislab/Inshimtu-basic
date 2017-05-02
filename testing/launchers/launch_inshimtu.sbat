@@ -14,7 +14,7 @@ INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
 SRC_DIR="/lustre/project/k1033/Development/Inshimtu/examples"
 DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
-# NOTE: DataWarp BurstBuffer is not currently enabled on Shaheen (remove DW_JOB_STRIPED overload when working)
+# TODO: Verify DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when working)
 ##DW jobdw access_mode=striped capacity=10GiB type=scratch
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
@@ -25,11 +25,15 @@ srun cp -r "$SRC_DIR/testing" "$DEVSHM_DIR"
 srun cp "$SRC_DIR/testing.done" "$DEVSHM_DIR"
 srun ls -lR "$DEVSHM_DIR"
 
+
 # Load Modules
-module use /lustre/project/k1033/software/easybuild/modules/all
-module add Boost
-module add ParaView/5.1.2-CrayGNU-2016.07.KSL-server-mesa
-module add cray-hdf5-parallel
+module use /lustre/project/k1033/sw/easybuild/modules/all
+module add Boost/1.61.0-CrayGNU-2016.07.KSL
+module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel/1.10.0.1
+
+# Note: For profiling support (if Inshimtu built with profiling)
+export LD_LIBRARY_PATH="$INSHIMTU_DIR":$LD_LIBRARY_PATH
 
 
 #srun "$INSHIMTU_DIR/Inshimtu" --help-example

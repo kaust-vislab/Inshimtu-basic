@@ -14,10 +14,13 @@ SRC_DIR="/lustre/project/k1033/Development/Inshimtu/examples"
 DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
 # Load Modules
-module use /lustre/project/k1033/software/easybuild/modules/all
-module add Boost
-module add ParaView/5.1.2-CrayGNU-2016.07.KSL-server-mesa
-module add cray-hdf5-parallel
+module use /lustre/project/k1033/sw/easybuild/modules/all
+module add Boost/1.61.0-CrayGNU-2016.07.KSL
+module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel/1.10.0.1
+
+# Note: For profiling support (if Inshimtu built with profiling)
+export LD_LIBRARY_PATH="$INSHIMTU_DIR":$LD_LIBRARY_PATH
 
 
 srun mkdir "$DEVSHM_DIR"

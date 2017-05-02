@@ -1,5 +1,5 @@
 #!/usr/bin/sh -e
-module add kvl-applications paraview/5.1.2-mpich-x86_64
+module add kvl-applications paraview/5.3.0-mpich-x86_64
 
 export INSHIMTU_DIR
 INSHIMTU_DIR="$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")"
