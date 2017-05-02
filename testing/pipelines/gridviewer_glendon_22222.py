@@ -12,7 +12,11 @@ from paraview import coprocessing
 def CreateCoProcessor():
   def _CreatePipeline(coprocessor, datadescription):
     class Pipeline:
-      adaptorinput = coprocessor.CreateProducer( datadescription, "input" )
+      #adaptor_input = coprocessor.CreateProducer( datadescription, "input" )
+      adaptor_QVAPOR = coprocessor.CreateProducer( datadescription, "QVAPOR" )
+      adaptor_U = coprocessor.CreateProducer( datadescription, "U" )
+      adaptor_V = coprocessor.CreateProducer( datadescription, "V" )
+      adaptor_W = coprocessor.CreateProducer( datadescription, "W" )
 
     return Pipeline()
 
