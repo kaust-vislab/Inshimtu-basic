@@ -36,8 +36,10 @@ case "$OSVERSION" in
   INSHIMTU_PROFILING=true
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     LIB_EXT="so"
+    BUILD_TYPE="RelWithDebInfo"
   else
     LIB_EXT="a"
+    BUILD_TYPE="Release"
   fi
 
 
@@ -73,26 +75,19 @@ case "$OSVERSION" in
   fi
 
 
-  cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.${LIB_EXT}" -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.${LIB_EXT}" -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" -DBOOST_ROOT=$EBROOTBOOST ..
+  cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+        -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" \
+        -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.${LIB_EXT}" \
+        -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.${LIB_EXT}" \
+        -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" \
+        -DBOOST_ROOT=$EBROOTBOOST \
+        ..
 
   make -j 12
 
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     pat_build Inshimtu
-    # TODO:
-    # To instrument a program, add these compiler options:
-    #   compilation for use with MAP - not required for Performance Reports:
-    #     -g (or '-G2' for native Cray Fortran) (and -O3 etc.)
-    #   linking (both MAP and Performance Reports):
-    #     -dynamic -L/lustre/project/k1033/Development/Inshimtu/build.shaheen -lmap-sampler-pmpi -lmap-sampler \
-    #              -Wl,--eh-frame-hdr -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
-    # Note: These libraries must be on the same NFS/Lustre/GPFS filesystem as your program.
-    # Before running your program (interactively or from a queue), set LD_LIBRARY_PATH:
-    #    export LD_LIBRARY_PATH=/lustre/project/k1033/Development/Inshimtu/build.shaheen:$LD_LIBRARY_PATH
-    #    map --profile Inshimtu ... 
-    # or add  when linking your program: 
-    #    -Wl,-rpath=/lustre/project/k1033/Development/Inshimtu/build.shaheen
   fi
 
   ;;

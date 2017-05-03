@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # NOTE: These settings fix link errors on Shaheen
 if (${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
   set(CMAKE_EXE_LINKER_FLAGS "-dynamic -Wl,--no-as-needed -ldl")
-  set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
 endif()
 
 
@@ -47,6 +46,11 @@ if (Allinea_map_sampler_LIBRARY AND Allinea_map_sampler_pmpi_LIBRARY)
     ${Allinea_map_sampler_LIBRARY}
     ${Allinea_map_sampler_pmpi_LIBRARY}
   )
+
+  set(PROFILER_EXE_LINKER_FLAGS "-L${CMAKE_BINARY_DIR} -lmap-sampler-pmpi -lmap-sampler -Wl,--eh-frame-hdr -Wl,-rpath=${CMAKE_BINARY_DIR}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${PROFILER_EXE_LINKER_FLAGS}")
+
+
   message("Found Allinea_LIBRARIES: ${Allinea_LIBRARIES}")
 endif()
 
