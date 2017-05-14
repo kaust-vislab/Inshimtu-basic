@@ -15,8 +15,8 @@ case "$OSVERSION" in
   # TODO: Fix CMake Error at CMakeLists.txt:45 (add_executable):
   #   Target "Inshimtu" links to target "Qt5::X11Extras" but the target was not found.  
   #   Perhaps a find_package() call is missing for an IMPORTED target, or an ALIAS target is missing?
-  # Fix: sed -i 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
   # Fix: find_package(...???...)
+  sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
 
 
   cmake3 ..

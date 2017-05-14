@@ -20,7 +20,9 @@
 class Inporter
 {
 public:
-  Inporter(Processor& processor, const std::vector<std::string>& variables);
+  Inporter( Processor& processor
+          , const std::pair<int, size_t>& section_
+          , const std::vector<std::string>& variables_);
   ~Inporter();
 
   void process(const std::vector<boost::filesystem::path>& newfiles);
@@ -30,6 +32,9 @@ protected:
 
   std::vector<boost::filesystem::path> workingFiles;
   std::vector<boost::filesystem::path> completedFiles;
+
+  // inport section: idx of count
+  const std::pair<int, size_t> section;
 
   const std::vector<std::string> variables;
 

@@ -13,17 +13,28 @@
 #include <sys/types.h>
 #include <sys/inotify.h>
 
-class INotify
+
+class Notify
+{
+public:
+  Notify();
+  virtual ~Notify();
+
+  virtual void processEvents(std::vector<boost::filesystem::path>& out_newFiles);
+  virtual bool isDone() const;
+};
+
+class INotify : public Notify
 {
 public:
   INotify( const boost::filesystem::path& watch_directory
          , const boost::regex& watch_files_filter
          , const boost::filesystem::path& done_file);
-  ~INotify();
+  virtual ~INotify();
 
-  void processEvents(std::vector<boost::filesystem::path>& out_newFiles);
+  virtual void processEvents(std::vector<boost::filesystem::path>& out_newFiles) override;
 
-  bool isDone() const;
+  virtual bool isDone() const override;
 
 protected:
   int inotify_descriptor;

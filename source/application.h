@@ -2,6 +2,7 @@
 #define APPLICATION_HEADER
 
 #include <vector>
+#include <set>
 
 #include <boost/filesystem.hpp>
 
@@ -12,7 +13,7 @@
 #include <vtkMPICommunicator.h>
 
 
-class INotify;
+class Notify;
 class vtkMPICommunicatorOpaqueComm;
 
 
@@ -24,15 +25,15 @@ public:
 
   static const int ROOT_RANK = 0;
 
-  bool isRoot() const { return rank == 0; }
+  bool isRoot() const { return rank == ROOT_RANK; }
   int getRank() const { return rank; }
 
   int getSize() const { return size; }
 
   bool hasFiles(const std::vector<boost::filesystem::path>& newfiles) const;
-  void collectFiles(std::vector<boost::filesystem::path>& newfiles);
+  void collectFiles(std::vector<boost::filesystem::path>& inout_newfiles);
 
-  bool isDone(const INotify& notify);
+  bool isDone(const Notify& notify);
 
 protected:
   int rank;
@@ -46,12 +47,19 @@ public:
   MPICatalystApplication(int* argc, char** argv[]);
   ~MPICatalystApplication();
 
-  bool isInporter() const { return rank == 0; }
+  bool isNotifier() const { notifier; }
+  bool isInporter() const { return getInporterIndex() >= 0; }
+
+  const std::pair<int, size_t>& getInporterSection() const { return inporterSection; };
+  int getInporterIndex() const { return inporterSection.first; };
+  size_t getInporterCount() const { return inporterSection.second; };
 
   vtkMPICommunicatorOpaqueComm& getCommunicator();
 
 protected:
   vtkNew<vtkMPICommunicator> communicator;
+  bool notifier;
+  std::pair<int, size_t> inporterSection;
 };
 
 #endif

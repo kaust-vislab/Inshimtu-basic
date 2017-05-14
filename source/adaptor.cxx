@@ -2,6 +2,7 @@
 #include "logger.h"
 
 #include <iostream>
+#include <math.h>
 
 #include <vtkCellData.h>
 #include <vtkCellType.h>
@@ -54,9 +55,11 @@ Processor::~Processor()
 
 
 Descriptor::Descriptor( Processor& processor_
+                      , const std::pair<int, size_t>& section_
                       , uint timeStep, double time, bool forceOutput)
   : processor(processor_)
   , requireProcessing(false)
+  , section(section_)
 {
   description->SetTimeData(time, timeStep);
 
@@ -98,6 +101,20 @@ bool Adaptor::doesRequireProcessing() const
 {
   return descriptor.doesRequireProcessing();
 }
+
+std::pair<size_t, size_t> Adaptor::getExtent(size_t max) const
+{
+  const std::pair<int, size_t>& section(descriptor.getSection());
+
+  size_t chunksize = static_cast<size_t>(
+                       ceil(static_cast<double>(max) /
+                            static_cast<double>(section.second)));
+  size_t extstart = std::min(chunksize * section.first, max);
+  size_t extsize = std::min(chunksize, max - extstart);
+
+  return std::pair<size_t, size_t>(extstart, extsize);
+}
+
 
 void Adaptor::coprocess(vtkDataObject* data, int global_extent[6])
 {

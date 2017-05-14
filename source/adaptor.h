@@ -32,18 +32,25 @@ class Descriptor
 {
 public:
   Descriptor( Processor& processor
+            , const std::pair<int, size_t>& section_
             , uint timeStep, double time, bool forceOutput);
   virtual ~Descriptor();
 
   bool doesRequireProcessing() const;
+
+  const std::pair<int, size_t>& getSection() const { return section; }
 
 private:
   Processor& processor;
 
 protected:
 friend class Adaptor;
+
   vtkNew<vtkCPDataDescription> description;
   bool requireProcessing;
+
+  // inport section: idx of count
+  const std::pair<int, size_t> section;
 };
 
 
@@ -60,6 +67,7 @@ private:
 
 protected:
   bool doesRequireProcessing() const;
+  std::pair<size_t, size_t> getExtent(size_t max) const;
   void coprocess(vtkDataObject* data, int global_extent[6]);
 
 protected:

@@ -22,9 +22,14 @@
 #include <vtkInformation.h>
 #include <vtkIndent.h>
 
+// TODO:<vtk_netcdfcpp.h> points to wrong directory on ParaView v5.1.2
+//#include <vtk_netcdfcpp.h>
+#include <vtknetcdf/include/netcdfcpp.h>
+
 #include <vtk_netcdf.h>
 
-#include <hdf5.h>
+// TODO: Restore when HDF5 functionality is working
+//#include <hdf5.h>
 
 #include <memory>
 #include <iostream>
@@ -38,12 +43,15 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+
 namespace fs = boost::filesystem;
 
 Inporter::Inporter( Processor& processor_
+                  , const std::pair<int, size_t>& section_
                   , const std::vector<std::string>& variables_)
   : processor(processor_)
   , variables(variables_)
+  , section(section_)
   , timeStep(0)
   , maxTimeSteps(100)
   , lengthTimeStep(0.01)
@@ -78,8 +86,8 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
       if (wfitr == workingFiles.end())
       {
         const double time = timeStep * lengthTimeStep;
-        const bool forceOutput = true || timeStep >= maxTimeSteps-1;
-        Descriptor descriptor(processor, timeStep, time, forceOutput);
+        const bool forceOutput = false || timeStep >= maxTimeSteps-1;
+        Descriptor descriptor(processor, section, timeStep, time, forceOutput);
         std::vector<std::unique_ptr<Adaptor>> inporters;
 
         // Create inporters
@@ -193,29 +201,106 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   int ndims;
   int dimids[NC_MAX_VAR_DIMS]; // netCDF ID for dimensions.
   nc_type vartype;
-  size_t lenX, lenY, lenZ;
+  size_t lenX, lenY, lenZ, lenT;
   int retval; // Error handling
 
   // Open the file. NC_NOWRITE tells netCDF we want read-only access to the file.
-  retval = nc_open(filepath.c_str(), NC_NOWRITE, &ncid); assert(retval == 0);
+  retval = nc_open(filepath.c_str(), NC_NOWRITE, &ncid); assert(retval == NC_NOERR);
 
   // Get the varid of the data variable, based on its name.
-  retval = nc_inq_varid(ncid, varname.c_str(), &varid); assert(retval == 0);
+  retval = nc_inq_varid(ncid, varname.c_str(), &varid); assert(retval == NC_NOERR);
 
-  retval = nc_inq_varndims(ncid, varid, &ndims); assert(retval == 0);
-  retval = nc_inq_vardimid(ncid, varid, dimids); assert(retval == 0);
-  retval = nc_inq_vartype(ncid, varid, &vartype); assert(retval == 0);
+  retval = nc_inq_varndims(ncid, varid, &ndims); assert(retval == NC_NOERR);
+  retval = nc_inq_vardimid(ncid, varid, dimids); assert(retval == NC_NOERR);
+  retval = nc_inq_vartype(ncid, varid, &vartype); assert(retval == NC_NOERR);
+
+  // TODO: Generalize dimension and time support
 
   assert(vartype == NC_FLOAT);
-  assert(ndims >= 3);
+  assert(ndims == 4);
 
-  retval = nc_inq_dimlen(ncid, dimids[ndims-1], &lenX); assert(retval == 0);
-  retval = nc_inq_dimlen(ncid, dimids[ndims-2], &lenY); assert(retval == 0);
-  retval = nc_inq_dimlen(ncid, dimids[ndims-3], &lenZ); assert(retval == 0);
+  retval = nc_inq_dimlen(ncid, dimids[ndims-1], &lenX); assert(retval == NC_NOERR);
+  retval = nc_inq_dimlen(ncid, dimids[ndims-2], &lenY); assert(retval == NC_NOERR);
+  retval = nc_inq_dimlen(ncid, dimids[ndims-3], &lenZ); assert(retval == NC_NOERR);
+  retval = nc_inq_dimlen(ncid, dimids[ndims-4], &lenT); assert(retval == NC_NOERR); assert(lenT == 1);
+
+  int global_size[3] = {static_cast<int>(lenX), static_cast<int>(lenY), static_cast<int>(lenZ)};
+  int global_extent[6] = { 0, global_size[0]-1
+                         , 0, global_size[1]-1
+                         , 0, global_size[2]-1
+                         };
+  {
+    for (int i=0; i<6; ++i)
+      global_extent_out[i] = global_extent[i];
+  }
+
+  const std::pair<size_t, size_t> extentZ = getExtent(lenZ);
+
+  int local_offset[3] = {0, 0, static_cast<int>(extentZ.first)};
+  int local_size[3] = {static_cast<int>(lenX), static_cast<int>(lenY), static_cast<int>(extentZ.second)};
+  int local_extent[6] = { local_offset[0], local_offset[0]+local_size[0]-1
+                        , local_offset[1], local_offset[1]+local_size[1]-1
+                        , local_offset[2], local_offset[2]+local_size[2]-1
+                        };
+
+
+  vtkSmartPointer<vtkImageData> data = vtkImageData::New();
+  data->SetDimensions(local_size);
+  data->SetExtent(local_extent);
+  data->AllocateScalars(VTK_FLOAT, 1);
+  data->GetPointData()->GetScalars()->SetName(varname.c_str());
+
+
+  const size_t vstart[4] = { 0
+                           , static_cast<size_t>(local_offset[2])
+                           , static_cast<size_t>(local_offset[1])
+                           , static_cast<size_t>(local_offset[0])
+                           };
+  const size_t vcount[4] = { 1
+                           , static_cast<size_t>(local_size[2])
+                           , static_cast<size_t>(local_size[1])
+                           , static_cast<size_t>(local_size[0])
+                           };
+
+  // Read the data.
+  retval = nc_get_vars_float( ncid, varid, vstart, vcount, nullptr
+                            , static_cast<float*>(data->GetScalarPointer()));
+  assert(retval == NC_NOERR);
+
+  // Close the file, freeing all resources.
+  retval = nc_close(ncid);
+  assert(retval == NC_NOERR);
+
+  return data;
+}
+
+// TODO: fix linker errors (missing NetCDF functions), test, and replace C netcdf code
+/*
+vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFile(
+    const fs::path& filepath
+  , const std::string& varname
+  , int global_extent_out[6])
+{
+  std::cout << "Processing variable '" << varname
+            << "' from NetCDF Datafile:'" << filepath << "' with netcdf library"
+            << std::endl;
+
+  NcFile ncfile(filepath.c_str(), NcFile::ReadOnly, nullptr, 0, NcFile::Netcdf4Classic);
+  assert(ncfile.is_valid());
+
+  NcToken varid = varname.c_str();
+  NcVar* ncvar = ncfile.get_var(varid);
+  assert(ncvar != nullptr);
+  assert(ncvar->is_valid());
+  assert(ncvar->num_dims() == 3);
+  assert(ncvar->type() == ncFloat);
 
   // TODO: find local offset for per-rank files.
   int local_offset[3] = {0, 0, 0};
-  int local_size[3] = {static_cast<int>(lenX), static_cast<int>(lenY), static_cast<int>(lenZ)};
+  size_t* local_sizes = ncvar->edges();
+  int local_size[3] = { static_cast<int>(local_sizes[0])
+                      , static_cast<int>(local_sizes[1])
+                      , static_cast<int>(local_sizes[2])};
   int local_extent[6] = { local_offset[0], local_offset[0]+local_size[0]-1
                         , local_offset[1], local_offset[1]+local_size[1]-1
                         , local_offset[2], local_offset[2]+local_size[2]-1
@@ -233,16 +318,16 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   data->GetPointData()->GetScalars()->SetName(varname.c_str());
 
   // Read the data.
-  retval = nc_get_var_float(ncid, varid, static_cast<float*>(data->GetScalarPointer()));
-  assert(retval == 0);
+  {
+    NcBool result;
 
-  // Close the file, freeing all resources.
-  retval = nc_close(ncid);
-  assert(retval == 0);
+    result = ncvar->get(static_cast<float*>(data->GetScalarPointer()), local_sizes);
+    assert(result);
+  }
 
   return data;
 }
-
+*/
 
 XMLImageDataFileInporter::XMLImageDataFileInporter(
     Descriptor& descriptor
@@ -288,6 +373,7 @@ vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
   reader->SetFileName(filepath.c_str());
   reader->Update();
 
+  // TODO: handle multiple inporters (or force single inporter to manage)
   vtkSmartPointer<vtkImageData> data = reader->GetOutput();
 
   // TODO: acquire accurate global_extent

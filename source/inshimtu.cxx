@@ -40,18 +40,27 @@ int main(int argc, char* argv[])
   // TODO: WatchFilesystem replaces INotify;
   //       WatchFS uses INotify (if all nodes have a node master)
   //       or PollFS (for shared filesystem)
-  INotify notify( options::getWatchDirectory(opts)
-                , options::getFileFilter(opts)
-                , options::getDoneFile(opts));
+  std::unique_ptr<Notify> notify;
+
+  {
+    const bool watchDirectory(options::hasWatchDirectory(opts));
+    const bool doneFile(options::hasDoneFile(opts));
+
+    if (!watchDirectory && !doneFile)
+      notify.reset(new Notify());
+    else
+      notify.reset(new INotify( options::getWatchDirectory(opts)
+                              , options::getFileFilter(opts)
+                              , options::getDoneFile(opts)));
+  }
 
   std::vector<fs::path> newfiles;
 
-  if (app.isInporter())
+  if (app.isRoot())
   {
     newfiles = options::collectInitialFiles(opts);
   }
 
-  // TODO: Inporter nodes; collect and process files
   std::unique_ptr<Processor> processor;
   std::unique_ptr<Inporter> inporter;
 
@@ -61,20 +70,24 @@ int main(int argc, char* argv[])
                                  , options::collectScripts(opts)
                                  , options::getStartupDelay(opts)));
     inporter.reset(new Inporter( *processor.get()
+                               , app.getInporterSection()
                                , options::collectVariables(opts)));
   }
 
   std::cout << "READY" << std::endl;
 
+  // TODO: Fix logic to support per-node, local files (e.g., from a RAM Disk)
+  //       Make each notification node an inporter, each inporter process the file
+  //       from its node (the files may have different names), the coordinator node
+  //       (root) must syncronize the inporters to process their fragment of the
+  //       same frame as other inporters.
+
   do
   {
-    // TODO: inporter nodes only
+    // if any node has files to process, skip blocking notify event wait
     if (!app.hasFiles(newfiles))
     {
-      // TODO: collect all notifications (MPI lock-step)
-      //       sort them by filenaming scheme to determine correct order
-      //       (if multiple frames and files created between last processEvents)
-      notify.processEvents(newfiles);
+      notify->processEvents(newfiles);
     }
 
     app.collectFiles(newfiles);
@@ -86,7 +99,7 @@ int main(int argc, char* argv[])
 
     newfiles.clear();
 
-  } while (!app.isDone(notify));
+  } while (!app.isDone(*(notify.get())));
 
   return 0;
 }

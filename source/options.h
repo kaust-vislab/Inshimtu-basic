@@ -35,13 +35,22 @@ const std::vector<fs::path> collectInitialFiles(const po::variables_map& opts);
 
 const std::vector<std::string> collectVariables(const po::variables_map& opts);
 
+const std::vector<std::pair<int, int>> collectInporterNodes(const po::variables_map& opts);
+
+const bool hasWatchDirectory(const po::variables_map& opts);
 const fs::path getWatchDirectory(const po::variables_map& opts);
 
+const bool hasDoneFile(const po::variables_map& opts);
 const fs::path getDoneFile(const po::variables_map& opts);
 
+const bool hasFileFilter(const po::variables_map& opts);
 const boost::regex getFileFilter(const po::variables_map& opts);
 
 const uint getStartupDelay(const po::variables_map& opts);
+
+const bool hasFileFilter(const po::variables_map& opts);
+const boost::regex getFileFilter(const po::variables_map& opts);
+
 }
 }
 

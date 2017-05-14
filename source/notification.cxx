@@ -14,10 +14,32 @@
 namespace fs = boost::filesystem;
 
 
+Notify::Notify()
+{
+  std::cout << "STARTED Notification" << std::endl;
+}
+
+Notify::~Notify()
+{
+  std::cout << "FINALIZED Notification." << std::endl;
+}
+
+void Notify::processEvents(std::vector<boost::filesystem::path>&)
+{
+}
+
+bool Notify::isDone() const
+{
+  return true;
+}
+
+
+
 INotify::INotify( const fs::path& watch
                 , const boost::regex& mask
                 , const fs::path& done)
-  : inotify_descriptor(-1)
+  : Notify()
+  , inotify_descriptor(-1)
   , watch_descriptor(-1)
   , done_descriptor(-1)
   , watch_directory(watch)
@@ -87,8 +109,6 @@ INotify::~INotify()
     close( inotify_descriptor );
     inotify_descriptor = -1;
   }
-
-  std::cout << "FINALIZED INotify." << std::endl;
 }
 
 void INotify::processEvents(std::vector<fs::path>& out_newFiles)
