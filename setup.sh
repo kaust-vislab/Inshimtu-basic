@@ -55,7 +55,7 @@ case "$OSVERSION" in
 
   module add cmake/3.6.2
 
-  module use /lustre/project/k1033/sw/easybuild/modules/all
+  module use /lustre/sw/vis/modulefiles
   module add Boost/1.61.0-CrayGNU-2016.07.KSL
   module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel/1.10.0.1
