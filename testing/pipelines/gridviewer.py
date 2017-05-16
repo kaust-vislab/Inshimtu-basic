@@ -2,6 +2,7 @@ from paraview.simple import *
 
 from paraview import coprocessing
 
+import os
 
 #--------------------------------------------------------------
 # Code generated from cpstate.py to create the CoProcessor.
@@ -74,6 +75,11 @@ def DoCoProcessing(datadescription):
     # If the pipeline hasn't been setup yet, this will setup the pipeline.
     coprocessor.UpdateProducers(datadescription)
 
+    # Dynamically determine client
+    clienthost = 'localhost'
+    if 'SSH_CLIENT' in os.environ:
+      clienthost = os.environ['SSH_CLIENT'].split()[0]
+
     # Live Visualization, if enabled.
-    coprocessor.DoLiveVisualization(datadescription, "localhost", 22222)
+    coprocessor.DoLiveVisualization(datadescription, clienthost, 22222)
 
