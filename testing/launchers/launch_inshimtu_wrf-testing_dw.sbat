@@ -7,7 +7,7 @@
 #SBATCH --nodes=3
 #DW jobdw access_mode=striped capacity=100GiB type=scratch
 #DW stage_in source=/scratch/holstgr/tmp/wrf2pv-testing/test-example/wrfrun-output destination=$DW_JOB_STRIPED/wrfrun-output type=directory
-#DW stage_in source=/scratch/holstgr/tmp/wrf2pv-testing/test-example/wrfrun-output.done destination=$DW_JOB_STRIPED/wrfrun-output.done  type=file
+#DW stage_in source=/scratch/holstgr/tmp/wrf2pv-testing/test-example/wrfrun-output.done destination=$DW_JOB_STRIPED/wrfrun-output.done type=file
 
 #???#DW stage_out source=$DW_JOB_STRIPED/wrfrun-output/vis-results destination=/scratch/holstgr/tmp/wrf2pv-testing/test-example/vis-results type=directory 
 
@@ -59,7 +59,7 @@ echo "  INSHIMTU_INPORT_NODES=$INSHIMTU_INPORT_NODES"
 echo "  WRFRUN_TOTAL_TASKS=$WRFRUN_TOTAL_TASKS"
 echo "  WRFRUN_TASKS_PER_NODE=$WRFRUN_TASKS_PER_NODE"
 echo "  Catalyst script: gridviewer.py"
-echo "  SSH_CLIENT IP: echo ${SSH_CLIENT%% *}"
+echo "  SSH_CLIENT IP: ${SSH_CLIENT%% *}"
 
 
 # Load Modules

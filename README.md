@@ -25,7 +25,7 @@ build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridv
 srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" \
      -w "$OUTPUT_ROOT/wrfrun-output" -d "$OUTPUT_ROOT/wrfrun-output.done" \
      -i "${OUTPUT_ROOT}/wrfrun-output/"wrfout_d*.nc \
-     -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" \
+     -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py" \
      -v U,V,W,QVAPOR
   &
 
@@ -40,18 +40,18 @@ cd /home/holstgr/Development/Inshimtu/examples
 ../build.kvl/Inshimtu \
     -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
     -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_QVAPOR_glendon_22222.py" -v QVAPOR
+    -s "$PWD/pipelines/viewer_QVAPOR.py" -v QVAPOR
 
 # note: much slower with decimate
 "$PWD/../build.kvl/Inshimtu" \
     -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
     -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_P_QICE_glendon_22222.py" -v P,QICE
+    -s "$PWD/pipelines/viewer_P_QICE.py" -v P,QICE
 
 "$PWD/../build.kvl/Inshimtu" \
     -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
     -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_P_QICE_nodec_glendon_22222.py" -v P,QICE
+    -s "$PWD/pipelines/viewer_P_QICE_nodec.py" -v P,QICE
 
 
 # MPI multi node
@@ -60,13 +60,13 @@ cd /home/holstgr/Development/Inshimtu/examples
 mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08 \
   "$PWD/../build.kvl/Inshimtu" \
     -w "$PWD/testing/GDM" -d "$PWD/testing.done" -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_P_QICE_QVAPOR_glendon_22222.py" -v QVAPOR,P,QICE
+    -s "$PWD/pipelines/viewer_P_QICE_QVAPOR.py" -v QVAPOR,P,QICE
 
 mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08 \
   "$PWD/../build.kvl/Inshimtu" \
     -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
     -i "$PWD/testing/GDM/"wrfout_d01_2015-{10-28,10-29,10-30,10-31,11-01}* \
-    -s "$PWD/pipelines/viewer_P_QICE_nodec_glendon_22222.py" -v P,QICE
+    -s "$PWD/pipelines/viewer_P_QICE_nodec.py" -v P,QICE
 
 
 ### Notes

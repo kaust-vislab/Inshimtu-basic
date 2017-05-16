@@ -154,7 +154,7 @@ while getopts ":D:d:f:i:N:n:s:v:S:h" opt; do
           echo "Setup GDM configuration"
           DATA_DIR="/lustre/project/k1029/hari/chapalla/GDM"
           INITIAL_FILES_GLOB='wrfout_d01_*'
-          SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/gridviewer_glendon_22222.py" \
+          SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/gridviewer.py" \
           VARIABLES_LIST="U,V,W,QVAPOR"
           INPORTER_NODES=0
         ;;
