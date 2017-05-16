@@ -185,27 +185,31 @@ const std::vector<std::pair<int, int>> collectInporterNodes(const po::variables_
 {
   // intervals are node id pairs <s,e> specifying the start through end nodes inclusive
   std::vector<std::pair<int, int>> nintervals;
-  std::vector<std::string> ivals;
-  const std::string ivalstr(opts["nodes"].as<std::string>());
-  const boost::regex regexNums("(\\d+)-(\\d+)|(\\d+)");
 
-  boost::split(ivals, ivalstr, boost::is_any_of(","), boost::token_compress_on);
-
-  for (const auto& iv : ivals)
+  if (opts.find("nodes") != opts.end())
   {
-    boost::smatch what;
+    std::vector<std::string> ivals;
+    const std::string ivalstr(opts["nodes"].as<std::string>());
+    const boost::regex regexNums("(\\d+)-(\\d+)|(\\d+)");
 
-    if (boost::regex_search(iv, what, regexNums))
-    {
-      const bool single = what[3].matched;
-      int n1 = single ? boost::lexical_cast<int>(what[3]) : boost::lexical_cast<int>(what[1]);
-      int n2 = single ? boost::lexical_cast<int>(what[3]) : boost::lexical_cast<int>(what[2]);
+    boost::split(ivals, ivalstr, boost::is_any_of(","), boost::token_compress_on);
 
-      nintervals.push_back(std::pair<int,int>(n1, n2));
-    }
-    else
+    for (const auto& iv : ivals)
     {
-      throw std::runtime_error("the option '--nodes' must have interval format: ((#|(#-#)),)*(#|(#-#))");
+      boost::smatch what;
+
+      if (boost::regex_search(iv, what, regexNums))
+      {
+        const bool single = what[3].matched;
+        int n1 = single ? boost::lexical_cast<int>(what[3]) : boost::lexical_cast<int>(what[1]);
+        int n2 = single ? boost::lexical_cast<int>(what[3]) : boost::lexical_cast<int>(what[2]);
+
+        nintervals.push_back(std::pair<int,int>(n1, n2));
+      }
+      else
+      {
+        throw std::runtime_error("the option '--nodes' must have interval format: ((#|(#-#)),)*(#|(#-#))");
+      }
     }
   }
 
