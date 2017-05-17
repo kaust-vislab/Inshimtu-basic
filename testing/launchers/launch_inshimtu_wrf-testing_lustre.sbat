@@ -58,7 +58,7 @@ echo "  WRFRUN_TOTAL_NODES=$WRFRUN_TOTAL_NODES"
 echo "  WRFRUN_TOTAL_TASKS=$WRFRUN_TOTAL_TASKS"
 echo "  WRFRUN_TASKS_PER_NODE=$WRFRUN_TASKS_PER_NODE"
 echo "  Catalyst script: gridviewer.py"
-echo "  SSH_CLIENT IP: echo ${SSH_CLIENT%% *}"
+echo "  SSH_CLIENT IP: ${SSH_CLIENT%% *}"
 
 
 # Load Modules
