@@ -56,6 +56,7 @@ echo "  WRFRUN_OUTPUT_DIR=$WRFRUN_OUTPUT_DIR"
 echo "  WRFRUN_DONE_FILE=$WRFRUN_DONE_FILE"
 echo "  SLURM_NNODES=$SLURM_NNODES"
 echo "  INSHIMTU_INPORT_NODES=$INSHIMTU_INPORT_NODES"
+echo "  WRFRUN_TOTAL_NODES=$WRFRUN_TOTAL_NODES"
 echo "  WRFRUN_TOTAL_TASKS=$WRFRUN_TOTAL_TASKS"
 echo "  WRFRUN_TASKS_PER_NODE=$WRFRUN_TASKS_PER_NODE"
 echo "  Catalyst script: gridviewer.py"
@@ -73,15 +74,16 @@ module add cray-hdf5-parallel/1.10.0.1
 srun --ntasks-per-node=1 \
      "$INSHIMTU_DIR/Inshimtu" -w "$WRFRUN_OUTPUT_DIR" \
                               -d "$WRFRUN_DONE_FILE" \
-                              -f 'wrfout_d.*.nc' \
+                              -f 'wrfout_d02.*.nc' \
                               -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py" \
-                              -n "$INSHIMTU_INPORT_NODES"
+                              -n "$INSHIMTU_INPORT_NODES" \
                               -v U,V,W,QVAPOR \
   &
 
 # Launch WRF
 export OMP_NUM_THREADS=1
-srun --ntasks=$WRFRUN_TOTAL_TASKS --ntasks-per-node=$WRFRUN_TASKS_PER_NODE \
+srun --nodes=$WRFRUN_TOTAL_NODES \
+     --ntasks=$WRFRUN_TOTAL_TASKS --ntasks-per-node=$WRFRUN_TASKS_PER_NODE \
      --cpus-per-task=1 --threads-per-core=1 --hint=nomultithread \
      "$WRF_ROOT/wrf.exe"
 

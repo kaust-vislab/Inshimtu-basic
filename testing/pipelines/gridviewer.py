@@ -49,12 +49,26 @@ coprocessor = CreateCoProcessor()
 coprocessor.EnableLiveVisualization(True, frequency = 1)
 
 
+#--------------------------------------------------------------
+# Dynamically determine client
+clientport = 22222
+clienthost = 'localhost'
+if 'SSH_CLIENT' in os.environ:
+  clienthost = os.environ['SSH_CLIENT'].split()[0]
+
+
 # ---------------------- Data Selection method ----------------------
 
 def RequestDataDescription(datadescription):
     "Callback to populate the request for current timestep"
     global coprocessor
-    if datadescription.GetForceOutput() == True:
+
+    # TODO: Fix update issue 
+    #   If output is not forced, Catalyst fails to request processing, even
+    #   if ParaView client is connected.
+    datadescription.SetForceOutput(True)
+
+    if datadescription.GetForceOutput():
         # We are just going to request all fields and meshes from the simulation
         # code/adaptor.
         for i in range(datadescription.GetNumberOfInputDescriptions()):
@@ -70,16 +84,13 @@ def RequestDataDescription(datadescription):
 def DoCoProcessing(datadescription):
     "Callback to do co-processing for current timestep"
     global coprocessor
+    global clienthost
+    global clientport
 
     # Update the coprocessor by providing it the newly generated simulation data.
     # If the pipeline hasn't been setup yet, this will setup the pipeline.
     coprocessor.UpdateProducers(datadescription)
 
-    # Dynamically determine client
-    clienthost = 'localhost'
-    if 'SSH_CLIENT' in os.environ:
-      clienthost = os.environ['SSH_CLIENT'].split()[0]
-
     # Live Visualization, if enabled.
-    coprocessor.DoLiveVisualization(datadescription, clienthost, 22222)
+    coprocessor.DoLiveVisualization(datadescription, clienthost, clientport)
 

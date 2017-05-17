@@ -40,7 +40,6 @@ protected:
 
   // time
   uint timeStep;
-  const uint maxTimeSteps;
   const double lengthTimeStep;
 
 private:

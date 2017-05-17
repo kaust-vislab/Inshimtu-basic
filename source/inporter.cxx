@@ -53,8 +53,7 @@ Inporter::Inporter( Processor& processor_
   , variables(variables_)
   , section(section_)
   , timeStep(0)
-  , maxTimeSteps(100)
-  , lengthTimeStep(0.01)
+  , lengthTimeStep(1.0)
 {
   std::cout << "STARTED Inporter" << std::endl;
 }
@@ -86,7 +85,7 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
       if (wfitr == workingFiles.end())
       {
         const double time = timeStep * lengthTimeStep;
-        const bool forceOutput = false || timeStep >= maxTimeSteps-1;
+        const bool forceOutput = false;
         Descriptor descriptor(processor, section, timeStep, time, forceOutput);
         std::vector<std::unique_ptr<Adaptor>> inporters;
 
