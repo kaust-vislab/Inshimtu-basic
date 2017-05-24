@@ -100,9 +100,23 @@ def CreateCoProcessor():
       computeVelocityMagnitude.RequestUpdateExtentScript = ''
       computeVelocityMagnitude.PythonPath = ''
 
+
+      # create Parallel Image Data Writers
+      parallelImageDataWriterVelMag = servermanager.writers.XMLPImageDataWriter(Input=computeVelocityMagnitude)
+      parallelImageDataWriterU = servermanager.writers.XMLPImageDataWriter(Input=extractU)
+      parallelImageDataWriterV = servermanager.writers.XMLPImageDataWriter(Input=extractV)
+      parallelImageDataWriterW = servermanager.writers.XMLPImageDataWriter(Input=extractW)
+
+      # register Writers with coprocessor and initialize
+      coprocessor.RegisterWriter(parallelImageDataWriterVelMag, filename='cyclone_VelocityMagnitude_%t.pvti', freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterU, filename='cyclone_U_%t.pvti', freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterV, filename='cyclone_V_%t.pvti', freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterW, filename='cyclone_W_%t.pvti', freq=1)
+
+
       # ----------------------------------------------------------------
       # finally, restore active source
-      SetActiveSource(extractQICE)
+      SetActiveSource(parallelImageDataWriterVelMag)
       # ----------------------------------------------------------------
 
     return Pipeline()
@@ -126,7 +140,7 @@ coprocessor = CreateCoProcessor()
 
 #--------------------------------------------------------------
 # Enable Live-Visualizaton with ParaView
-coprocessor.EnableLiveVisualization(True, 1)
+coprocessor.EnableLiveVisualization(False, 1)
 
 
 #--------------------------------------------------------------
@@ -144,7 +158,7 @@ if 'INSHIMTU_CLIENT' in os.environ:
 def RequestDataDescription(datadescription):
     "Callback to populate the request for current timestep"
     global coprocessor
-    datadescription.SetForceOutput(True)
+    #datadescription.SetForceOutput(True)
     if datadescription.GetForceOutput() == True:
         # We are just going to request all fields and meshes from the simulation
         # code/adaptor.
