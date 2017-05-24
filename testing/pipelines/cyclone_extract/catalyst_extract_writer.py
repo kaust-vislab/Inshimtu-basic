@@ -158,7 +158,7 @@ if 'INSHIMTU_CLIENT' in os.environ:
 def RequestDataDescription(datadescription):
     "Callback to populate the request for current timestep"
     global coprocessor
-    #datadescription.SetForceOutput(True)
+    datadescription.SetForceOutput(True)
     if datadescription.GetForceOutput() == True:
         # We are just going to request all fields and meshes from the simulation
         # code/adaptor.
