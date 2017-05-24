@@ -158,12 +158,20 @@ while getopts ":D:d:f:i:N:n:s:v:S:h" opt; do
           VARIABLES_LIST="U,V,W,QVAPOR"
           INPORTER_NODES=0
         ;;
+        "CycloneExtract")
+          echo "Setup CycloneExtract configuration"
+          DATA_DIR="/var/remote/projects/kaust/earthenvironscience/hari/tom_playground/inshimtu/data"
+          INITIAL_FILES_GLOB='wrfout_d01_*.nc'
+          SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/catalyst_extract_viewer.py" \
+          VARIABLES_LIST="P,U,V,W,QICE"
+          INPORTER_NODES=0
+        ;;
         *)
       esac
       ;;
     h)
       usage
-      echo "Scenarios: GDM" 1>&2;
+      echo "Scenarios: GDM, CycloneExtract" 1>&2;
       exit 1
       ;;
     [?])

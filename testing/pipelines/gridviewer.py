@@ -55,6 +55,8 @@ clientport = 22222
 clienthost = 'localhost'
 if 'SSH_CLIENT' in os.environ:
   clienthost = os.environ['SSH_CLIENT'].split()[0]
+if 'INSHIMTU_CLIENT' in os.environ:
+  clienthost = os.environ['INSHIMTU_CLIENT']
 
 
 # ---------------------- Data Selection method ----------------------
