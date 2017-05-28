@@ -101,17 +101,30 @@ def CreateCoProcessor():
       computeVelocityMagnitude.PythonPath = ''
 
 
+      # TODO: Fix parallelImageDataWriterVelMag, only the first timestep has valid data
+      #  vtkImageData (0xcae38d0): Point array vel with 1 components, only has 0 tuples but there are 4040764 points
+      #  vtkXMLImageDataWriter (0xcb8bbb0): Input is invalid for piece 0.  Aborting.
+      #  Algorithm vtkXMLImageDataWriter(0xc5d1550) returned failure for request: vtkInformation (0xc59f9d0)
+      #    Debug: Off
+      #    Modified Time: 614687
+      #    Reference Count: 1
+      #    Registered Events: (none)
+      #    Request: REQUEST_DATA
+      #    FORWARD_DIRECTION: 0
+      #    ALGORITHM_AFTER_FORWARD: 1
+      #    FROM_OUTPUT_PORT: -1
+
       # create Parallel Image Data Writers
-      parallelImageDataWriterVelMag = servermanager.writers.XMLPImageDataWriter(Input=computeVelocityMagnitude)
       parallelImageDataWriterU = servermanager.writers.XMLPImageDataWriter(Input=extractU)
       parallelImageDataWriterV = servermanager.writers.XMLPImageDataWriter(Input=extractV)
       parallelImageDataWriterW = servermanager.writers.XMLPImageDataWriter(Input=extractW)
+      #parallelImageDataWriterVelMag = servermanager.writers.XMLPImageDataWriter(Input=computeVelocityMagnitude)
 
       # register Writers with coprocessor and initialize
-      coprocessor.RegisterWriter(parallelImageDataWriterVelMag, filename='cyclone_VelocityMagnitude_%t.pvti', freq=1)
       coprocessor.RegisterWriter(parallelImageDataWriterU, filename='cyclone_U_%t.pvti', freq=1)
       coprocessor.RegisterWriter(parallelImageDataWriterV, filename='cyclone_V_%t.pvti', freq=1)
       coprocessor.RegisterWriter(parallelImageDataWriterW, filename='cyclone_W_%t.pvti', freq=1)
+      #coprocessor.RegisterWriter(parallelImageDataWriterVelMag, filename='cyclone_VelocityMagnitude_%t.pvti', freq=1)
 
 
       # ----------------------------------------------------------------
