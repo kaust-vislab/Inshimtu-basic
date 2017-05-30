@@ -21,7 +21,7 @@ WRFRUN_DONE_FILE="$DW_JOB_STRIPED/wrfrun-output.done"
 INSHIMTU_INPORT_NODES_COUNT=1
 
 WRFRUN_TOTAL_NODES=$(( SLURM_NNODES - INSHIMTU_INPORT_NODES_COUNT ))
-WRFRUN_TASKS_PER_NODE=31
+WRFRUN_TASKS_PER_NODE=4
 WRFRUN_TOTAL_TASKS=$(( WRFRUN_TOTAL_NODES * WRFRUN_TASKS_PER_NODE ))
 
 INSHIMTU_INPORT_NODES_START=$(( WRFRUN_TOTAL_NODES + 1 ))
@@ -35,19 +35,20 @@ cd "$WRFRUN_OUTPUT_DIR"
 # MPI IO Directives
 
 # Displays all settings used by the MPI during execution
-export MPICH_ENV_DISPLAY=1
+#export MPICH_ENV_DISPLAY=1
 # Displays MPI version
 export MPICH_VERSION_DISPLAY=1
 # Display ranks performing IO aggregation when using collective buffering
-export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
+#export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
 # Display read/write operations statistics after collective buffering
-export MPICH_MPIIO_STATS=2
+export MPICH_MPIIO_STATS=1
 #Displays all the available I/O hints and their values
 export MPICH_MPIIO_HINTS_DISPLAY=1
 # Set per-file striping (lustre / burst buffer)
-#export MPICH_MPIIO_HINTS=“wrfinput*:striping_factor=64,\
-#wrfrst*:striping_factor=144,\
-#wrfout*:striping_factor=144:cb_nodes=20:striping_units=striping_unit=2097152”
+export MPICH_MPIIO_HINTS="wrfrst*:cb_nodes=40:,\
+wrfout*:cb_nodes=40:striping_unit=2097152,\
+wrfi*:cb_nodes=40:striping_unit=1048576"
+export MPICH_MPIIO_TIMERS=1
 
 
 # Output Configuration
@@ -81,10 +82,10 @@ srun --ntasks-per-node=1 \
   &
 
 # Launch WRF
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=8
 srun --nodes=$WRFRUN_TOTAL_NODES \
      --ntasks=$WRFRUN_TOTAL_TASKS --ntasks-per-node=$WRFRUN_TASKS_PER_NODE \
-     --cpus-per-task=1 --threads-per-core=1 --hint=nomultithread \
+     --cpus-per-task=7 --threads-per-core=1 --hint=nomultithread \
      "$WRF_ROOT/wrf.exe"
 
 # Notify Inshimtu of completion
