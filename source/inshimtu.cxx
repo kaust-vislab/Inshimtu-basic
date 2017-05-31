@@ -82,19 +82,23 @@ int main(int argc, char* argv[])
   //       (root) must syncronize the inporters to process their fragment of the
   //       same frame as other inporters.
 
+  const bool removeProcessedFiles = options::getDeleteFilesFlag(opts);
+  bool deleteFiles = false;
+
   do
   {
     // if any node has files to process, skip blocking notify event wait
     if (!app.hasFiles(newfiles))
     {
       notify->processEvents(newfiles);
+      deleteFiles = removeProcessedFiles;
     }
 
     app.collectFiles(newfiles);
 
     if (app.isInporter())
     {
-      inporter->process(newfiles);
+      inporter->process(newfiles, deleteFiles);
     }
 
     newfiles.clear();

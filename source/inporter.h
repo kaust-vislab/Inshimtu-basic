@@ -25,7 +25,8 @@ public:
           , const std::vector<std::string>& variables_);
   ~Inporter();
 
-  void process(const std::vector<boost::filesystem::path>& newfiles);
+  void process( const std::vector<boost::filesystem::path>& newfiles
+              , const bool deleteFiles = false);
 
 protected:
   Processor& processor;

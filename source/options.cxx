@@ -47,6 +47,7 @@ const po::variables_map handleOptions(int argc, const char* const argv[])
     ("variables,v", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of comma-separated variable sets to process")
     ("nodes,n", po::value<std::string>()->default_value(""), "comma-separated list of node-id intervals specifying inporter Catalyst nodes")
     ("pause,p", po::value<uint>()->default_value(0), "initial delay in seconds to wait for ParaView to connect before processing commences")
+    ("delete", po::bool_switch()->default_value(false), "delete watched files after processing")
    ;
 
   po::options_description helpDesc("help options");
@@ -252,6 +253,11 @@ const boost::regex getFileFilter(const po::variables_map& opts)
 const uint getStartupDelay(const po::variables_map& opts)
 {
   return opts["pause"].as<uint>();
+}
+
+const bool getDeleteFilesFlag(const po::variables_map& opts)
+{
+  return opts["delete"].as<bool>();
 }
 
 }

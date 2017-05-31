@@ -63,7 +63,8 @@ Inporter::~Inporter()
   std::cout << "FINISHED Inporter. Time:" << timeStep << std::endl;
 }
 
-void Inporter::process(const std::vector<fs::path>& newfiles)
+void Inporter::process( const std::vector<fs::path>& newfiles
+                      , const bool deleteFiles)
 {
   std::vector<fs::path> processFiles;
 
@@ -73,6 +74,8 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
     auto cfitr = std::find(completedFiles.begin(), completedFiles.end(), name);
     if (cfitr != completedFiles.end())
     {
+      // TODO: is this event ever expected?
+
       // expected event
       std::cout << "Completed file: '" << name << "'" << std::endl;
 
@@ -106,6 +109,15 @@ void Inporter::process(const std::vector<fs::path>& newfiles)
         }
 
         completedFiles.push_back(name);
+
+        // TODO: verify all inporter processing has completed before here
+        // TODO: only a single node should delete on shared filesystem, all inporters on local filesystems
+        if (deleteFiles && section.first == 0)
+        {
+          std::cout << "Deleting file: '" << name << "'" << std::endl;
+          fs::remove(name);
+        }
+
         ++timeStep;
 
         std::cout << "\t\t...Done UpdateFields" << std::endl;

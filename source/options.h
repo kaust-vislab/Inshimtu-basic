@@ -48,6 +48,8 @@ const boost::regex getFileFilter(const po::variables_map& opts);
 
 const uint getStartupDelay(const po::variables_map& opts);
 
+const bool getDeleteFilesFlag(const po::variables_map& opts);
+
 const bool hasFileFilter(const po::variables_map& opts);
 const boost::regex getFileFilter(const po::variables_map& opts);
 
