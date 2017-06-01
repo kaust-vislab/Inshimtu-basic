@@ -206,7 +206,6 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
 {
   std::cout << "Processing variable '" << varname
             << "' on inport node " << getSection().first
-            << " of " << getSection().second
             << " from NetCDF Datafile:'" << filepath << "' with netcdf library"
             << std::endl;
 
@@ -296,7 +295,6 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
 {
   std::cout << "Processing variable '" << varname
             << "' on inport node " << getSection().first
-            << " of " << getSection().second
             << "' from NetCDF Datafile:'" << filepath << "' with netcdf library"
             << std::endl;
 
