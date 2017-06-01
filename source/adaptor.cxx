@@ -115,6 +115,11 @@ std::pair<size_t, size_t> Adaptor::getExtent(size_t max) const
   return std::pair<size_t, size_t>(extstart, extsize);
 }
 
+const std::pair<int, size_t>& Adaptor::getSection() const
+{
+  return descriptor.getSection();
+}
+
 
 void Adaptor::coprocess(vtkDataObject* data, int global_extent[6])
 {

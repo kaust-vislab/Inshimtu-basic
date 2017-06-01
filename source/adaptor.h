@@ -68,6 +68,7 @@ private:
 protected:
   bool doesRequireProcessing() const;
   std::pair<size_t, size_t> getExtent(size_t max) const;
+  const std::pair<int, size_t>& getSection() const;
   void coprocess(vtkDataObject* data, int global_extent[6]);
 
 protected:
