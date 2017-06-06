@@ -255,6 +255,17 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
                         , local_offset[2], local_offset[2]+local_size[2]-1
                         };
 
+  // TODO: debugging Shaheen crash
+  std::cout << "RawNetCDFDataFileInporter - filepath:" << filepath
+            << " var:" << varname << std::endl
+            << " globalsize:<" << global_size[0] << "," << global_size[1] << "," << global_size[2] << ">"
+            << " localsize:<" << local_size[0] << "," << local_size[1] << "," << local_size[2] << ">"
+            << " localoffset:<" << local_offset[0] << "," << local_offset[1] << "," << local_offset[2] << ">"
+            << " localextent:<"
+              << local_extent[0] << "," << local_extent[1] << ","
+              << local_extent[2] << "," << local_extent[3] << ","
+              << local_extent[4] << "," << local_extent[5] << ">"
+            << std::endl;
 
   vtkSmartPointer<vtkImageData> data = vtkImageData::New();
   data->SetDimensions(local_size);
