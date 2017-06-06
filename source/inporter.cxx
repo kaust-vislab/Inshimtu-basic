@@ -255,7 +255,7 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
                         , local_offset[2], local_offset[2]+local_size[2]-1
                         };
 
-  // TODO: debugging Shaheen crash
+  // TODO: Remove debugging when Shaheen crash fixed (memory leak issue?)
   std::cout << "RawNetCDFDataFileInporter - filepath:" << filepath
             << " var:" << varname << std::endl
             << " globalsize:<" << global_size[0] << "," << global_size[1] << "," << global_size[2] << ">"
@@ -267,7 +267,7 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
               << local_extent[4] << "," << local_extent[5] << ">"
             << std::endl;
 
-  vtkSmartPointer<vtkImageData> data = vtkImageData::New();
+  vtkSmartPointer<vtkImageData> data = vtkSmartPointer<vtkImageData>::New();
   data->SetDimensions(local_size);
   data->SetExtent(local_extent);
   data->AllocateScalars(VTK_FLOAT, 1);
@@ -335,7 +335,7 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
       global_extent_out[i] = local_extent[i];
   }
 
-  vtkSmartPointer<vtkImageData> data = vtkImageData::New();
+  vtkSmartPointer<vtkImageData> data = vtkSmartPointer<vtkImageData>::New();
   data->SetDimensions(local_size);
   data->SetExtent(local_extent);
   data->AllocateScalars(VTK_FLOAT, 1);
