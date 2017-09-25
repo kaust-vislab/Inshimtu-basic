@@ -12,17 +12,6 @@ case "$OSVERSION" in
   mkdir "${INSHIMTU_DIR}/build.kvl"
   cd "${INSHIMTU_DIR}/build.kvl"
 
-  # TODO: Fix CMake Error at CMakeLists.txt:45 (add_executable):
-  #   Target "Inshimtu" links to target "Qt5::X11Extras" but the target was not found.  
-  #   Perhaps a find_package() call is missing for an IMPORTED target, or an ALIAS target is missing?
-  # Fix: find_package(...???...)
-  # Ugly hack (ignore cmake errors, tweak link.txt file to remove unused Qt5::X11Extras)
-  #cmake3 .. || true 
-  #sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
-  #cmake3 .. || true
-  #sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
-
-  # TODO: Restore...
   cmake3 ..
 
   make -j 8
