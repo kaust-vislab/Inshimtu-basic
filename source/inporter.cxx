@@ -22,10 +22,7 @@
 #include <vtkInformation.h>
 #include <vtkIndent.h>
 
-// TODO:<vtk_netcdfcpp.h> points to wrong directory on ParaView v5.1.2
-//#include <vtk_netcdfcpp.h>
-#include <vtknetcdf/include/netcdfcpp.h>
-
+#include <vtk_netcdfcpp.h>
 #include <vtk_netcdf.h>
 
 // TODO: Restore when HDF5 functionality is working
