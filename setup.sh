@@ -22,7 +22,7 @@ case "$OSVERSION" in
   # NOTE: Build on compute node:
   # salloc --partition=debug
   # srun -u --pty bash -i
-  # cd /lustre/project/k1033/Development/Inshimtu
+  # cd /lustre/sw/vis/development/Inshimtu
   # ./setup.sh
 
 
