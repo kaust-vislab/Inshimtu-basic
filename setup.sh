@@ -6,7 +6,7 @@ OSVERSION=$(echo `lsb_release -sir` | awk -F '.' '{ print $1 }')
 
 case "$OSVERSION" in
 "CentOS"*)
-  module add kvl-applications paraview/5.3.0-mpich-x86_64
+  module add kvl-applications pvserver/5.4.1-mpich-x86_64
 
   echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.kvl"
   mkdir "${INSHIMTU_DIR}/build.kvl"
@@ -17,13 +17,13 @@ case "$OSVERSION" in
   #   Perhaps a find_package() call is missing for an IMPORTED target, or an ALIAS target is missing?
   # Fix: find_package(...???...)
   # Ugly hack (ignore cmake errors, tweak link.txt file to remove unused Qt5::X11Extras)
-  cmake3 .. || true 
-  sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
-  cmake3 .. || true
-  sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
+  #cmake3 .. || true 
+  #sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
+  #cmake3 .. || true
+  #sed -i -e 's\-lQt5::X11Extras\\g' CMakeFiles/Inshimtu.dir/link.txt
 
   # TODO: Restore...
-  #cmake3 ..
+  cmake3 ..
 
   make -j 8
 
@@ -57,7 +57,7 @@ case "$OSVERSION" in
 
   module use /lustre/sw/vis/modulefiles
   module add Boost/1.61.0-CrayGNU-2016.07.KSL
-  module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
+  module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel/1.10.0.1
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then

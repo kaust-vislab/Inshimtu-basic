@@ -1,5 +1,5 @@
 #!/usr/bin/sh -e
-module add kvl-applications paraview/5.3.0-mpich-x86_64
+module add kvl-applications pvserver/5.4.1-mpich-x86_64
 
 export INSHIMTU_DIR
 INSHIMTU_DIR="$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")"
@@ -14,8 +14,6 @@ fi
 export DEFAULT_DATA_DIR="${INSHIMTU_DIR}/testing/data"
 
 
-AVAILABLE_HOSTS_GPGPU="gpgpu-00,gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08,gpgpu-09,gpgpu-10,gpgpu-11,gpgpu-12,gpgpu-13,gpgpu-14,gpgpu-15"
-MAX_AVAILABLE_HOSTS_GPGPU=16
 AVAILABLE_HOSTS_CORNEA="pc102,pc103,pc104,pc105,pc106,pc107,pc108,pc109,pc110,pc111,pc112,pc113"
 MAX_AVAILABLE_HOSTS_CORNEA=12
 AVAILABLE_HOSTS_CUBES="vis-cubes-0,vis-cubes-1,vis-cubes-2,vis-cubes-3,vis-cubes-4,vis-cubes-5,vis-cubes-6"
@@ -40,11 +38,6 @@ HOST_NAME="$(hostname -s)"
 
 # Setup hosts
 case "$HOST_DOMAINNAME" in
-  "gpgpu"*)
-    echo "Setup GPGPU hosts"
-    AVAILABLE_HOSTS=$AVAILABLE_HOSTS_GPGPU
-    MAX_AVAILABLE_HOSTS=$MAX_AVAILABLE_HOSTS_GPGPU
-    ;;
   "cornea")
     echo "Setup CORNEA hosts"
     AVAILABLE_HOSTS=$AVAILABLE_HOSTS_CORNEA

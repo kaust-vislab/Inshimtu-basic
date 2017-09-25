@@ -7,7 +7,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 
-INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
+INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
 INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
 
 # TODO: Verify DataWarp BurstBuffer settings
@@ -15,16 +15,16 @@ INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
 #DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
 #DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
 
-# Load Modules
-module use /lustre/project/k1033/sw/easybuild/modules/all
-module add Boost/1.61.0-CrayGNU-2016.07.KSL
-module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
-module add cray-hdf5-parallel/1.10.0.1
 
-# Note: For profiling support (if Inshimtu built with profiling)
-export LD_LIBRARY_PATH="$INSHIMTU_DIR":$LD_LIBRARY_PATH
+# Load Modules
+module use /lustre/sw/vis/modulefiles
+module add Boost/1.61.0-CrayGNU-2016.07.KSL
+module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel/1.10.0.1
 
 
 #srun "$INSHIMTU_DIR/Inshimtu" --help-example
-srun "$INSHIMTU_DIR/Inshimtu" -w "$DW_JOB_STRIPED/testing" -d "$DW_JOB_STRIPED/testing.done" -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" -i "$DW_JOB_STRIPED/testing/filename_*.vti"
+srun "$INSHIMTU_DIR/Inshimtu" -w "$DW_JOB_STRIPED/testing" -d "$DW_JOB_STRIPED/testing.done" \
+                              -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py" \
+                              -i "$DW_JOB_STRIPED/testing/filename_*.vti"
 
