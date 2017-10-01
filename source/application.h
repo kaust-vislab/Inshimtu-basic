@@ -1,6 +1,8 @@
 #ifndef APPLICATION_HEADER
 #define APPLICATION_HEADER
 
+#include "options.h"
+
 #include <vector>
 #include <set>
 
@@ -50,6 +52,8 @@ public:
   bool isNotifier() const { notifier; }
   bool isInporter() const { return getInporterIndex() >= 0; }
 
+  const Configuration& getConfigs() const { return configs; }
+
   const std::pair<int, size_t>& getInporterSection() const { return inporterSection; };
   int getInporterIndex() const { return inporterSection.first; };
   size_t getInporterCount() const { return inporterSection.second; };
@@ -57,6 +61,7 @@ public:
   vtkMPICommunicatorOpaqueComm& getCommunicator();
 
 protected:
+  Configuration configs;
   vtkNew<vtkMPICommunicator> communicator;
   bool notifier;
   std::pair<int, size_t> inporterSection;

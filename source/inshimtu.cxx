@@ -28,14 +28,11 @@
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
-namespace options = inshimtu::options;
-
 
 int main(int argc, char* argv[])
 {
   MPICatalystApplication app(&argc, &argv);
-
-  const po::variables_map opts(options::handleOptions(argc, argv));
+  const Configuration& configs(app.getConfigs());
 
   // TODO: WatchFilesystem replaces INotify;
   //       WatchFS uses INotify (if all nodes have a node master)
@@ -43,22 +40,22 @@ int main(int argc, char* argv[])
   std::unique_ptr<Notify> notify;
 
   {
-    const bool watchDirectory(options::hasWatchDirectory(opts));
-    const bool doneFile(options::hasDoneFile(opts));
+    const bool watchDirectory(configs.hasWatchDirectory());
+    const bool doneFile(configs.hasDoneFile());
 
     if (!watchDirectory && !doneFile)
       notify.reset(new Notify());
     else
-      notify.reset(new INotify( options::getWatchDirectory(opts)
-                              , options::getFileFilter(opts)
-                              , options::getDoneFile(opts)));
+      notify.reset(new INotify( configs.getWatchDirectory()
+                              , configs.getFileFilter()
+                              , configs.getDoneFile()));
   }
 
   std::vector<fs::path> newfiles;
 
   if (app.isRoot())
   {
-    newfiles = options::collectInitialFiles(opts);
+    newfiles = configs.collectInitialFiles();
   }
 
   std::unique_ptr<Processor> processor;
@@ -67,11 +64,11 @@ int main(int argc, char* argv[])
   if (app.isInporter())
   {
     processor.reset(new Processor( app.getCommunicator()
-                                 , options::collectScripts(opts)
-                                 , options::getStartupDelay(opts)));
+                                 , configs.collectScripts()
+                                 , configs.getStartupDelay()));
     inporter.reset(new Inporter( *processor.get()
                                , app.getInporterSection()
-                               , options::collectVariables(opts)));
+                               , configs.collectVariables()));
   }
 
   std::cout << "READY" << std::endl;
@@ -82,7 +79,7 @@ int main(int argc, char* argv[])
   //       (root) must syncronize the inporters to process their fragment of the
   //       same frame as other inporters.
 
-  const bool removeProcessedFiles = options::getDeleteFilesFlag(opts);
+  const bool removeProcessedFiles = configs.getDeleteFilesFlag();
   bool deleteFiles = false;
 
   do

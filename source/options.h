@@ -12,6 +12,7 @@
 #include <string>
 
 #include <boost/program_options.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
@@ -21,40 +22,41 @@
 #include <sys/types.h>
 
 namespace po = boost::program_options;
+namespace pt = boost::property_tree;
 namespace fs = boost::filesystem;
 
-namespace inshimtu
+class Configuration
 {
-namespace options
-{
-const po::variables_map handleOptions(int argc, const char* const argv[]);
+public:
 
-const std::vector<fs::path> collectScripts(const po::variables_map& opts);
+  Configuration(int argc, const char* const argv[]);
+  virtual ~Configuration();
 
-const std::vector<fs::path> collectInitialFiles(const po::variables_map& opts);
+  const std::vector<fs::path> collectScripts() const;
 
-const std::vector<std::string> collectVariables(const po::variables_map& opts);
+  const std::vector<fs::path> collectInitialFiles() const;
 
-const std::vector<std::pair<int, int>> collectInporterNodes(const po::variables_map& opts);
+  const std::vector<std::string> collectVariables() const;
 
-const bool hasWatchDirectory(const po::variables_map& opts);
-const fs::path getWatchDirectory(const po::variables_map& opts);
+  const std::vector<std::pair<int, int>> collectInporterNodes() const;
 
-const bool hasDoneFile(const po::variables_map& opts);
-const fs::path getDoneFile(const po::variables_map& opts);
+  const bool hasWatchDirectory() const;
+  const fs::path getWatchDirectory() const;
 
-const bool hasFileFilter(const po::variables_map& opts);
-const boost::regex getFileFilter(const po::variables_map& opts);
+  const bool hasDoneFile() const;
+  const fs::path getDoneFile() const;
 
-const uint getStartupDelay(const po::variables_map& opts);
+  const bool hasFileFilter() const;
+  const boost::regex getFileFilter() const;
 
-const bool getDeleteFilesFlag(const po::variables_map& opts);
+  const uint getStartupDelay() const;
 
-const bool hasFileFilter(const po::variables_map& opts);
-const boost::regex getFileFilter(const po::variables_map& opts);
+  const bool getDeleteFilesFlag() const;
 
-}
-}
+protected:
+  po::variables_map opts;
+  pt::ptree configs;
+};
 
 #endif
 

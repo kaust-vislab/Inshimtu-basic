@@ -24,8 +24,6 @@
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
-namespace options = inshimtu::options;
-
 
 MPIApplication::MPIApplication(int* argc, char** argv[])
 {
@@ -150,6 +148,7 @@ bool MPIApplication::isDone(const Notify& notify)
 
 MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
   : MPIApplication(argc, argv)
+  , configs(*argc, *argv)
   , notifier(true)
   , inporterSection(-1, 0)
 {
@@ -161,9 +160,7 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
 
   // generate inporter node ids from interval pairs
   {
-    const po::variables_map opts(options::handleOptions(*argc, *argv));
-
-    for (const auto& inval : options::collectInporterNodes(opts))
+    for (const auto& inval : configs.collectInporterNodes())
     {
       for (int i = inval.first; i < std::min(inval.second+1, getSize()); ++i)
       {

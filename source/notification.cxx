@@ -72,7 +72,7 @@ INotify::INotify( const fs::path& watch
 
   inotify_descriptor = inotify_init();
 
-  if ( inotify_descriptor < 0)
+  if (inotify_descriptor < 0)
   {
     std::cerr << "Failed: Cannot init inotify filesystem watcher" << std::endl;
     return;
@@ -81,7 +81,7 @@ INotify::INotify( const fs::path& watch
   done_descriptor = inotify_add_watch( inotify_descriptor, done_file.c_str()
                                      , IN_ACCESS | IN_MODIFY | IN_ATTRIB | IN_DELETE_SELF );
 
-  if ( done_descriptor < 0)
+  if (done_descriptor < 0)
   {
     std::cerr << "Failed: Cannot add 'done' watch. Ensure file '"
               << done_file << "' exists." << std::endl;
@@ -91,7 +91,7 @@ INotify::INotify( const fs::path& watch
   watch_descriptor = inotify_add_watch( inotify_descriptor, watch_directory.c_str()
                                       , IN_CLOSE_WRITE );
 
-  if ( watch_descriptor < 0)
+  if (watch_descriptor < 0)
   {
     std::cerr << "Failed: Cannot add filesystem watcher."
               << "Ensure directory '" << watch_directory << "' exists." << std::endl;
