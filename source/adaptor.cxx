@@ -55,7 +55,7 @@ Processor::~Processor()
 
 
 Descriptor::Descriptor( Processor& processor_
-                      , const std::pair<int, size_t>& section_
+                      , const InporterSection& section_
                       , uint timeStep, double time, bool forceOutput)
   : processor(processor_)
   , requireProcessing(false)
@@ -102,9 +102,9 @@ bool Adaptor::doesRequireProcessing() const
   return descriptor.doesRequireProcessing();
 }
 
-std::pair<size_t, size_t> Adaptor::getExtent(size_t max) const
+Adaptor::Extent Adaptor::getExtent(size_t max) const
 {
-  const std::pair<int, size_t>& section(descriptor.getSection());
+  const Descriptor::InporterSection& section(descriptor.getSection());
 
   size_t chunksize = static_cast<size_t>(
                        ceil(static_cast<double>(max) /
@@ -112,10 +112,10 @@ std::pair<size_t, size_t> Adaptor::getExtent(size_t max) const
   size_t extstart = std::min(chunksize * section.first, max);
   size_t extsize = std::min(chunksize, max - extstart);
 
-  return std::pair<size_t, size_t>(extstart, extsize);
+  return Extent(extstart, extsize);
 }
 
-const std::pair<int, size_t>& Adaptor::getSection() const
+const Descriptor::InporterSection& Adaptor::getSection() const
 {
   return descriptor.getSection();
 }

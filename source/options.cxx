@@ -259,10 +259,10 @@ const std::vector<std::string> Configuration::collectVariables() const
   return vars;
 }
 
-const std::vector<std::pair<int, int>> Configuration::collectInporterNodes() const
+const std::vector<Configuration::NodeRange> Configuration::collectInporterNodes() const
 {
   // intervals are node id pairs <s,e> specifying the start through end nodes inclusive
-  std::vector<std::pair<int, int>> nintervals;
+  std::vector<NodeRange> nintervals;
   std::vector<std::string> ivals;
 
   boost::optional<const pt::ptree&> nodes_(configs.get_child_optional("control.catalyst_inporter_nodes"));
@@ -296,7 +296,7 @@ const std::vector<std::pair<int, int>> Configuration::collectInporterNodes() con
       int n1 = single ? boost::lexical_cast<int>(what[3]) : boost::lexical_cast<int>(what[1]);
       int n2 = single ? boost::lexical_cast<int>(what[3]) : boost::lexical_cast<int>(what[2]);
 
-      nintervals.push_back(std::pair<int,int>(n1, n2));
+      nintervals.push_back(NodeRange(n1, n2));
     }
     else
     {

@@ -31,14 +31,18 @@ friend class Descriptor;
 class Descriptor
 {
 public:
+
+  typedef int NodeRank;
+  typedef std::pair<NodeRank, size_t> InporterSection;
+
   Descriptor( Processor& processor
-            , const std::pair<int, size_t>& section_
+            , const InporterSection& section_
             , uint timeStep, double time, bool forceOutput);
   virtual ~Descriptor();
 
   bool doesRequireProcessing() const;
 
-  const std::pair<int, size_t>& getSection() const { return section; }
+  const InporterSection& getSection() const { return section; }
 
 private:
   Processor& processor;
@@ -50,7 +54,7 @@ friend class Adaptor;
   bool requireProcessing;
 
   // inport section: idx of count
-  const std::pair<int, size_t> section;
+  const InporterSection section;
 };
 
 
@@ -66,9 +70,12 @@ private:
   Descriptor& descriptor;
 
 protected:
+
+  typedef std::pair<size_t, size_t> Extent;
+
   bool doesRequireProcessing() const;
-  std::pair<size_t, size_t> getExtent(size_t max) const;
-  const std::pair<int, size_t>& getSection() const;
+  Extent getExtent(size_t max) const;
+  const Descriptor::InporterSection& getSection() const;
   void coprocess(vtkDataObject* data, int global_extent[6]);
 
 protected:

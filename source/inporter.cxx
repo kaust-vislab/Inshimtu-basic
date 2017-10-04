@@ -44,7 +44,7 @@
 namespace fs = boost::filesystem;
 
 Inporter::Inporter( Processor& processor_
-                  , const std::pair<int, size_t>& section_
+                  , const Descriptor::InporterSection& section_
                   , const std::vector<std::string>& variables_)
   : processor(processor_)
   , variables(variables_)
@@ -241,7 +241,7 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
       global_extent_out[i] = global_extent[i];
   }
 
-  const std::pair<size_t, size_t> extentZ = getExtent(lenZ);
+  const Adaptor::Extent extentZ = getExtent(lenZ);
 
   int local_offset[3] = {0, 0, static_cast<int>(extentZ.first)};
   int local_size[3] = {static_cast<int>(lenX), static_cast<int>(lenY), static_cast<int>(extentZ.second)};

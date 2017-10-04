@@ -35,7 +35,8 @@ public:
 
   const std::vector<std::string> collectVariables() const;
 
-  const std::vector<std::pair<int, int>> collectInporterNodes() const;
+  typedef std::pair<int, int> NodeRange;
+  const std::vector<NodeRange> collectInporterNodes() const;
 
   const bool hasWatchDirectory() const;
   const boost::filesystem::path getWatchDirectory() const;
