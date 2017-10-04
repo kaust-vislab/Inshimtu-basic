@@ -214,9 +214,9 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
             finfo.is_ready = true;
           }
           else
-          // assumes we have seen complete set of writers after first file was written,
-          // and assumes first file was written completely if:
-          // we have seen the second file, or we've seen done notification (from anyone)
+          // assumes we have seen complete set of writers after second file was written,
+          // or if we've seen done notification (from anyone).
+          // assumes file was written completely if set of writers is complete
           if ( (filesinfoSize > 1 || is_done_global)
              && std::includes( finfo.writers.cbegin(), finfo.writers.cend()
                              , writers.cbegin(), writers.cend()))

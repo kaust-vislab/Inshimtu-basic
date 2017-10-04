@@ -101,6 +101,10 @@ protected:
 
   size_t getTotalFiles(const std::vector<boost::filesystem::path>& files) const;
   bool isDone() const;
+
+  //! \brief Provides corresponding data output file from possible signal file path
+  //! \arg path   Filepath
+  //! \return   Optional filepath which is nothing if input path is not a signal file
   boost::optional<boost::filesystem::path> getSignalledOutputFile(const boost::filesystem::path& path) const;
 };
 
