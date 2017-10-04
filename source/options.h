@@ -21,9 +21,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-namespace po = boost::program_options;
-namespace pt = boost::property_tree;
-namespace fs = boost::filesystem;
 
 class Configuration
 {
@@ -32,30 +29,34 @@ public:
   Configuration(int argc, const char* const argv[]);
   virtual ~Configuration();
 
-  const std::vector<fs::path> collectScripts() const;
+  const std::vector<boost::filesystem::path> collectScripts() const;
 
-  const std::vector<fs::path> collectInitialFiles() const;
+  const std::vector<boost::filesystem::path> collectInitialFiles() const;
 
   const std::vector<std::string> collectVariables() const;
 
   const std::vector<std::pair<int, int>> collectInporterNodes() const;
 
   const bool hasWatchDirectory() const;
-  const fs::path getWatchDirectory() const;
+  const boost::filesystem::path getWatchDirectory() const;
 
   const bool hasDoneFile() const;
-  const fs::path getDoneFile() const;
+  const boost::filesystem::path getDoneFile() const;
 
   const bool hasFileFilter() const;
   const boost::regex getFileFilter() const;
+
+  typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
+  const bool hasOutputReadySignal() const;
+  const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
 
   const uint getStartupDelay() const;
 
   const bool getDeleteFilesFlag() const;
 
 protected:
-  po::variables_map opts;
-  pt::ptree configs;
+  boost::program_options::variables_map opts;
+  boost::property_tree::ptree configs;
 };
 
 #endif

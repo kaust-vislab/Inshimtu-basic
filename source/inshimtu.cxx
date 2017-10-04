@@ -5,6 +5,7 @@
  */
 
 #include "application.h"
+#include "coordinator.h"
 #include "notification.h"
 #include "inporter.h"
 #include "adaptor.h"
@@ -51,12 +52,8 @@ int main(int argc, char* argv[])
                               , configs.getDoneFile()));
   }
 
-  std::vector<fs::path> newfiles;
+  Coordinator coordinator(app, *notify.get(), configs);
 
-  if (app.isRoot())
-  {
-    newfiles = configs.collectInitialFiles();
-  }
 
   std::unique_ptr<Processor> processor;
   std::unique_ptr<Inporter> inporter;
@@ -71,6 +68,9 @@ int main(int argc, char* argv[])
                                , configs.collectVariables()));
   }
 
+  const bool shouldDelete = configs.getDeleteFilesFlag();
+  bool isFinished = false;
+
   std::cout << "READY" << std::endl;
 
   // TODO: Fix logic to support per-node, local files (e.g., from a RAM Disk)
@@ -79,28 +79,36 @@ int main(int argc, char* argv[])
   //       (root) must syncronize the inporters to process their fragment of the
   //       same frame as other inporters.
 
-  const bool removeProcessedFiles = configs.getDeleteFilesFlag();
-  bool deleteFiles = false;
+  std::vector<fs::path> newfiles;
 
-  do
+  // process initial files (don't delete)
   {
-    // if any node has files to process, skip blocking notify event wait
-    if (!app.hasFiles(newfiles))
+    if (app.isRoot())
     {
-      notify->processEvents(newfiles);
-      deleteFiles = removeProcessedFiles;
+      newfiles = configs.collectInitialFiles();
     }
 
-    app.collectFiles(newfiles);
+    coordinator.update(newfiles, Coordinator::InitialFiles);
+    newfiles.clear();
+    if (app.isInporter())
+    {
+      inporter->process(coordinator.getReadyFiles(), false);
+    }
+  }
+
+  // process watched files
+  do
+  {
+    notify->processEvents(newfiles);
+
+    isFinished = coordinator.update(newfiles);
+    newfiles.clear();
 
     if (app.isInporter())
     {
-      inporter->process(newfiles, deleteFiles);
+      inporter->process(coordinator.getReadyFiles(), shouldDelete);
     }
-
-    newfiles.clear();
-
-  } while (!app.isDone(*(notify.get())));
+  } while (!isFinished);
 
   return 0;
 }

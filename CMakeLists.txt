@@ -4,7 +4,7 @@ project(Inshimtu)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# NOTE: These settings fix link errors on Shaheen
+# NOTE: These settings fix link errors on Cray environment
 if (${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
   set(CMAKE_EXE_LINKER_FLAGS "-dynamic -Wl,--no-as-needed -ldl")
 endif()
@@ -59,6 +59,7 @@ endif()
 set(Executable_SRCS
   source/adaptor.cxx
   source/application.cxx
+  source/coordinator.cxx
   source/help.cxx
   source/inporter.cxx
   source/inshimtu.cxx

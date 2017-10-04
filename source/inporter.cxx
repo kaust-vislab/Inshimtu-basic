@@ -63,15 +63,13 @@ Inporter::~Inporter()
 void Inporter::process( const std::vector<fs::path>& newfiles
                       , const bool deleteFiles)
 {
-  std::vector<fs::path> processFiles;
-
   for(const fs::path& name : newfiles)
   {
     auto wfitr = std::find(workingFiles.begin(), workingFiles.end(), name);
     auto cfitr = std::find(completedFiles.begin(), completedFiles.end(), name);
     if (cfitr != completedFiles.end())
     {
-      // TODO: is this event ever expected?
+      // TODO: is this event ever expected?  Duplicates functionality from Coordinator?
 
       // expected event
       std::cout << "Completed file: '" << name << "'" << std::endl;

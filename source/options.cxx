@@ -327,6 +327,33 @@ const fs::path Configuration::getWatchDirectory() const
   return fs::absolute(fs::path(watchdirectory));
 }
 
+
+const bool Configuration::hasOutputReadySignal() const
+{
+  return getOutputReadyConversion().is_initialized();
+}
+
+const boost::optional<Configuration::ReplaceRegexFormat> Configuration::getOutputReadyConversion() const
+{
+  boost::optional<Configuration::ReplaceRegexFormat> conversion;
+  boost::optional<const pt::ptree&> nodes_(configs.get_child_optional("input.output_ready_signal"));
+
+  if (nodes_.is_initialized())
+  {
+    std::string match_str(nodes_->get<std::string>("match_regex", ""));
+    std::string format_str(nodes_->get<std::string>("replace_formatstr", ""));
+
+    if (!match_str.empty() && !format_str.empty())
+    {
+      conversion = ReplaceRegexFormat(boost::regex(match_str), format_str);
+    }
+  }
+
+  return conversion;
+}
+
+
+
 const bool Configuration::hasDoneFile() const
 {
   return !configs.get<std::string>("control.done_watchfile", "").empty()

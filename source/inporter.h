@@ -46,7 +46,6 @@ protected:
 private:
   void createInporters( Descriptor& descriptor, const boost::filesystem::path& filename
                       , std::vector<std::unique_ptr<Adaptor>>& outInporters);
-
 };
 
 

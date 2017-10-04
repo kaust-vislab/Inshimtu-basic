@@ -1,10 +1,13 @@
 {
   "input": {
-    "watch": {
+    "IGNORE:watch": {
       "directory_path": "/lustre/project/k1029/hari/chapalla/GDM",
-      "files_regex": "wrfout_d01_*"
+      "files_regex": "wrfout_d01_.*"
     },
-    "output_ready_convert_regex": "",
+    "output_ready_signal": {
+      "match_regex": "^(.*)/wrfoutReady_(.*)$",
+      "replace_formatstr": "${1}/wrfout_${2}"
+    },
     "initial_files": [
         "/lustre/project/k1029/hari/chapalla/GDM/wrfout_d01_2015-10-27_00:00:00"
       , "/lustre/project/k1029/hari/chapalla/GDM/wrfout_d01_2015-10-27_01:00:00"
@@ -155,7 +158,7 @@
       ]
     },
   "control": {
-    "done_watchfile": "/lustre/project/k1029/hari/chapalla/GDM.done",
+    "IGNORE:done_watchfile": "/lustre/project/k1029/hari/chapalla/GDM.done",
     "initial_connection_wait_secs": 0,
     "catalyst_inporter_nodes": [ 
         "0" 
