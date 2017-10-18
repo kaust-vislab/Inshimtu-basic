@@ -3,22 +3,10 @@
 export INSHIMTU_DIR=$(cd `dirname $0` && pwd)
 
 OSVERSION=$(echo `lsb_release -sir` | awk -F '.' '{ print $1 }')
+HOSTDOMAIN=$(hostname -d)
 
-case "$OSVERSION" in
-"CentOS"*)
-  module add kvl-applications pvserver/5.4.1-mpich-x86_64
 
-  echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.kvl"
-  mkdir "${INSHIMTU_DIR}/build.kvl"
-  cd "${INSHIMTU_DIR}/build.kvl"
-
-  cmake3 ..
-
-  make -j 8
-
-  ;;
-"SUSE LINUX"*)
-
+function buildShaheen {
   # NOTE: Build on compute node:
   # salloc --partition=debug
   # srun -u --pty bash -i
@@ -56,10 +44,10 @@ case "$OSVERSION" in
     module load allinea-reports/7.0 allinea-forge/7.0
   fi
 
-
-  echo "Setting Inshimtu build directory: ${INSHIMTU_DIR}/build.shaheen"
-  mkdir "${INSHIMTU_DIR}/build.shaheen"
-  cd "${INSHIMTU_DIR}/build.shaheen"
+  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.shaheen"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
+  mkdir "${INSHIMTU_BUILD_DIR}"
+  cd "${INSHIMTU_BUILD_DIR}"
 
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
@@ -82,10 +70,60 @@ case "$OSVERSION" in
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     pat_build Inshimtu
   fi
+}
 
+function buildCluster {
+  module use /sw/vis/cluster-gpu/easybuild/modules/all
+  module add CMake/3.5.2 ParaView/5.4.1-openmpi-x86_64
+
+  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.cluster"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
+  mkdir "${INSHIMTU_BUILD_DIR}"
+  cd "${INSHIMTU_BUILD_DIR}"
+
+  cmake ..
+
+  make -j 8
+}
+
+function buildKVL {
+  module add kvl-applications pvserver/5.4.1-mpich-x86_64
+
+  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.kvl"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
+  mkdir "${INSHIMTU_BUILD_DIR}"
+  cd "${INSHIMTU_BUILD_DIR}"
+
+  cmake3 ..
+
+  make -j 8
+}
+
+
+# Determine Build Recipe
+case "$HOSTDOMAIN" in
+*"vis.kaust.edu.sa")
+  buildKVL
+  ;;
+*"dragon.kaust.edu.sa")
+  buildCluster
+  ;;
+*"hpc.kaust.edu.sa")
+  buildShaheen
   ;;
 *)
+  case "$OSVERSION" in
+  "SUSE LINUX"*)
+    # host domain not available on Cray compute nodes
+    buildShaheen
+    ;;
+  *)
+    echo "Unknown build environment. Unknown system domain."
+    exit 1
+    ;;
+  esac
   echo "Unknown build environment"
+  exit 1
   ;;
 esac
 

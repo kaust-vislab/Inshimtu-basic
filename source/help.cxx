@@ -19,8 +19,8 @@ namespace inshimtu
 namespace help
 {
 const uint32_t inshimtu_version_major = 0;
-const uint32_t inshimtu_version_minor = 0;
-const uint32_t inshimtu_version_patch = 3;
+const uint32_t inshimtu_version_minor = 1;
+const uint32_t inshimtu_version_patch = 0;
 
 
 void printVersion()
