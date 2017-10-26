@@ -72,11 +72,11 @@ function buildShaheen {
   fi
 }
 
-function buildCluster {
-  module use /sw/vis/cluster-gpu/easybuild/modules/all
+function buildIbex {
+  module use /sw/vis/ibex-gpu.modules
   module add CMake/3.5.2 ParaView/5.4.1-openmpi-x86_64
 
-  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.cluster"
+  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.ibex"
   echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
   mkdir "${INSHIMTU_BUILD_DIR}"
   cd "${INSHIMTU_BUILD_DIR}"
@@ -105,8 +105,10 @@ case "$HOSTDOMAIN" in
 *"vis.kaust.edu.sa")
   buildKVL
   ;;
+*"ibex.kaust.edu.sa")
+  ;&
 *"dragon.kaust.edu.sa")
-  buildCluster
+  buildIbex
   ;;
 *"hpc.kaust.edu.sa")
   buildShaheen
