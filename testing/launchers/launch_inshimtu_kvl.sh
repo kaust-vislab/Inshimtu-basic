@@ -94,13 +94,136 @@ esac
 # Usage function
 #
 usage() {
-    echo "Usage: $0 [-D data-directory] [-f file-watch-regex] [-i initial-files-glob] [-N total-nodes-range] [-n inporter-node-ranges] [-s script] [-v variables-list] [-S scenarios] [-h help]" 1>&2;
+  echo "Usage: $0 [-D data-directory] [-f file-watch-regex] [-i initial-files-glob] [-N total-nodes-range] [-n inporter-node-ranges] [-s script] [-v variables-list] [-S scenarios] [-h help]" 1>&2;
+  echo "Scenarios: GDM, GDMcmdline, CycloneExtract, TestReadyFiles, TestMultinodeWrite" 1>&2;
 }
+
+
+#
+# Helper functions
+#
+createHelperScript() {
+HELPER_SCRIPT=$1
+HELPER_DIR="$(dirname "$HELPER_SCRIPT")"
+if [ ! -d "$HELPER_DIR" ] ; then
+  echo "Invalid HELPER SCRIPT: ${HELPER_SCRIPT}"
+  exit 1
+fi
+
+echo "Creating HELPER: ${HELPER_SCRIPT}"
+cat <<'EOF' > "${HELPER_SCRIPT}"
+#!/usr/bin/sh -e
+echo "Running HELPER: ${HELPER_SCRIPT}"
+echo "Initial Delay... 40s"
+sleep 40
+EOF
+}
+
+
+#
+# Scenarios
+#
+
+scenarioGDM() {
+  echo "Setup GDM configuration"
+  WORK_DIR="${INSHIMTU_DIR}/examples/test-GDM"
+  CONFIG_FILE="${WORK_DIR}/config.json"
+  DATA_DIR="${WORK_DIR}/data"
+  mkdir -p "${WORK_DIR}"
+  cd "${WORK_DIR}"
+  ln -fs "${INSHIMTU_DIR}/examples/data/GDM" "${DATA_DIR}" 
+  ln -fs "${INSHIMTU_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}" 
+  ln -fs "${INSHIMTU_DIR}/testing/pipelines" "${WORK_DIR}" 
+}
+
+scenarioGDMcmdline() {
+  echo "Setup GDM-command-line configuration"
+  DATA_DIR="${INSHIMTU_DIR}/examples/data/GDM"
+  INITIAL_FILES_GLOB='wrfout_d01_*'
+  SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/gridviewer_gdm_UVWQVAPOR.py" \
+  VARIABLES_LIST="U,V,W,QVAPOR"
+  INPORTER_NODES=0
+}
+
+scenarioCycloneExtract() {
+  echo "Setup CycloneExtract configuration"
+  DATA_DIR="/var/remote/projects/kaust/earthenvironscience/hari/tom_playground/inshimtu/data"
+  INITIAL_FILES_GLOB='wrfout_d01_*.nc'
+  SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/catalyst_extract_viewer.py" \
+  VARIABLES_LIST="P,U,V,W,QICE"
+  INPORTER_NODES=0
+}
+
+scenarioTestReadyFiles() {
+  echo "Setup TestReadyFile configuration"
+  WORK_DIR="${INSHIMTU_DIR}/examples/test-outready"
+  CONFIG_FILE="${WORK_DIR}/config.json"
+  DATA_DIR="${WORK_DIR}/data"
+  COHELPER_SCRIPT_SH="${WORK_DIR}/doDelayedReady.sh"
+  mkdir -p "${WORK_DIR}"
+
+  mkdir -p "${DATA_DIR}"
+  rm -f "${DATA_DIR}/"wrfoutReady_*
+  cd "${DATA_DIR}"
+  for dfile in "${INSHIMTU_DIR}/examples/data/GDM"/wrfout_* ; do
+    ln -fs "$dfile" "${DATA_DIR}"
+  done
+
+  cd "${WORK_DIR}"
+  ln -fs "${INSHIMTU_DIR}/testing/configs/gdm_outready.json" "${CONFIG_FILE}" 
+  ln -fs "${INSHIMTU_DIR}/testing/pipelines" "${WORK_DIR}" 
+  touch "${WORK_DIR}/data.done"
+
+  createHelperScript "$COHELPER_SCRIPT_SH"
+  for dfile in "${DATA_DIR}"/wrfout_* ; do
+    dirpath="$(dirname "${dfile}")"
+    fname="$(basename "${dfile}")"
+    rfile="${dirpath}/${fname/wrfout_/wrfoutReady_}"
+    echo "touch $rfile" >> "$COHELPER_SCRIPT_SH"
+    echo "echo "Helper waiting... 20s"" >> "$COHELPER_SCRIPT_SH"
+    echo "sleep 20" >> "$COHELPER_SCRIPT_SH"
+  done
+  chmod +x "$COHELPER_SCRIPT_SH"
+}
+
+scenarioTestMultinodeWrite() {
+  echo "Setup TestMultinodeWrite configuration"
+  WORK_DIR="${INSHIMTU_DIR}/examples/test-multinodewrite"
+  CONFIG_FILE="${WORK_DIR}/config.json"
+  DATA_DIR="${WORK_DIR}/data"
+  COHELPER_SCRIPT_SH="${WORK_DIR}/doDelayedTouch.sh"
+  mkdir -p "${WORK_DIR}"
+
+  mkdir -p "${DATA_DIR}"
+  rsync "${INSHIMTU_DIR}/examples/data/testing"/filename_*.vti "${DATA_DIR}"
+
+  cd "${WORK_DIR}"
+  ln -fs "${INSHIMTU_DIR}/testing/configs/vti_notified.json" "${CONFIG_FILE}" 
+  ln -fs "${INSHIMTU_DIR}/testing/pipelines" "${WORK_DIR}" 
+  touch "${WORK_DIR}/data.done"
+
+  createHelperScript "$COHELPER_SCRIPT_SH"
+  for dfile in "${DATA_DIR}"/filename_*.vti ; do
+    echo "touch $dfile" >> "$COHELPER_SCRIPT_SH"
+    echo "echo "Helper waiting... 20s"" >> "$COHELPER_SCRIPT_SH"
+    echo "sleep 20" >> "$COHELPER_SCRIPT_SH"
+  done
+  chmod +x "$COHELPER_SCRIPT_SH"
+
+  AVAILABLE_HOSTS="$HOST_NAME,$AVAILABLE_HOSTS_LMEM"
+  MAX_AVAILABLE_HOSTS=2
+
+  echo "Run ${COHELPER_SCRIPT_SH} on nodes: ${AVAILABLE_HOSTS}" 1>&2;
+  echo "  ${COHELPER_SCRIPT_SH} &" 1>&2;
+  echo "  ssh $AVAILABLE_HOSTS_LMEM ${COHELPER_SCRIPT_SH}" 1>&2;
+  unset COHELPER_SCRIPT_SH
+}
+
 
 #
 # Use getopts to get arguments
 #
-while getopts ":D:d:f:i:N:n:s:v:S:h" opt; do
+while getopts ":D:d:f:i:N:n:c:s:v:S:h" opt; do
   case $opt in
     D)
       DATA_DIR=$OPTARG
@@ -135,6 +258,9 @@ while getopts ":D:d:f:i:N:n:s:v:S:h" opt; do
     n)
       INPORTER_NODES=$OPTARG
       ;;
+    c)
+      CONFIG_FILE=$OPTARG
+      ;;
     s)
       SCRIPT_FILE=$OPTARG
       ;;
@@ -144,27 +270,29 @@ while getopts ":D:d:f:i:N:n:s:v:S:h" opt; do
     S)
       case "$OPTARG" in
         "GDM")
-          echo "Setup GDM configuration"
-          DATA_DIR="/lustre/project/k1029/hari/chapalla/GDM"
-          INITIAL_FILES_GLOB='wrfout_d01_*'
-          SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/gridviewer.py" \
-          VARIABLES_LIST="U,V,W,QVAPOR"
-          INPORTER_NODES=0
+          scenarioGDM
+        ;;
+        "GDMcmdline")
+          scenarioGDMcmdline
         ;;
         "CycloneExtract")
-          echo "Setup CycloneExtract configuration"
-          DATA_DIR="/var/remote/projects/kaust/earthenvironscience/hari/tom_playground/inshimtu/data"
-          INITIAL_FILES_GLOB='wrfout_d01_*.nc'
-          SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/catalyst_extract_viewer.py" \
-          VARIABLES_LIST="P,U,V,W,QICE"
-          INPORTER_NODES=0
+          scenarioCycloneExtract
+        ;;
+        "TestReadyFiles")
+          scenarioTestReadyFiles
+        ;;
+        "TestMultinodeWrite")
+          scenarioTestMultinodeWrite
         ;;
         *)
+          echo "Unknown scenario: $OPTARG" 1>&2;
+          usage
+          exit 1
+        ;;
       esac
       ;;
     h)
       usage
-      echo "Scenarios: GDM, CycloneExtract" 1>&2;
       exit 1
       ;;
     [?])
@@ -181,12 +309,14 @@ while getopts ":D:d:f:i:N:n:s:v:S:h" opt; do
 done
 shift $((OPTIND-1))
 
+
 # Validate
-if [ -z "${SCRIPT_FILE}" ] || [ -z "${VARIABLES_LIST}" ] ; then
-  echo "Missing required options: [-s script] [-v variables-list]" 1>&2;
+if [ -z "${CONFIG_FILE}" ] && ([ -z "${SCRIPT_FILE}" ] || [ -z "${VARIABLES_LIST}" ]) ; then
+  echo "Missing required options: [-c config]  [-s script] [-v variables-list]" 1>&2;
   usage
   exit 1
 fi
+
 
 # Handle Nodes
 START_NODE=${START_NODE:-1}
@@ -205,9 +335,19 @@ HOSTS=$(echo "$START_NODE" "$END_NODE" "$AVAILABLE_HOSTS" | \
 # Handle Input Data and Files
 DATA_DIR=${DATA_DIR:-$DEFAULT_DATA_DIR}
 
-if [ -z "$DONE_FILE" ] && [ -z "$INITIAL_FILES_GLOB" ]; then
+if [ -z "$CONFIG_FILE" ] && [ -z "$DONE_FILE" ] && [ -z "$INITIAL_FILES_GLOB" ]; then
   DONE_FILE=${DONE_FILE:-"${DATA_DIR}.done"}
   touch "$DONE_FILE"
+fi
+
+
+# Handle CoProcessing Helper Scripts
+if [ -x "${COHELPER_SCRIPT_SH}" ] ; then
+  "${COHELPER_SCRIPT_SH}" &
+  trap 'kill $(jobs -p)' EXIT
+elif [ -n "${COHELPER_SCRIPT_SH}" ] ; then
+  echo "HELPER SCRIPT is not executable: ${COHELPER_SCRIPT_SH}"
+  exit 1
 fi
 
 
@@ -236,8 +376,12 @@ if [ -n "$SCRIPT_FILE" ] && [ -n "$VARIABLES_LIST" ]; then
   OptCATALYST="-s "${SCRIPT_FILE}" -v "$VARIABLES_LIST" $OptINNODES"
 fi
 
+if [ -n "$CONFIG_FILE" ]; then
+  OptCONFIG="-c "$CONFIG_FILE""
+fi
+
 
 mpiexec -np $NODES -ppn 1 -hosts "$HOSTS" \
-        "${INSHIMTU_EXEC}" $OptWATCHING $OptINFILES $OptCATALYST
+        "${INSHIMTU_EXEC}" $OptWATCHING $OptINFILES $OptCATALYST $OptCONFIG
 
 
