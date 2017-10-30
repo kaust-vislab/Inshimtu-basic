@@ -1,0 +1,29 @@
+{
+  "input": {
+    "watch": {
+      "directory_path": "data",
+      "files_regex": "wrfoutReady_d01_.*"
+    },
+    "output_ready_signal": {
+      "match_regex": "^(.*)/wrfoutReady_(.*)$",
+      "replace_formatstr": "${1}/wrfout_${2}"
+    }
+  },
+  "pipeline": {
+    "scripts": [
+        "pipelines/gridviewer_gdm_UVWQVAPOR.py"
+      ],
+    "variables": [
+        "U,V,W,QVAPOR"
+      ]
+    },
+  "control": {
+    "done_watchfile": "data.done",
+    "initial_connection_wait_secs": 0,
+    "catalyst_inporter_nodes": [ 
+        "0" 
+      ],
+    "delete_processed_input_files": false
+    }
+}
+
