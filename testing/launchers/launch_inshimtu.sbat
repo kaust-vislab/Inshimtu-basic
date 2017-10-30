@@ -34,7 +34,7 @@ module add cray-hdf5-parallel/1.10.0.1
 
 
 #srun "$INSHIMTU_DIR/Inshimtu" --help-example
-#srun "$INSHIMTU_DIR/Inshimtu" -w "$DW_JOB_STRIPED/testing" -d "$DW_JOB_STRIPED/testing.done" -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py" -i "$DW_JOB_STRIPED/testing/filename_*.vti"
+#srun "$INSHIMTU_DIR/Inshimtu" -w "$DW_JOB_STRIPED/testing" -d "$DW_JOB_STRIPED/testing.done" -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_vti_velocity.py" -i "$DW_JOB_STRIPED/testing/filename_*.vti"
 
 srun /bin/sh -c 'function touch_file() {
   local MaxSecs=250
@@ -56,7 +56,7 @@ wait
 srun /bin/sh -c 'sleep $((( RANDOM % 10 ) + 275)) && touch "/dev/shm/holstgr-inshimtu-testing/testing.done"' &
 
 srun "$INSHIMTU_DIR/Inshimtu" -w "$DEVSHM_DIR/testing" -d "$DEVSHM_DIR/testing.done" \
-                              -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py"
+                              -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_vti_velocity.py"
 
 #srun /bin/sh -c 'sleep $((( RANDOM % 10 ) + 1)) && echo "run 1 " $(hostname)' &
 
