@@ -125,6 +125,7 @@ EOF
 #
 
 scenarioGDM() {
+  #GDM -> /var/remote/projects/kaust/earthenvironscience/hari/cyclone/GDM/
   echo "Setup GDM configuration"
   WORK_DIR="${INSHIMTU_DIR}/examples/test-GDM"
   CONFIG_FILE="${WORK_DIR}/config.json"
@@ -137,6 +138,7 @@ scenarioGDM() {
 }
 
 scenarioGDMcmdline() {
+  #GDM -> /var/remote/projects/kaust/earthenvironscience/hari/cyclone/GDM/
   echo "Setup GDM-command-line configuration"
   DATA_DIR="${INSHIMTU_DIR}/examples/data/GDM"
   INITIAL_FILES_GLOB='wrfout_d01_*'
@@ -146,15 +148,20 @@ scenarioGDMcmdline() {
 }
 
 scenarioCycloneExtract() {
+  #GDMncdata -> /var/remote/projects/kaust/earthenvironscience/hari/tom_playground/inshimtu/data/
   echo "Setup CycloneExtract configuration"
-  DATA_DIR="/var/remote/projects/kaust/earthenvironscience/hari/tom_playground/inshimtu/data"
-  INITIAL_FILES_GLOB='wrfout_d01_*.nc'
-  SCRIPT_FILE="${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/catalyst_extract_viewer.py" \
-  VARIABLES_LIST="P,U,V,W,QICE"
-  INPORTER_NODES=0
+  WORK_DIR="${INSHIMTU_DIR}/examples/test-cycloneextract"
+  CONFIG_FILE="${WORK_DIR}/config.json"
+  DATA_DIR="${WORK_DIR}/data"
+  mkdir -p "${WORK_DIR}"
+  cd "${WORK_DIR}"
+  ln -fs "${INSHIMTU_DIR}/examples/data/GDMncdata" "${DATA_DIR}" 
+  ln -fs "${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/cyclone_configs.json" "${CONFIG_FILE}" 
+  ln -fs "${INSHIMTU_DIR}/testing/pipelines" "${WORK_DIR}"
 }
 
 scenarioTestReadyFiles() {
+  #GDM -> /var/remote/projects/kaust/earthenvironscience/hari/cyclone/GDM/
   echo "Setup TestReadyFile configuration"
   WORK_DIR="${INSHIMTU_DIR}/examples/test-outready"
   CONFIG_FILE="${WORK_DIR}/config.json"
@@ -187,6 +194,18 @@ scenarioTestReadyFiles() {
 }
 
 scenarioTestMultinodeWrite() {
+  #testing = {filename_*_0.vti}
+  #<VTKFile type="ImageData" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  #<ImageData WholeExtent="0 1024 0 128 0 64" Origin="0 0 0" Spacing="1 1.1 1.3">
+  #  <Piece Extent="0 1024 0 128 0 64"                                                 >
+  #    <PointData>
+  #      <DataArray type="Float64" Name="velocity" NumberOfComponents="3" .../>
+  #    </PointData>
+  #    <CellData>
+  #      <DataArray type="Float32" Name="pressure" .../>
+  #    </CellData>
+  #  </Piece>
+  #</ImageData>
   echo "Setup TestMultinodeWrite configuration"
   WORK_DIR="${INSHIMTU_DIR}/examples/test-multinodewrite"
   CONFIG_FILE="${WORK_DIR}/config.json"
