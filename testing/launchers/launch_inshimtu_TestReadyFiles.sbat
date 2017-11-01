@@ -1,0 +1,104 @@
+#!/bin/bash
+#SBATCH --partition=debug
+#SBATCH --job-name=inshimtu
+#SBATCH --time=00:25:00
+#SBATCH --output=inshimtu.%j.out
+#SBATCH --error=inshimtu.%j.err                                     
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+
+
+# TODO: Verify DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when working)
+##DW jobdw access_mode=striped capacity=10GiB type=scratch
+##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
+##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
+DW_JOB_STRIPED="/lustre/sw/vis/development/Inshimtu/examples"
+
+
+# invoke: cd /scratch/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_TestReadyFiles.sbat"
+
+
+## PATHS
+
+#INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
+#INSHIMTU_DIR="${INSHIMTU_ROOT}/build.shaheen"
+
+INSHIMTU_DIR="/lustre/sw/vis/development/Inshimtu/build.shaheen"
+INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
+
+
+SRC_DIR="$INSHIMTU_ROOT"
+
+DEST_DIR="/scratch/$USER/inshimtu-testing"
+DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
+
+
+#
+# Helper functions
+#
+createHelperScript() {
+HELPER_SCRIPT=$1
+HELPER_DIR="$(dirname "$HELPER_SCRIPT")"
+if [ ! -d "$HELPER_DIR" ] ; then
+  echo "Invalid HELPER SCRIPT: ${HELPER_SCRIPT}"
+  exit 1
+fi
+
+echo "Creating HELPER: ${HELPER_SCRIPT}"
+cat <<'EOF' > "${HELPER_SCRIPT}"
+#!/usr/bin/sh -e
+echo "Running HELPER: ${HELPER_SCRIPT}"
+echo "Initial Delay... 40s"
+sleep 40
+EOF
+}
+
+
+## SETUP
+echo "Setup TestReadyFile configuration"
+
+WORK_DIR="${DEST_DIR}/test-outready"
+CONFIG_FILE="${WORK_DIR}/config.json"
+DATA_DIR="${WORK_DIR}/data"
+COHELPER_SCRIPT_SH="${WORK_DIR}/doDelayedReady.sh"
+
+mkdir -p "${WORK_DIR}"
+
+mkdir -p "${DATA_DIR}"
+rm -f "${DATA_DIR}/"wrfoutReady_*
+cd "${DATA_DIR}"
+for dfile in "${SRC_DIR}/examples/data/GDM"/wrfout_* ; do
+  ln -fs "$dfile" "${DATA_DIR}"
+done
+
+cd "${WORK_DIR}"
+ln -fs "${SRC_DIR}/testing/configs/gdm_outready.json" "${CONFIG_FILE}" 
+ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}" 
+touch "${WORK_DIR}/data.done"
+
+createHelperScript "$COHELPER_SCRIPT_SH"
+for dfile in "${DATA_DIR}"/wrfout_* ; do
+  dirpath="$(dirname "${dfile}")"
+  fname="$(basename "${dfile}")"
+  rfile="${dirpath}/${fname/wrfout_/wrfoutReady_}"
+  echo "touch $rfile" >> "$COHELPER_SCRIPT_SH"
+  echo "echo "Helper waiting... 20s"" >> "$COHELPER_SCRIPT_SH"
+  echo "sleep 20" >> "$COHELPER_SCRIPT_SH"
+done
+chmod +x "$COHELPER_SCRIPT_SH"
+
+
+# MODULES
+
+module use /lustre/sw/vis/modulefiles
+module add Boost/1.61.0-CrayGNU-2016.07.KSL
+module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel/1.10.0.1
+
+
+# RUN
+
+srun --chdir="${WORK_DIR}" "$COHELPER_SCRIPT_SH" &
+
+srun --chdir="${WORK_DIR}" "$INSHIMTU_DIR/Inshimtu" -c "${CONFIG_FILE}"
+
