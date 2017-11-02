@@ -12,7 +12,7 @@
 ##DW jobdw access_mode=striped capacity=10GiB type=scratch
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
-DW_JOB_STRIPED="/lustre/sw/vis/development/Inshimtu/examples"
+DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
 
 
 # invoke: cd /scratch/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_GDM.sbat"
