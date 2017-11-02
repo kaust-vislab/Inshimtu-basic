@@ -10,7 +10,14 @@ import os
 # ParaView 5.3.0 64 bits
 
 
-ScriptDir = os.path.join(os.getcwd(), 'pipelines/cyclone_extract')
+#--------------------------------------------------------------
+# Dynamically determine Filter Scripts directory
+
+if 'INSHIMTU_FILTER_SCRIPT_DIR' in os.environ:
+  ScriptDir = os.path.join(os.getcwd(), os.environ['INSHIMTU_FILTER_SCRIPT_DIR'])
+else
+  ScriptDir = os.path.join(os.getcwd(), 'filters')
+
 
 # ----------------------- CoProcessor definition -----------------------
 

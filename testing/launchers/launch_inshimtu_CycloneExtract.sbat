@@ -15,7 +15,7 @@
 DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
 
 
-# invoke: cd /scratch/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_GDM.sbat"
+# invoke: pushd /scratch/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_CycloneExtract.sbat"
 
 
 ## PATHS
@@ -32,18 +32,24 @@ SRC_DIR="$INSHIMTU_ROOT"
 DEST_DIR="/scratch/$USER/inshimtu-testing"
 DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
-## SETUP
-echo "Setup GDM configuration"
 
-WORK_DIR="${DEST_DIR}/test-GDM"
+## SETUP
+echo "Setup CycloneExtract configuration"
+
+WORK_DIR="${DEST_DIR}/test-cycloneextract"
 CONFIG_FILE="${WORK_DIR}/config.json"
 DATA_DIR="${WORK_DIR}/data"
+FILTERS_DIR="${WORK_DIR}/filters"
 
 mkdir -p "${WORK_DIR}"
 
-ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}" 
-ln -fs "${SRC_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}" 
-ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}" 
+cd "${WORK_DIR}"
+ln -fns "${SRC_DIR}/examples/data/GDMncdata" "${DATA_DIR}"
+ln -fs "${SRC_DIR}/testing/pipelines/cyclone_extract/cyclone_configs.json" "${CONFIG_FILE}" 
+ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}"
+ln -fns "${SRC_DIR}/examples/pipelines/cyclone_extract/filters" "${FILTERS_DIR}"
+
+#export INSHIMTU_FILTER_SCRIPT_DIR="${SRC_DIR}/examples/pipelines/cyclone_extract/filters"
 
 
 # MODULES
@@ -53,6 +59,11 @@ module add Boost/1.61.0-CrayGNU-2016.07.KSL
 module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
 module add cray-hdf5-parallel/1.10.0.1
 
+# NOTE: LD_PRELOAD solves 'from mpi4py import MPI' import issue; but,
+# only from pvpython, not from within Inshimtu
+# Possibly because ParaView was build with static linking?
+#export MPI4PY_DIR="$(dirname "$(dirname "$(which pvpython)")")/lib/paraview-5.4/site-packages/mpi4py"
+#export LD_PRELOAD="${MPI4PY_DIR}/MPI.so":"${MPI4PY_DIR}/dl.so":"${MPI4PY_DIR}/lib-pmpi/libmpe.so":"${MPI4PY_DIR}/lib-pmpi/libvt.so":"${MPI4PY_DIR}/lib-pmpi/libvt-mpi.so":"${MPI4PY_DIR}/lib-pmpi/libvt-hyb.so"
 
 # RUN
 
