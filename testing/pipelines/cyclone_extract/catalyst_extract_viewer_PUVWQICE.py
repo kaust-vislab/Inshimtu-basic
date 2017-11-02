@@ -27,7 +27,7 @@ import os
 
 if 'INSHIMTU_FILTER_SCRIPT_DIR' in os.environ:
   ScriptDir = os.path.join(os.getcwd(), os.environ['INSHIMTU_FILTER_SCRIPT_DIR'])
-else
+else:
   ScriptDir = os.path.join(os.getcwd(), 'filters')
 
 
