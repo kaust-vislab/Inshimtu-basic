@@ -4,6 +4,18 @@ from paraview import coprocessing
 
 import os
 
+# TODO: Parallelize 
+# http://www.programcreek.com/python/example/65345/vtk.vtkImageMathematics
+# http://www.vtk.org/doc/nightly/html/classvtkThreadedImageAlgorithm.html
+# https://blog.kitware.com/a-vtk-pipeline-primer-part-1/
+# http://www.paraview.org/ParaView/Doc/Nightly/www/py-doc/paraview.simple.ProgrammableFilter.html
+# http://www.paraview.org/ParaView/Doc/Nightly/www/py-doc/paraview.vtk.numpy_interface.dataset_adapter.html
+# https://blog.kitware.com/improved-vtk-numpy-integration/
+# http://public.kitware.com/pipermail/paraview/2011-August/022529.html
+# https://cmake.org/pipermail/paraview/2011-August/022403.html
+# https://blog.kitware.com/developing-hdf5-readers-using-vtkpythonalgorithm/
+# https://blog.kitware.com/vtkpythonalgorithm-is-great/
+
 
 #--------------------------------------------------------------
 # Code generated from cpstate.py to create the CoProcessor.
