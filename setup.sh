@@ -13,7 +13,6 @@ function buildShaheen {
   # cd /lustre/sw/vis/development/Inshimtu
   # ./setup.sh
 
-
   INSHIMTU_PROFILING=true
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     LIB_EXT="so"
@@ -24,6 +23,12 @@ function buildShaheen {
   fi
 
 
+  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.shaheen"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
+  mkdir "${INSHIMTU_BUILD_DIR}"
+  cd "${INSHIMTU_BUILD_DIR}"
+
+
   # Enable Cray profiling tools
   module unload darshan
 
@@ -32,10 +37,14 @@ function buildShaheen {
 
   module add cmake/3.6.2
 
+  echo "Creating Module File"
+cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module use /lustre/sw/vis/modulefiles
   module add Boost/1.61.0-CrayGNU-2016.07.KSL
   module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel/1.10.0.1
+EOF
+  source "${INSHIMTU_BUILD_DIR}/module.init"
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     # Enable Cray profiling tools
@@ -43,11 +52,6 @@ function buildShaheen {
     # Allinea support
     module load allinea-reports/7.0 allinea-forge/7.0
   fi
-
-  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.shaheen"
-  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
-  mkdir "${INSHIMTU_BUILD_DIR}"
-  cd "${INSHIMTU_BUILD_DIR}"
 
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
@@ -73,13 +77,17 @@ function buildShaheen {
 }
 
 function buildIbex {
-  module use /sw/vis/ibex-gpu.modules
-  module add CMake/3.5.2 ParaView/5.4.1-openmpi-x86_64
-
   INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.ibex"
   echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
   mkdir "${INSHIMTU_BUILD_DIR}"
   cd "${INSHIMTU_BUILD_DIR}"
+
+  echo "Creating Module File"
+cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
+  module use /sw/vis/ibex-gpu.modules
+  module add CMake/3.5.2 ParaView/5.4.1-openmpi-x86_64
+EOF
+  source "${INSHIMTU_BUILD_DIR}/module.init"
 
   cmake ..
 
@@ -87,12 +95,17 @@ function buildIbex {
 }
 
 function buildKVL {
-  module add kvl-applications pvserver/5.4.1-mpich-x86_64
 
   INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.kvl"
   echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
   mkdir "${INSHIMTU_BUILD_DIR}"
   cd "${INSHIMTU_BUILD_DIR}"
+
+  echo "Creating Module File"
+cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
+module add kvl-applications pvserver/5.4.1-mpich-x86_64
+EOF
+  source "${INSHIMTU_BUILD_DIR}/module.init"
 
   cmake3 ..
 

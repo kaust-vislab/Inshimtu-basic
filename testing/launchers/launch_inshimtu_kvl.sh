@@ -1,15 +1,21 @@
 #!/usr/bin/sh -e
-module add kvl-applications pvserver/5.4.1-mpich-x86_64
-
 export INSHIMTU_DIR
 INSHIMTU_DIR="$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")"
 
-export INSHIMTU_EXEC="${INSHIMTU_DIR}/build.kvl/Inshimtu"
+export INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.kvl"
+export INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
+export INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
 
 if [ ! -x "${INSHIMTU_EXEC}" ]; then
   echo "Expecting executable: ${INSHIMTU_EXEC}"
   exit 1
 fi
+
+if [ ! -e "${INSHIMTU_MODULES}" ]; then
+  echo "Expecting modules: ${INSHIMTU_MODULES}"
+  exit 1
+fi
+source "${INSHIMTU_MODULES}"
 
 export DEFAULT_DATA_DIR="${INSHIMTU_DIR}/testing/data"
 
