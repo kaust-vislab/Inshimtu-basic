@@ -21,11 +21,13 @@ DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
 ## PATHS
 
 #INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
-#INSHIMTU_DIR="${INSHIMTU_ROOT}/build.shaheen"
+#INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
 
-INSHIMTU_DIR="/lustre/sw/vis/development/Inshimtu/build.shaheen"
+INSHIMTU_BUILD_DIR="/lustre/sw/vis/development/Inshimtu/build.shaheen"
+INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
+INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
+
 INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
-
 
 SRC_DIR="$INSHIMTU_ROOT"
 
@@ -90,15 +92,21 @@ chmod +x "$COHELPER_SCRIPT_SH"
 
 # MODULES
 
-module use /lustre/sw/vis/modulefiles
-module add Boost/1.61.0-CrayGNU-2016.07.KSL
-module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
-module add cray-hdf5-parallel/1.10.0.1
+if [ ! -e "${INSHIMTU_MODULES}" ]; then
+  echo "Expecting modules: ${INSHIMTU_MODULES}"
+  exit 1
+fi
+source "${INSHIMTU_MODULES}"
 
 
 # RUN
 
+if [ ! -x "${INSHIMTU_EXEC}" ]; then
+  echo "Expecting executable: ${INSHIMTU_EXEC}"
+  exit 1
+fi
+
 srun --chdir="${WORK_DIR}" "$COHELPER_SCRIPT_SH" &
 
-srun --chdir="${WORK_DIR}" "$INSHIMTU_DIR/Inshimtu" -c "${CONFIG_FILE}"
+srun --chdir="${WORK_DIR}" "$INSHIMTU_EXEC" -c "${CONFIG_FILE}"
 
