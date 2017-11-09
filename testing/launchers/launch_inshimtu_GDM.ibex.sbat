@@ -1,0 +1,74 @@
+#!/bin/bash
+#SBATCH --job-name=inshimtu
+#SBATCH --time=00:25:00
+#SBATCH --output=inshimtu.%j.out
+#SBATCH --error=inshimtu.%j.err                                     
+#SBATCH --gres=gpu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+
+##SBATCH --partition=debug
+
+# TODO: Verify DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when working)
+##DW jobdw access_mode=striped capacity=10GiB type=scratch
+##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
+##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
+DW_JOB_STRIPED="/scratch/dragon/intel/$USER/inshimtu-testing"
+
+
+# invoke: cd /scratch/dragon/intel/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_GDM.ibex.sbat"
+
+
+## PATHS
+
+#INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
+#INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
+
+INSHIMTU_BUILD_DIR="$HOME/Development/Inshimtu/build.ibex"
+INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
+INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
+
+INSHIMTU_ROOT="$HOME/Development/Inshimtu"
+
+SRC_DIR="$INSHIMTU_ROOT"
+
+DEST_DIR="/scratch/dragon/intel/$USER/inshimtu-testing"
+DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
+
+## SETUP
+echo "Setup GDM configuration"
+
+WORK_DIR="${DEST_DIR}/test-GDM"
+CONFIG_FILE="${WORK_DIR}/config.json"
+DATA_DIR="${WORK_DIR}/data"
+
+mkdir -p "${WORK_DIR}"
+
+#ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}"
+if [ ! -d "${DATA_DIR}" ] ; then
+  mkdir -p "${DATA_DIR}"
+  rsync lmem-00.vis.kaust.edu.sa:"${SRC_DIR}/examples/data/GDM/wrfout_d01_2015-10-27_0*" "${DATA_DIR}"
+fi
+
+ln -fs "${SRC_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}"
+ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}"
+
+
+# MODULES
+
+if [ ! -e "${INSHIMTU_MODULES}" ]; then
+  echo "Expecting modules: ${INSHIMTU_MODULES}"
+  exit 1
+fi
+source "${INSHIMTU_MODULES}"
+
+
+# RUN
+
+if [ ! -x "${INSHIMTU_EXEC}" ]; then
+  echo "Expecting executable: ${INSHIMTU_EXEC}"
+  exit 1
+fi
+
+srun --chdir="${WORK_DIR}" "$INSHIMTU_EXEC" -c "${CONFIG_FILE}"
+
