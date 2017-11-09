@@ -6,17 +6,10 @@
 #SBATCH --gres=gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-
-##SBATCH --partition=debug
-
-# TODO: Verify DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when working)
-##DW jobdw access_mode=striped capacity=10GiB type=scratch
-##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
-##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
-DW_JOB_STRIPED="/scratch/dragon/intel/$USER/inshimtu-testing"
+##SBATCH --partition=batch
 
 
-# invoke: cd /scratch/dragon/intel/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_GDM.ibex.sbat"
+# invoke: cd /scratch/dragon/intel/$USER/pv-log && sbatch "/sw/vis/ibex-gpu/development/Inshimtu/testing/launchers/launch_inshimtu_GDM.ibex.sbat"
 
 
 ## PATHS
