@@ -50,8 +50,8 @@ cd "${WORK_DIR}"
 ln -fns "${SRC_DIR}/examples/data/GDMncdata" "${DATA_DIR}"
 ln -fs "${SRC_DIR}/testing/pipelines/cyclone_extract/cyclone_configs.json" "${CONFIG_FILE}" 
 ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}"
-#ln -fns "${SRC_DIR}/testing/pipelines/cyclone_extract" "${FILTERS_DIR}"
-ln -fns "${SRC_DIR}/examples/pipelines/cyclone_extract/filters" "${FILTERS_DIR}"
+ln -fns "${SRC_DIR}/testing/pipelines/cyclone_extract" "${FILTERS_DIR}"
+#ln -fns "${SRC_DIR}/examples/pipelines/cyclone_extract/filters" "${FILTERS_DIR}"
 #export INSHIMTU_FILTER_SCRIPT_DIR="${SRC_DIR}/examples/pipelines/cyclone_extract/filters"
 
 
@@ -64,11 +64,6 @@ if [ ! -e "${INSHIMTU_MODULES}" ]; then
 fi
 source "${INSHIMTU_MODULES}"
 
-# NOTE: LD_PRELOAD solves 'from mpi4py import MPI' import issue; but,
-# only from pvpython, not from within Inshimtu
-# Dynamic linking (-sharedlibs) doesn't help
-#export MPI4PY_DIR="$(dirname "$(dirname "$(which pvpython)")")/lib/paraview-5.4/site-packages/mpi4py"
-#export LD_PRELOAD="${MPI4PY_DIR}/MPI.so":"${MPI4PY_DIR}/dl.so":"${MPI4PY_DIR}/lib-pmpi/libmpe.so":"${MPI4PY_DIR}/lib-pmpi/libvt.so":"${MPI4PY_DIR}/lib-pmpi/libvt-mpi.so":"${MPI4PY_DIR}/lib-pmpi/libvt-hyb.so"
 
 # RUN
 

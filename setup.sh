@@ -43,6 +43,10 @@ cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module add Boost/1.61.0-CrayGNU-2016.07.KSL
   module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
   module add cray-hdf5-parallel/1.10.0.1
+  # TODO: Put fix in ParaView module
+  #   Fix for issue loading correct version of cray mpi
+  #   export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH":$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH="${CRAY_MPICH2_DIR}/lib":$LD_LIBRARY_PATH
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
 
