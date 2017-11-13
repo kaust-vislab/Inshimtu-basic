@@ -162,7 +162,7 @@ scenarioCycloneExtract() {
   mkdir -p "${WORK_DIR}"
   cd "${WORK_DIR}"
   ln -fns "${INSHIMTU_DIR}/examples/data/GDMncdata" "${DATA_DIR}" 
-  ln -fs "${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/cyclone_configs.json" "${CONFIG_FILE}" 
+  ln -fs "${INSHIMTU_DIR}/testing/pipelines/cyclone_extract/cyclone_test_viewer_configs.json" "${CONFIG_FILE}" 
   ln -fs "${INSHIMTU_DIR}/testing/pipelines" "${WORK_DIR}"
 }
 

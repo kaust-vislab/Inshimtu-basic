@@ -1,34 +1,48 @@
 #!/bin/bash
 #SBATCH --partition=workq
 #SBATCH --job-name=wrf-inshimtu
-#SBATCH --time=00:25:00
+#SBATCH --time=00:30:00
 #SBATCH --output=wrf-inshimtu.%j.out
 #SBATCH --error=wrf-inshimtu.%j.err
 #SBATCH --nodes=3
 
 
-WRF_ROOT="/scratch/holstgr/tmp/wrf2pv-testing/hari-original/wrf-3.7.1/main"
+
+## PATHS
+
+# Note: WRF must reside inside wrfrun-output (with name.input)
+WRF_ROOT="/scratch/holstgr/inshimtu-testing/sw/wrf-3.7.1/main"
+WRFOUT_DIR="${WRF_ROOT}"
+WRF_EXEC="$WRF_ROOT/wrf.exe"
+
+OUTPUT_ROOT="/scratch/$USER/inshimtu-testing/wrfout"
+WRFRUN_OUTPUT_DIR="${OUTPUT_ROOT}/wrfrun-output"
+WRFRUN_DONE_FILE="${OUTPUT_ROOT}/wrfrun-output.done"
+
 INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
-INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
+INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
+INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
+INSHIMTU_TESTING="${INSHIMTU_ROOT}/testing"
 
-OUTPUT_ROOT="/scratch/$USER/tmp/wrf2pv-testing/test-example"
+# cp -r /lustre/project/k1033/Development/Inshimtu/examples /scratch/holstgr/inshimtu-testing
+# chmod -R o=g /scratch/holstgr/inshimtu-testing/examples
+EXAMPLES_DIR="/scratch/holstgr/inshimtu-testing/examples"
 
-WRFRUN_OUTPUT_DIR="$OUTPUT_ROOT/wrfrun-output"
-WRFRUN_DONE_FILE="$OUTPUT_ROOT/wrfrun-output.done"
+DEST_DIR="/scratch/$USER/inshimtu-testing"
+
+
+## PARAMETERS
 
 INSHIMTU_INPORT_NODES_COUNT=1
+WRFRUN_TASKS_PER_NODE=31
 
 WRFRUN_TOTAL_NODES=$(( SLURM_NNODES - INSHIMTU_INPORT_NODES_COUNT ))
-WRFRUN_TASKS_PER_NODE=31
 WRFRUN_TOTAL_TASKS=$(( WRFRUN_TOTAL_NODES * WRFRUN_TASKS_PER_NODE ))
 
 INSHIMTU_INPORT_NODES_START=$(( WRFRUN_TOTAL_NODES ))
 INSHIMTU_INPORT_NODES_END=$(( INSHIMTU_INPORT_NODES_START + INSHIMTU_INPORT_NODES_COUNT - 1 ))
 INSHIMTU_INPORT_NODES="${INSHIMTU_INPORT_NODES_START}-${INSHIMTU_INPORT_NODES_END}"
-
-
-cd "$WRFRUN_OUTPUT_DIR"
-
 
 # MPI IO Directives
 
@@ -49,44 +63,110 @@ cd "$WRFRUN_OUTPUT_DIR"
 #export MPICH_MPIIO_TIMERS=1
 
 
-# Output Configuration
+## SETUP
+echo "Setup WRF CycloneExtract Viewer configuration"
+
+WORK_DIR="${DEST_DIR}/test-wrf-dw"
+#WORK_DIR="${DEST_DIR}/test-wrf-cycloneextract-writer"
+CONFIG_FILE="${WORK_DIR}/config.json"
+DATA_DIR="${WORK_DIR}/data"
+DONE_FILE="${WORK_DIR}/data.done"
+FILTERS_DIR="${WORK_DIR}/filters"
+RESULTS_DIR="${WORK_DIR}/results"
+
+# Note: launching WRF from DW; force executable
+chmod +x "$WRF_EXEC"
+
+mkdir -p "${WORK_DIR}"
+cd "${WORK_DIR}"
+
+ln -fns "${WRFRUN_OUTPUT_DIR}" "${DATA_DIR}"
+if [ -f "${WRFRUN_DONE_FILE}" ] ; then
+  ln -fns "${WRFRUN_DONE_FILE}" "${DONE_FILE}"
+else
+  touch "${DONE_FILE}"
+fi
+
+ln -fs "${INSHIMTU_TESTING}/configs/gdm_relpath.json" "${CONFIG_FILE}"
+#ln -fs "${INSHIMTU_TESTING}/pipelines/cyclone_extract/cyclone_live_viewer_configs.json" "${CONFIG_FILE}" 
+
+ln -fs "${INSHIMTU_TESTING}/pipelines" "${WORK_DIR}"
+
+ln -fns "${INSHIMTU_TESTING}/pipelines/cyclone_extract" "${FILTERS_DIR}"
+#ln -fns "${EXAMPLES_DIR}/pipelines/cyclone_extract/filters" "${FILTERS_DIR}"
+#export INSHIMTU_FILTER_SCRIPT_DIR="${EXAMPLES_DIR}/examples/pipelines/cyclone_extract/filters"
+
+mkdir -p "${RESULTS_DIR}"
+export INSHIMTU_RESULTS_DIR="${RESULTS_DIR}"
+
+
+# Output Setup Info
 echo "Launching WRF+Inshimtu"
+echo "  INSHIMTU_EXEC=$INSHIMTU_EXEC"
+echo "  WRF_EXEC=$WRF_EXEC"
 echo "  WRFRUN_OUTPUT_DIR=$WRFRUN_OUTPUT_DIR"
 echo "  WRFRUN_DONE_FILE=$WRFRUN_DONE_FILE"
+echo "  WORK_DIR=$WORK_DIR"
+echo "  DATA_DIR=$DATA_DIR"
+echo "  DONE_FILE=$DONE_FILE"
+echo "  FILTERS_DIR=$FILTERS_DIR"
+echo "  INSHIMTU_FILTER_SCRIPT_DIR=$INSHIMTU_FILTER_SCRIPT_DIR"
+echo "  INSHIMTU_RESULTS_DIR=$INSHIMTU_RESULTS_DIR"
 echo "  SLURM_NNODES=$SLURM_NNODES"
 echo "  INSHIMTU_INPORT_NODES=$INSHIMTU_INPORT_NODES"
 echo "  WRFRUN_TOTAL_NODES=$WRFRUN_TOTAL_NODES"
 echo "  WRFRUN_TOTAL_TASKS=$WRFRUN_TOTAL_TASKS"
 echo "  WRFRUN_TASKS_PER_NODE=$WRFRUN_TASKS_PER_NODE"
-echo "  Catalyst script: gridviewer_gdm_UVWQVAPOR.py"
 echo "  SSH_CLIENT IP: ${SSH_CLIENT%% *}"
+echo "  CONFIG_FILE=$CONFIG_FILE"
+echo "cat $CONFIG_FILE"
+echo $(cat "$CONFIG_FILE")
 
 
-# Load Modules
-module use /lustre/sw/vis/modulefiles
-module add Boost/1.61.0-CrayGNU-2016.07.KSL
-module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
-module add cray-hdf5-parallel/1.10.0.1
+# MODULES
+
+if [ ! -e "${INSHIMTU_MODULES}" ]; then
+  echo "Expecting modules: ${INSHIMTU_MODULES}"
+  exit 1
+fi
+source "${INSHIMTU_MODULES}"
+
+
+# RUN
+
+if [ ! -x "${INSHIMTU_EXEC}" ]; then
+  echo "Expecting Inshimtu executable: ${INSHIMTU_EXEC}"
+  exit 1
+fi
+
+if [ ! -x "${WRF_EXEC}" ]; then
+  echo "Expecting WRF executable: ${WRF_EXEC}"
+  exit 1
+fi
 
 
 # Launch Inshimtu (background)
-srun --ntasks-per-node=1 \
-     "$INSHIMTU_DIR/Inshimtu" -w "$WRFRUN_OUTPUT_DIR" \
-                              -d "$WRFRUN_DONE_FILE" \
-                              -f 'wrfout_d02.*.nc' \
-                              -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_gdm_UVWQVAPOR.py" \
-                              -n "$INSHIMTU_INPORT_NODES" \
-                              -v U,V,W,QVAPOR \
+# Note: Override config file for DW data paths, inport nodes, and file deletion
+srun --chdir="${WORK_DIR}" --ntasks-per-node=1 \
+     "$INSHIMTU_EXEC" -c "${CONFIG_FILE}" \
+                      -w "$WRFRUN_OUTPUT_DIR"
+                      -d "$WRFRUN_DONE_FILE"
+                      -n "$INSHIMTU_INPORT_NODES" \
   &
 
+
 # Launch WRF
-export OMP_NUM_THREADS=8
-srun --nodes=$WRFRUN_TOTAL_NODES \
-     --ntasks=$WRFRUN_TOTAL_TASKS --ntasks-per-node=$WRFRUN_TASKS_PER_NODE \
-     --cpus-per-task=1 --threads-per-core=1 --hint=nomultithread \
-     "$WRF_ROOT/wrf.exe"
+export OMP_NUM_THREADS=7
+
+cd "$WRFRUN_OUTPUT_DIR"
+time srun --nodes=$WRFRUN_TOTAL_NODES \
+          --ntasks=$WRFRUN_TOTAL_TASKS --ntasks-per-node=$WRFRUN_TASKS_PER_NODE \
+          --cpus-per-task=7 --threads-per-core=1 --hint=nomultithread \
+          "$WRF_EXEC"
+
 
 # Notify Inshimtu of completion
-sleep 10 && touch "$WRFRUN_DONE_FILE"
+sleep 60 && touch "$WRFRUN_DONE_FILE" "$DONE_FILE"
 
+wait
 

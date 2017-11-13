@@ -24,7 +24,6 @@ DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
 #INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
 
 INSHIMTU_BUILD_DIR="/lustre/sw/vis/development/Inshimtu/build.shaheen"
-#INSHIMTU_BUILD_DIR="/lustre/sw/vis/development/Inshimtu/build.shaheen-sharedlibs"
 INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
 INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
 
@@ -48,7 +47,7 @@ mkdir -p "${WORK_DIR}"
 
 cd "${WORK_DIR}"
 ln -fns "${SRC_DIR}/examples/data/GDMncdata" "${DATA_DIR}"
-ln -fs "${SRC_DIR}/testing/pipelines/cyclone_extract/cyclone_configs.json" "${CONFIG_FILE}" 
+ln -fs "${SRC_DIR}/testing/pipelines/cyclone_extract/cyclone_test_viewer_configs.json" "${CONFIG_FILE}" 
 ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}"
 ln -fns "${SRC_DIR}/testing/pipelines/cyclone_extract" "${FILTERS_DIR}"
 #ln -fns "${SRC_DIR}/examples/pipelines/cyclone_extract/filters" "${FILTERS_DIR}"
@@ -56,7 +55,6 @@ ln -fns "${SRC_DIR}/testing/pipelines/cyclone_extract" "${FILTERS_DIR}"
 
 
 # MODULES
-
 
 if [ ! -e "${INSHIMTU_MODULES}" ]; then
   echo "Expecting modules: ${INSHIMTU_MODULES}"

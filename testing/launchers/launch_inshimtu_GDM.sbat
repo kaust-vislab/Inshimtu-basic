@@ -43,9 +43,9 @@ DATA_DIR="${WORK_DIR}/data"
 
 mkdir -p "${WORK_DIR}"
 
-ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}" 
-ln -fs "${SRC_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}" 
-ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}" 
+ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}"
+ln -fs "${SRC_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}"
+ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}"
 
 
 # MODULES

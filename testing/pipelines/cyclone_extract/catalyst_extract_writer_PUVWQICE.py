@@ -4,10 +4,31 @@ from paraview import coprocessing
 
 import os
 
+# TODO: Parallelize 
+# http://www.programcreek.com/python/example/65345/vtk.vtkImageMathematics
+# http://www.vtk.org/doc/nightly/html/classvtkThreadedImageAlgorithm.html
+# https://blog.kitware.com/a-vtk-pipeline-primer-part-1/
+# http://www.paraview.org/ParaView/Doc/Nightly/www/py-doc/paraview.simple.ProgrammableFilter.html
+# http://www.paraview.org/ParaView/Doc/Nightly/www/py-doc/paraview.vtk.numpy_interface.dataset_adapter.html
+# https://blog.kitware.com/improved-vtk-numpy-integration/
+# http://public.kitware.com/pipermail/paraview/2011-August/022529.html
+# https://cmake.org/pipermail/paraview/2011-August/022403.html
+# https://blog.kitware.com/developing-hdf5-readers-using-vtkpythonalgorithm/
+# https://blog.kitware.com/vtkpythonalgorithm-is-great/
+
 
 #--------------------------------------------------------------
 # Code generated from cpstate.py to create the CoProcessor.
 # ParaView 5.3.0 64 bits
+
+
+#--------------------------------------------------------------
+# Dynamically determine Filter Scripts directory
+
+if 'INSHIMTU_FILTER_SCRIPT_DIR' in os.environ:
+  ScriptDir = os.path.join(os.getcwd(), os.environ['INSHIMTU_FILTER_SCRIPT_DIR'])
+else:
+  ScriptDir = os.path.join(os.getcwd(), 'filters')
 
 
 # ----------------------- CoProcessor definition -----------------------
@@ -39,7 +60,7 @@ def CreateCoProcessor():
       # create a new 'Programmable Filter'
       extractCycloneCenter = ProgrammableFilter(Input=p_20151101_170000raw)
       extractCycloneCenter.OutputDataSetType = 'vtkPolyData'
-      extractCycloneCenter.Script = "di = inputs[0]\npdi = di.PointData['P']\npdo = self.GetPolyDataOutput()\nnewPts = vtk.vtkPoints()\n(dimX, dimY, dimZ) = di.GetDimensions()\nminIdx = pdi.argmin()\ni = minIdx % (dimX * dimY)\nminX = i % dimX\nminY = i // dimX\nnewPts.InsertPoint(0, minX, minY, 0)\npdo.SetPoints(newPts)"
+      extractCycloneCenter.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractCycloneCenter.Script.py')
       extractCycloneCenter.RequestInformationScript = ''
       extractCycloneCenter.RequestUpdateExtentScript = ''
       extractCycloneCenter.PythonPath = ''
@@ -47,8 +68,8 @@ def CreateCoProcessor():
       # create a new 'Programmable Filter'
       extractQICE = ProgrammableFilter(Input=[qICE_20151101_170000raw, extractCycloneCenter])
       extractQICE.OutputDataSetType = 'vtkImageData'
-      extractQICE.Script = "import vtk\ndi = inputs[0]\ngi = self.GetInput()\nci = inputs[1]\nidi = di.PointData['QICE']\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 64\nctrs = ci.GetPoints()\nctrX = int(ctrs[0][0])\nctrY = int(ctrs[0][1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(gi)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
-      extractQICE.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractQICE.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractQICE.Script.py')
+      extractQICE.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
       extractQICE.RequestUpdateExtentScript = ''
       extractQICE.PythonPath = ''
 
@@ -59,8 +80,8 @@ def CreateCoProcessor():
       # create a new 'Programmable Filter'
       extractW = ProgrammableFilter(Input=[w_20151101_170000raw, extractCycloneCenter])
       extractW.OutputDataSetType = 'vtkImageData'
-      extractW.Script = "import vtk\ndi = inputs[0]\ngi = self.GetInput()\nci = inputs[1]\nidi = di.PointData['W']\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 64\nctrs = ci.GetPoints()\nctrX = int(ctrs[0][0])\nctrY = int(ctrs[0][1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(gi)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
-      extractW.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractW.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractW.Script.py')
+      extractW.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
       extractW.RequestUpdateExtentScript = ''
       extractW.PythonPath = ''
 
@@ -71,31 +92,31 @@ def CreateCoProcessor():
       # create a new 'Programmable Filter'
       extractV = ProgrammableFilter(Input=[v_20151101_170000raw, extractCycloneCenter])
       extractV.OutputDataSetType = 'vtkImageData'
-      extractV.Script = "import vtk\ndi = inputs[0]\ngi = self.GetInput()\nci = inputs[1]\nidi = di.PointData['V']\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 64\nctrs = ci.GetPoints()\nctrX = int(ctrs[0][0])\nctrY = int(ctrs[0][1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(gi)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
-      extractV.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractV.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractV.Script.py')
+      extractV.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
       extractV.RequestUpdateExtentScript = ''
       extractV.PythonPath = ''
 
       # create a new 'Programmable Filter'
       extractP = ProgrammableFilter(Input=[p_20151101_170000raw, extractCycloneCenter])
       extractP.OutputDataSetType = 'vtkImageData'
-      extractP.Script = "import vtk\ndi = inputs[0]\ngi = self.GetInput()\nci = inputs[1]\nidi = di.PointData['P']\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 64\nctrs = ci.GetPoints()\nctrX = int(ctrs[0][0])\nctrY = int(ctrs[0][1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(gi)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
-      extractP.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractP.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractP.Script.py')
+      extractP.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
       extractP.RequestUpdateExtentScript = ''
       extractP.PythonPath = ''
 
       # create a new 'Programmable Filter'
       extractU = ProgrammableFilter(Input=[u_20151101_170000raw, extractCycloneCenter])
       extractU.OutputDataSetType = 'vtkImageData'
-      extractU.Script = "import vtk\ndi = inputs[0]\ngi = self.GetInput()\nci = inputs[1]\nidi = di.PointData['U']\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 64\nctrs = ci.GetPoints()\nctrX = int(ctrs[0][0])\nctrY = int(ctrs[0][1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(gi)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
-      extractU.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractU.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractU.Script.py')
+      extractU.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
       extractU.RequestUpdateExtentScript = ''
       extractU.PythonPath = ''
 
       # create a new 'Programmable Filter'
       computeVelocityMagnitude = ProgrammableFilter(Input=[extractU, extractV, extractW])
       computeVelocityMagnitude.OutputDataSetType = 'vtkImageData'
-      computeVelocityMagnitude.Script = "from math import sqrt\ndiU = inputs[0]\ndiV = inputs[1]\ndiW = inputs[2]\nidiU = diU.PointData['U']\nidiV = diV.PointData['V']\nidiW = diW.PointData['W']\nido = self.GetImageDataOutput()\n[minX, maxX, minY, maxY, minZ, maxZ] = diU.GetExtent()\n(dimX, dimY, dimZ) = diU.GetDimensions()\nido.SetExtent([0, maxX - minX, 0, maxY - minY, 0, maxZ - minZ])\nca = vtk.vtkFloatArray()\nca.SetName('vel')\nca.SetNumberOfComponents(1)\nca.SetNumberOfTuples(dimX*dimY*dimZ)\nfor k in range(0, ca.GetNumberOfTuples()):\n  ca.SetValue(k, sqrt(idiU[k]*idiU[k] + idiV[k]*idiV[k] +idiW[k]*idiW[k]))\nido.GetPointData().AddArray(ca)"
+      computeVelocityMagnitude.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_computeVelocityMagnitude.Script.py')
       computeVelocityMagnitude.RequestInformationScript = ''
       computeVelocityMagnitude.RequestUpdateExtentScript = ''
       computeVelocityMagnitude.PythonPath = ''
@@ -129,7 +150,8 @@ def CreateCoProcessor():
 
       # ----------------------------------------------------------------
       # finally, restore active source
-      SetActiveSource(parallelImageDataWriterVelMag)
+      SetActiveSource(extractQICE)
+      #SetActiveSource(parallelImageDataWriterVelMag)
       # ----------------------------------------------------------------
 
     return Pipeline()
