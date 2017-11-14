@@ -7,7 +7,6 @@
 #SBATCH --nodes=3
 
 
-
 ## PATHS
 
 # Note: WRF must reside inside wrfrun-output (with name.input)

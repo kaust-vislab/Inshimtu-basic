@@ -10,7 +10,8 @@
 #DW stage_in source=/scratch/tmp/wrf-3.7.1/run_big/burst_buffer_output/wrfrun-output.done destination=$DW_JOB_STRIPED/wrfrun-output.done type=file
 
 ## TODO: stage out if RESULTS_DIR is on DW
-#???#DW stage_out source=$DW_JOB_STRIPED/test-wrf-dw/results destination=/scratch/$USER/inshimtu-testing/test-wrf-dw/results type=directory 
+#TODO#DW stage_out source=$DW_JOB_STRIPED/test-wrf-dw/results destination=/scratch/$USER/inshimtu-testing/test-wrf-dw/results type=directory 
+
 
 ## PATHS
 

@@ -8,25 +8,26 @@
 #SBATCH --ntasks-per-node=1
 ##SBATCH --partition=batch
 
+## TODO: Enable for per-node data fragments using shared memory
+#DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
+
 
 # invoke: cd /scratch/dragon/intel/$USER/pv-log && sbatch "/sw/vis/ibex-gpu/development/Inshimtu/testing/launchers/launch_inshimtu_GDM.ibex.sbat"
 
 
 ## PATHS
 
-#INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
-#INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
-
-INSHIMTU_BUILD_DIR="$HOME/Development/Inshimtu/build.ibex"
+INSHIMTU_ROOT="/sw/vis/development/Inshimtu"
+INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.ibex"
 INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
 INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
+INSHIMTU_TESTING="${INSHIMTU_ROOT}/testing"
 
-INSHIMTU_ROOT="$HOME/Development/Inshimtu"
-
-SRC_DIR="$INSHIMTU_ROOT"
+SRC_DIR="$HOME/Development/Inshimtu/examples"
+#SRC_DIR="/lustre/project/k1033/Development/Inshimtu/examples"
+#SRC_DIR="$DEVSHM_DIR"
 
 DEST_DIR="/scratch/dragon/intel/$USER/inshimtu-testing"
-DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
 ## SETUP
 echo "Setup GDM configuration"
@@ -37,10 +38,10 @@ DATA_DIR="${WORK_DIR}/data"
 
 mkdir -p "${WORK_DIR}"
 
-#ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}"
+#ln -fns "${SRC_DIR}/data/GDM" "${DATA_DIR}"
 if [ ! -d "${DATA_DIR}" ] ; then
   mkdir -p "${DATA_DIR}"
-  rsync lmem-00.vis.kaust.edu.sa:"${SRC_DIR}/examples/data/GDM/wrfout_d01_2015-10-27_0*" "${DATA_DIR}"
+  rsync lmem-00.vis.kaust.edu.sa:"${SRC_DIR}/data/GDM/wrfout_d01_2015-10-27_0*" "${DATA_DIR}"
 fi
 
 ln -fs "${SRC_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}"

@@ -7,12 +7,14 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 
-
-# TODO: Verify DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when working)
+# TODO: Example DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when using)
 ##DW jobdw access_mode=striped capacity=10GiB type=scratch
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
-DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
+## TODO: Enable for testing DW workflow without using DW
+#DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
+## TODO: Enable for per-node data fragments using shared memory
+#DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
 
 # invoke: cd /scratch/$USER/pv-log && sbatch "$HOME/Development/Inshimtu/testing/launchers/launch_inshimtu_GDM.sbat"
@@ -20,19 +22,18 @@ DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
 
 ## PATHS
 
-#INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
-#INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
-
-INSHIMTU_BUILD_DIR="/lustre/sw/vis/development/Inshimtu/build.shaheen"
+INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
+INSHIMTU_BUILD_DIR="${INSHIMTU_ROOT}/build.shaheen"
 INSHIMTU_EXEC="${INSHIMTU_BUILD_DIR}/Inshimtu"
 INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
+INSHIMTU_TESTING="${INSHIMTU_ROOT}/testing"
 
-INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
-
-SRC_DIR="$INSHIMTU_ROOT"
+SRC_DIR="/lustre/project/k1033/Development/Inshimtu/examples"
+#SRC_DIR="$DEVSHM_DIR"
+#SRC_DIR="${DW_JOB_STRIPED}data"
 
 DEST_DIR="/scratch/$USER/inshimtu-testing"
-DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
+
 
 ## SETUP
 echo "Setup GDM configuration"
@@ -44,8 +45,8 @@ DATA_DIR="${WORK_DIR}/data"
 mkdir -p "${WORK_DIR}"
 
 ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}"
-ln -fs "${SRC_DIR}/testing/configs/gdm_relpath.json" "${CONFIG_FILE}"
-ln -fs "${SRC_DIR}/testing/pipelines" "${WORK_DIR}"
+ln -fs "${INSHIMTU_TESTING}/configs/gdm_relpath.json" "${CONFIG_FILE}"
+ln -fs "${INSHIMTU_TESTING}/pipelines" "${WORK_DIR}"
 
 
 # MODULES
