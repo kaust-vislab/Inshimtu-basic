@@ -144,6 +144,10 @@ if [ ! -x "${WRF_EXEC}" ]; then
 fi
 
 
+# TODO: Explore these options:
+# --threads-per-core=1 --hint=nomultithread --mem_bind=v,local --cpu_bind=v,threads
+# --ntasks-per-socket=1 --cpus-per-task=16 --ntasks-per-core=1
+
 # Launch Inshimtu (background)
 # Note: Override config file for DW data paths, inport nodes, and file deletion
 srun --chdir="${WORK_DIR}" --ntasks-per-node=1 \
