@@ -30,6 +30,11 @@ if 'INSHIMTU_FILTER_SCRIPT_DIR' in os.environ:
 else:
   ScriptDir = os.path.join(os.getcwd(), 'filters')
 
+if 'INSHIMTU_WRITE_OUTPUT_DIR' in os.environ:
+  OutputDir = os.path.join(os.getcwd(), os.environ['INSHIMTU_WRITE_OUTPUT_DIR'])
+else:
+  OutputDir = os.path.join(os.getcwd(), 'output')
+
 
 # ----------------------- CoProcessor definition -----------------------
 
@@ -142,10 +147,10 @@ def CreateCoProcessor():
       #parallelImageDataWriterVelMag = servermanager.writers.XMLPImageDataWriter(Input=computeVelocityMagnitude)
 
       # register Writers with coprocessor and initialize
-      coprocessor.RegisterWriter(parallelImageDataWriterU, filename='cyclone_U_%t.pvti', freq=1)
-      coprocessor.RegisterWriter(parallelImageDataWriterV, filename='cyclone_V_%t.pvti', freq=1)
-      coprocessor.RegisterWriter(parallelImageDataWriterW, filename='cyclone_W_%t.pvti', freq=1)
-      #coprocessor.RegisterWriter(parallelImageDataWriterVelMag, filename='cyclone_VelocityMagnitude_%t.pvti', freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterU, filename=os.path.join(OutputDir, 'cyclone_U_%t.pvti'), freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterV, filename=os.path.join(OutputDir, 'cyclone_V_%t.pvti'), freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterW, filename=os.path.join(OutputDir, 'cyclone_W_%t.pvti'), freq=1)
+      #coprocessor.RegisterWriter(parallelImageDataWriterVelMag, filename=os.path.join(OutputDir, 'cyclone_VelocityMagnitude_%t.pvti'), freq=1)
 
 
       # ----------------------------------------------------------------
