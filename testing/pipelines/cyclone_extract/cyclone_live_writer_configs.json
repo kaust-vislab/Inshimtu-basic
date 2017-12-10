@@ -11,10 +11,10 @@
     },
   "pipeline": {
     "scripts": [
-        "pipelines/cyclone_extract/catalyst_extract_writer_PUVWQICE.py"
+        "pipelines/cyclone_extract/catalyst_extract_writer_PUVWQICEQGRAUPQRAIN.py"
       ],
     "variables": [
-        "P,U,V,W,QICE"
+        "P,U,V,W,QICE,QGRAUP,QRAIN"
       ]
     },
   "control": {
