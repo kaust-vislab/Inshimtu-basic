@@ -57,6 +57,8 @@ def CreateCoProcessor():
       # create a new 'Image Reader'
       # create a producer from a simulation input
       qICE_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'QICE')
+      qGRAUP_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'QGRAUP')
+      qRAIN_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'QRAIN')
 
       # create a new 'Image Reader'
       # create a producer from a simulation input
@@ -77,6 +79,22 @@ def CreateCoProcessor():
       extractQICE.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
       extractQICE.RequestUpdateExtentScript = ''
       extractQICE.PythonPath = ''
+
+      # create a new 'Programmable Filter'
+      extractQGRAUP = ProgrammableFilter(Input=[qGRAUP_20151101_170000raw, extractCycloneCenter])
+      extractQGRAUP.OutputDataSetType = 'vtkImageData'
+      extractQGRAUP.Script = "import vtk\ndi = self.GetInputDataObject(0,0)\nipd = di.GetPointData()\nci = self.GetInputDataObject(0,1)\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 192\nctrs = ci.GetPoints().GetPoint(0)\nctrX = int(ctrs[0])\nctrY = int(ctrs[1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(di)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
+      extractQGRAUP.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractQGRAUP.RequestUpdateExtentScript = ''
+      extractQGRAUP.PythonPath = ''
+
+      # create a new 'Programmable Filter'
+      extractQRAIN = ProgrammableFilter(Input=[qRAIN_20151101_170000raw, extractCycloneCenter])
+      extractQRAIN.OutputDataSetType = 'vtkImageData'
+      extractQRAIN.Script = "import vtk\ndi = self.GetInputDataObject(0,0)\nipd = di.GetPointData()\nci = self.GetInputDataObject(0,1)\nido = self.GetImageDataOutput()\ndiExt = di.GetExtent()\noffs = 192\nctrs = ci.GetPoints().GetPoint(0)\nctrX = int(ctrs[0])\nctrY = int(ctrs[1])\noext = [ int(max([int(ctrX-offs),int(diExt[0])])), int(min([int(ctrX+offs),int(diExt[1])]))\n       , int(max([int(ctrY-offs),int(diExt[2])])), int(min([int(ctrY+offs),int(diExt[3])]))\n       , int(diExt[4]), int(diExt[5])]\nvoi = vtk.vtkExtractVOI()\nvoi.SetVOI(oext[0], oext[1], oext[2], oext[3], oext[4], oext[5])\nvoi.SetInputData(di)\nvoi.Update()\nido.ShallowCopy(voi.GetOutput())"
+      extractQRAIN.RequestInformationScript = 'from paraview import util\n\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())\n'
+      extractQRAIN.RequestUpdateExtentScript = ''
+      extractQRAIN.PythonPath = ''
 
       # create a new 'Image Reader'
       # create a producer from a simulation input
@@ -145,18 +163,23 @@ def CreateCoProcessor():
       parallelImageDataWriterV = servermanager.writers.XMLPImageDataWriter(Input=extractV)
       parallelImageDataWriterW = servermanager.writers.XMLPImageDataWriter(Input=extractW)
       #parallelImageDataWriterVelMag = servermanager.writers.XMLPImageDataWriter(Input=computeVelocityMagnitude)
+      parallelImageDataWriterQICE   = servermanager.writers.XMLPImageDataWriter(Input=extractQICE)
+      parallelImageDataWriterQGRAUP = servermanager.writers.XMLPImageDataWriter(Input=extractQGRAUP)
+      parallelImageDataWriterQRAIN  = servermanager.writers.XMLPImageDataWriter(Input=extractQRAIN)
 
       # register Writers with coprocessor and initialize
       coprocessor.RegisterWriter(parallelImageDataWriterU, filename=os.path.join(OutputDir, 'cyclone_U_%t.pvti'), freq=1)
       coprocessor.RegisterWriter(parallelImageDataWriterV, filename=os.path.join(OutputDir, 'cyclone_V_%t.pvti'), freq=1)
       coprocessor.RegisterWriter(parallelImageDataWriterW, filename=os.path.join(OutputDir, 'cyclone_W_%t.pvti'), freq=1)
       #coprocessor.RegisterWriter(parallelImageDataWriterVelMag, filename=os.path.join(OutputDir, 'cyclone_VelocityMagnitude_%t.pvti'), freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterQICE, filename=os.path.join(OutputDir, 'cyclone_QICE_%t.pvti'), freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterQGRAUP, filename=os.path.join(OutputDir, 'cyclone_QGRAUP_%t.pvti'), freq=1)
+      coprocessor.RegisterWriter(parallelImageDataWriterQRAIN, filename=os.path.join(OutputDir, 'cyclone_QRAIN_%t.pvti'), freq=1)
 
 
       # ----------------------------------------------------------------
       # finally, restore active source
       SetActiveSource(extractQICE)
-      #SetActiveSource(parallelImageDataWriterVelMag)
       # ----------------------------------------------------------------
 
     return Pipeline()
@@ -167,7 +190,7 @@ def CreateCoProcessor():
 
   coprocessor = CoProcessor()
   # these are the frequencies at which the coprocessor updates.
-  freqs = {'P': [1], 'U': [1], 'V': [1], 'W': [1], 'QICE': [1]}
+  freqs = {'P': [1], 'U': [1], 'V': [1], 'W': [1], 'QICE': [1], 'QGRAUP': [1], 'QRAIN': [1]}
   coprocessor.SetUpdateFrequencies(freqs)
   return coprocessor
 
