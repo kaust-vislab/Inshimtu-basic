@@ -27,14 +27,17 @@ Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
 {
   std::cout << "Starting Catalyst Processor..." << std::endl;
 
-  processor->Initialize(communicator);
+  if (processor->Initialize(communicator) != 0)
+    std::cout << "Processor initialized with communicator" << std::endl;
+  else
+    std::cerr << "FAILED: Processor initialize" << std::endl;
 
   for (const fs::path& script : scripts)
   {
     vtkNew<vtkCPPythonScriptPipeline> pipeline;
 
     if (pipeline->Initialize(script.c_str()) != 0)
-      std::cout << "Pipeline initialize: " << script << std::endl;
+      std::cout << "Pipeline initialized: " << script << std::endl;
     else
       std::cerr << "FAILED: Pipeline initialize: " << script << std::endl;
 

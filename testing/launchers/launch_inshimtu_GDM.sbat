@@ -4,7 +4,7 @@
 #SBATCH --time=00:25:00
 #SBATCH --output=inshimtu.%j.out
 #SBATCH --error=inshimtu.%j.err                                     
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=1
 
 # TODO: Example DataWarp BurstBuffer settings (remove DW_JOB_STRIPED overload when using)

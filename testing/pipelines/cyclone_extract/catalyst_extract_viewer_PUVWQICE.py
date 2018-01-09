@@ -45,20 +45,19 @@ def CreateCoProcessor():
       #### disable automatic camera reset on 'Show'
       paraview.simple._DisableFirstRenderCameraReset()
 
-      # create a new 'Image Reader'
-      # create a producer from a simulation input
-      u_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'U')
 
       # create a new 'Image Reader'
       # create a producer from a simulation input
-      qICE_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'QICE')
+      p_raw = coprocessor.CreateProducer(datadescription, 'P')
 
-      # create a new 'Image Reader'
-      # create a producer from a simulation input
-      p_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'P')
+      u_raw = coprocessor.CreateProducer(datadescription, 'U')
+      v_raw = coprocessor.CreateProducer(datadescription, 'V')
+      w_raw = coprocessor.CreateProducer(datadescription, 'W')
+
+      qICE_raw = coprocessor.CreateProducer(datadescription, 'QICE')
 
       # create a new 'Programmable Filter'
-      extractCycloneCenter = ProgrammableFilter(Input=p_20151101_170000raw)
+      extractCycloneCenter = ProgrammableFilter(Input=p_raw)
       extractCycloneCenter.OutputDataSetType = 'vtkPolyData'
       extractCycloneCenter.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractCycloneCenter.Script.py')
       extractCycloneCenter.RequestInformationScript = ''
@@ -66,31 +65,15 @@ def CreateCoProcessor():
       extractCycloneCenter.PythonPath = ''
 
       # create a new 'Programmable Filter'
-      extractQICE = ProgrammableFilter(Input=[qICE_20151101_170000raw, extractCycloneCenter])
-      extractQICE.OutputDataSetType = 'vtkImageData'
-      extractQICE.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractQICE.Script.py')
-      extractQICE.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
-      extractQICE.RequestUpdateExtentScript = ''
-      extractQICE.PythonPath = ''
-
-      # create a new 'Image Reader'
-      # create a producer from a simulation input
-      w_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'W')
+      extractU = ProgrammableFilter(Input=[u_raw, extractCycloneCenter])
+      extractU.OutputDataSetType = 'vtkImageData'
+      extractU.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractU.Script.py')
+      extractU.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
+      extractU.RequestUpdateExtentScript = ''
+      extractU.PythonPath = ''
 
       # create a new 'Programmable Filter'
-      extractW = ProgrammableFilter(Input=[w_20151101_170000raw, extractCycloneCenter])
-      extractW.OutputDataSetType = 'vtkImageData'
-      extractW.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractW.Script.py')
-      extractW.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
-      extractW.RequestUpdateExtentScript = ''
-      extractW.PythonPath = ''
-
-      # create a new 'Image Reader'
-      # create a producer from a simulation input
-      v_20151101_170000raw = coprocessor.CreateProducer(datadescription, 'V')
-
-      # create a new 'Programmable Filter'
-      extractV = ProgrammableFilter(Input=[v_20151101_170000raw, extractCycloneCenter])
+      extractV = ProgrammableFilter(Input=[v_raw, extractCycloneCenter])
       extractV.OutputDataSetType = 'vtkImageData'
       extractV.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractV.Script.py')
       extractV.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
@@ -98,7 +81,15 @@ def CreateCoProcessor():
       extractV.PythonPath = ''
 
       # create a new 'Programmable Filter'
-      extractP = ProgrammableFilter(Input=[p_20151101_170000raw, extractCycloneCenter])
+      extractW = ProgrammableFilter(Input=[w_raw, extractCycloneCenter])
+      extractW.OutputDataSetType = 'vtkImageData'
+      extractW.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractW.Script.py')
+      extractW.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
+      extractW.RequestUpdateExtentScript = ''
+      extractW.PythonPath = ''
+
+      # create a new 'Programmable Filter'
+      extractP = ProgrammableFilter(Input=[p_raw, extractCycloneCenter])
       extractP.OutputDataSetType = 'vtkImageData'
       extractP.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractP.Script.py')
       extractP.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
@@ -106,12 +97,12 @@ def CreateCoProcessor():
       extractP.PythonPath = ''
 
       # create a new 'Programmable Filter'
-      extractU = ProgrammableFilter(Input=[u_20151101_170000raw, extractCycloneCenter])
-      extractU.OutputDataSetType = 'vtkImageData'
-      extractU.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractU.Script.py')
-      extractU.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
-      extractU.RequestUpdateExtentScript = ''
-      extractU.PythonPath = ''
+      extractQICE = ProgrammableFilter(Input=[qICE_raw, extractCycloneCenter])
+      extractQICE.OutputDataSetType = 'vtkImageData'
+      extractQICE.Script = "execfile('%s')" % os.path.join(ScriptDir, 'filter_extractQICE.Script.py')
+      extractQICE.RequestInformationScript = 'from paraview import util\nutil.SetOutputWholeExtent(self, self.GetOutput().GetExtent())'
+      extractQICE.RequestUpdateExtentScript = ''
+      extractQICE.PythonPath = ''
 
       # create a new 'Programmable Filter'
       computeVelocityMagnitude = ProgrammableFilter(Input=[extractU, extractV, extractW])
