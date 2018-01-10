@@ -126,7 +126,9 @@ case "$HOSTDOMAIN" in
   buildKVL
   ;;
 *"ibex.kaust.edu.sa")
-  ;&
+  #;&
+  buildIbex
+  ;;
 *"dragon.kaust.edu.sa")
   buildIbex
   ;;
