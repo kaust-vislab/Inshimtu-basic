@@ -58,11 +58,13 @@ public:
   NodeRank getInporterIndex() const { return inporterSection.first; };
   size_t getInporterCount() const { return inporterSection.second; };
 
-  vtkMPICommunicatorOpaqueComm& getCommunicator();
+  vtkMPICommunicatorOpaqueComm& getInporterCommunicator();
+  vtkMPICommunicatorOpaqueComm& getCoordinationCommunicator();
 
 protected:
   Configuration configs;
-  vtkNew<vtkMPICommunicator> communicator;
+  vtkNew<vtkMPICommunicator> inportCommunicator;
+  vtkNew<vtkMPICommunicator> coordCommunicator;
   bool notifier;
   InporterSection inporterSection;
 };

@@ -248,8 +248,10 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
 
 
   // broadcast readyfiles to inporter nodes
+  if (app.isRoot() || app.isInporter())
   {
-    MPI_Comm inporterComm = *app.getCommunicator().GetHandle();
+    assert(app.getCoordinationCommunicator().GetHandle() != nullptr);
+    MPI_Comm coordComm = *app.getCoordinationCommunicator().GetHandle();
 
     int readyCount;
 
@@ -258,7 +260,7 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
       readyCount = readyFiles.size();
     }
 
-    MPI_Bcast(&readyCount, 1, MPI_INT, MPIApplication::ROOT_RANK, inporterComm);
+    MPI_Bcast(&readyCount, 1, MPI_INT, MPIApplication::ROOT_RANK, coordComm);
 
     for (int i = 0; i < readyCount; ++i)
     {
@@ -268,7 +270,7 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
         strncpy(message, f.c_str(), std::min(f.string().size()+1, static_cast<size_t>(PATH_MAX)));
       }
 
-      MPI_Bcast(message, sizeof(message), MPI_CHAR, MPIApplication::ROOT_RANK, inporterComm);
+      MPI_Bcast(message, sizeof(message), MPI_CHAR, MPIApplication::ROOT_RANK, coordComm);
 
       if (!app.isRoot())
       {

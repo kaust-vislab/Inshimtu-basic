@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
   if (app.isInporter())
   {
-    processor.reset(new Processor( app.getCommunicator()
+    processor.reset(new Processor( app.getInporterCommunicator()
                                  , configs.collectScripts()
                                  , configs.getStartupDelay()));
     inporter.reset(new Inporter( *processor.get()

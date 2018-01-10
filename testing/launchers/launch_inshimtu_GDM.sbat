@@ -12,7 +12,7 @@
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing type=directory
 ##DW stage_in destination=$DW_JOB_STRIPED source=/lustre/project/k1033/Development/Inshimtu/examples/testing.done type=file
 ## TODO: Enable for testing DW workflow without using DW
-#DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
+##DW_JOB_STRIPED="/scratch/$USER/inshimtu-testing"
 ## TODO: Enable for per-node data fragments using shared memory
 #DEVSHM_DIR="/dev/shm/$USER-inshimtu-testing"
 
@@ -44,7 +44,7 @@ DATA_DIR="${WORK_DIR}/data"
 
 mkdir -p "${WORK_DIR}"
 
-ln -fns "${SRC_DIR}/examples/data/GDM" "${DATA_DIR}"
+ln -fns "${SRC_DIR}/data/GDM" "${DATA_DIR}"
 ln -fs "${INSHIMTU_TESTING}/configs/gdm_relpath.json" "${CONFIG_FILE}"
 ln -fs "${INSHIMTU_TESTING}/pipelines" "${WORK_DIR}"
 

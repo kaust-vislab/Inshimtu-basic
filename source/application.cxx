@@ -51,7 +51,8 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
   , notifier(true)
   , inporterSection(-1, 0)
 {
-  vtkNew<vtkProcessGroup> pgroup;
+  vtkNew<vtkProcessGroup> pgroupInport;
+  vtkNew<vtkProcessGroup> pgroupCoord;
   std::set<NodeRank> inporters;
 
   NodeRank inporterIndex = -1;
@@ -76,12 +77,21 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
     }
   }
 
-  // pgroup represents just the inporter processes
-  pgroup->Initialize(communicator->GetWorldCommunicator());
-  pgroup->RemoveAllProcessIds();
+  // pgroupInport represents just the inporter processes
+  pgroupInport->Initialize(inportCommunicator->GetWorldCommunicator());
+  pgroupInport->RemoveAllProcessIds();
+  // pgroupCoord represents root + inporter processes (ROOT_RANK must be first)
+  pgroupCoord->Initialize(coordCommunicator->GetWorldCommunicator());
+  pgroupCoord->RemoveAllProcessIds();
+  pgroupCoord->AddProcessId(ROOT_RANK);
+
   for (const NodeRank i : inporters)
   {
-    pgroup->AddProcessId(i);
+    pgroupInport->AddProcessId(i);
+    if (i != ROOT_RANK)
+    {
+      pgroupCoord->AddProcessId(i);
+    }
 
     // determine node inport properties
     if (getRank() == i)
@@ -94,7 +104,8 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
   inporterSection.first = inporterIndex;
   inporterSection.second = inporterCount;
 
-  communicator->Initialize(pgroup.Get());
+  inportCommunicator->Initialize(pgroupInport.Get());
+  coordCommunicator->Initialize(pgroupCoord.Get());
 }
 
 MPICatalystApplication::~MPICatalystApplication()
@@ -102,8 +113,15 @@ MPICatalystApplication::~MPICatalystApplication()
 }
 
 
-vtkMPICommunicatorOpaqueComm& MPICatalystApplication::getCommunicator()
+vtkMPICommunicatorOpaqueComm& MPICatalystApplication::getInporterCommunicator()
 {
-  return *communicator->GetMPIComm();
+  assert(inportCommunicator->GetMPIComm() != nullptr);
+  return *inportCommunicator->GetMPIComm();
+}
+
+vtkMPICommunicatorOpaqueComm& MPICatalystApplication::getCoordinationCommunicator()
+{
+  assert(coordCommunicator->GetMPIComm() != nullptr);
+  return *coordCommunicator->GetMPIComm();
 }
 

@@ -100,8 +100,8 @@ esac
 # Usage function
 #
 usage() {
-  echo "Usage: $0 [-D data-directory] [-f file-watch-regex] [-i initial-files-glob] [-N total-nodes-range] [-n inporter-node-ranges] [-s script] [-v variables-list] [-S scenarios] [-h help]" 1>&2;
-  echo "Scenarios: GDM, GDMcmdline, CycloneExtract, TestReadyFiles, TestMultinodeWrite" 1>&2;
+  echo "Usage: $0 [-D data-directory] [-f file-watch-regex] [-i initial-files-glob] [-N total-nodes-range] [-n inporter-node-ranges] [-s script] [-v variables-list] [-P initial-delay] [-S scenarios] [-h help]" 1>&2;
+  echo "Scenarios: GDM, GDMcmdline, CycloneExtract, TestReadyFiles, TestMultinodeWrite, TestCoordinationIssue" 1>&2;
 }
 
 
@@ -248,7 +248,7 @@ scenarioTestMultinodeWrite() {
 #
 # Use getopts to get arguments
 #
-while getopts ":D:d:f:i:N:n:c:s:v:S:h" opt; do
+while getopts ":D:d:f:i:N:n:c:s:v:P:S:h" opt; do
   case $opt in
     D)
       DATA_DIR=$OPTARG
@@ -292,6 +292,9 @@ while getopts ":D:d:f:i:N:n:c:s:v:S:h" opt; do
     v)
       VARIABLES_LIST=$OPTARG
       ;;
+    P)
+      INITIAL_PAUSE=$OPTARG
+      ;;
     S)
       case "$OPTARG" in
         "GDM")
@@ -308,6 +311,16 @@ while getopts ":D:d:f:i:N:n:c:s:v:S:h" opt; do
         ;;
         "TestMultinodeWrite")
           scenarioTestMultinodeWrite
+        ;;
+        "TestCoordinationIssue")
+          # Test case for coordinator subset issue: 
+          # MPI errors when inporters were a subset of all world communicators
+          # arbitrary scenario to double size (require multiple ranks)
+          scenarioGDM 
+          AVAILABLE_HOSTS="$AVAILABLE_HOSTS,$AVAILABLE_HOSTS"
+          MAX_AVAILABLE_HOSTS=$(( MAX_AVAILABLE_HOSTS * 2 ))
+          INPORTER_NODES=${INPORTER_NODES:-1}
+          INITIAL_PAUSE=${INITIAL_PAUSE:-30}
         ;;
         *)
           echo "Unknown scenario: $OPTARG" 1>&2;
@@ -397,8 +410,13 @@ if [ -n "$INPORTER_NODES" ]; then
   OptINNODES="-n "$INPORTER_NODES""
 fi
 
+if [ -n "$INITIAL_PAUSE" ]; then
+  OptINDELAY="-p "$INITIAL_PAUSE""
+  printf "\n\nATTACH DEBUGGER NOW...\n\n\n"
+fi
+
 if [ -n "$SCRIPT_FILE" ] && [ -n "$VARIABLES_LIST" ]; then
-  OptCATALYST="-s "${SCRIPT_FILE}" -v "$VARIABLES_LIST" $OptINNODES"
+  OptCATALYST="-s "${SCRIPT_FILE}" -v "$VARIABLES_LIST""
 fi
 
 if [ -n "$CONFIG_FILE" ]; then
@@ -407,6 +425,7 @@ fi
 
 
 mpiexec -np $NODES -ppn 1 -hosts "$HOSTS" \
-        "${INSHIMTU_EXEC}" $OptWATCHING $OptINFILES $OptCATALYST $OptCONFIG
+        "${INSHIMTU_EXEC}" $OptWATCHING $OptINFILES $OptCATALYST $OptCONFIG \
+                           $OptINNODES $OptINDELAY
 
 

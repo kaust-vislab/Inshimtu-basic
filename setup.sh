@@ -86,6 +86,8 @@ function buildIbex {
   mkdir "${INSHIMTU_BUILD_DIR}"
   cd "${INSHIMTU_BUILD_DIR}"
 
+  BUILD_TYPE="Release"
+
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module use /sw/vis/ibex-gpu.modules
@@ -93,17 +95,18 @@ cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
 
-  cmake ..
+  cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" ..
 
   make -j 8
 }
 
 function buildKVL {
-
   INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.kvl"
   echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
   mkdir "${INSHIMTU_BUILD_DIR}"
   cd "${INSHIMTU_BUILD_DIR}"
+
+  local BUILD_TYPE="RelWithDebInfo"
 
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
@@ -111,7 +114,7 @@ module add kvl-applications pvserver/5.4.1-mpich-x86_64
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
 
-  cmake3 ..
+  cmake3 -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" ..
 
   make -j 8
 }
