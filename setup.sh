@@ -40,9 +40,11 @@ function buildShaheen {
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module use /sw/vis/xc40.modules
-  module add boost/1.66-gcc-7.2.0
   module add ParaView/5.4.1-CrayGNU-2017.12.KSL-server-mesa
-  module add cray-netcdf-hdf5parallel/4.4.1.1.6
+  module add boost/1.66-gcc-7.2.0
+  #module add cray-netcdf-hdf5parallel/4.4.1.1.6
+  module add cray-parallel-netcdf/1.8.1.3
+  module add cray-hdf5-parallel/1.10.1.1
   # TODO: Put fix in ParaView module
   #   Fix for issue loading correct version of cray mpi
   #   export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH":$LD_LIBRARY_PATH
