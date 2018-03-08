@@ -10,10 +10,10 @@ function buildShaheen {
   # NOTE: Build on compute node:
   # salloc --partition=debug
   # srun -u --pty bash -i
-  # cd /lustre/sw/vis/development/Inshimtu
+  # cd /sw/vis/development/Inshimtu
   # ./setup.sh
 
-  INSHIMTU_PROFILING=true
+  INSHIMTU_PROFILING=${INSHIMTU_PROFILING:-true}
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     LIB_EXT="so"
     BUILD_TYPE="RelWithDebInfo"
@@ -33,16 +33,16 @@ function buildShaheen {
   module unload darshan
 
   module swap PrgEnv-cray PrgEnv-gnu
-  module add cdt/16.07
+  module add cdt/17.12
 
-  module add cmake/3.6.2
+  module add cmake/3.10.2
 
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
-  module use /lustre/sw/vis/modulefiles
-  module add Boost/1.61.0-CrayGNU-2016.07.KSL
-  module add ParaView/5.4.1-CrayGNU-2016.07.KSL-server-mesa
-  module add cray-hdf5-parallel/1.10.0.1
+  module use /sw/vis/xc40.modules
+  module add boost/1.66-gcc-7.2.0
+  module add ParaView/5.4.1-CrayGNU-2017.12.KSL-server-mesa
+  module add cray-netcdf-hdf5parallel/4.4.1.1.6
   # TODO: Put fix in ParaView module
   #   Fix for issue loading correct version of cray mpi
   #   export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH":$LD_LIBRARY_PATH
@@ -54,13 +54,15 @@ EOF
     # Enable Cray profiling tools
     module load perftools-base perftools
     # Allinea support
-    module load allinea-reports/7.0 allinea-forge/7.0
+    # TODO: restore allinea support when available again
+    #module load allinea-reports/7.0 allinea-forge/7.0
   fi
 
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     # Allinea support
-    make-profiler-libraries
+    # TODO: restore allinea support when available again
+    #make-profiler-libraries
   fi
 
 
@@ -125,11 +127,9 @@ case "$HOSTDOMAIN" in
 *"vis.kaust.edu.sa")
   buildKVL
   ;;
-*"ibex.kaust.edu.sa")
-  #;&
-  buildIbex
-  ;;
 *"dragon.kaust.edu.sa")
+  ;&
+*"ibex.kaust.edu.sa")
   buildIbex
   ;;
 *"hpc.kaust.edu.sa")
@@ -138,6 +138,8 @@ case "$HOSTDOMAIN" in
 *)
   case "$OSVERSION" in
   "SUSE LINUX"*)
+    ;&
+  "SUSE 12"*)
     # host domain not available on Cray compute nodes
     buildShaheen
     ;;
