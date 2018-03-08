@@ -62,6 +62,8 @@ EOF
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     # Allinea support
     # TODO: restore allinea support when available again
+    module av allinea-reports
+    module av allinea-forge
     #make-profiler-libraries
   fi
 
