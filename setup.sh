@@ -95,7 +95,7 @@ function buildIbex {
 
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
-  module cmake/3.9.4/gnu-6.4.0
+  module add cmake/3.9.4/gnu-6.4.0
   module use /sw/vis/ibex-gpu.modules
   module add ParaView/5.4.1-openmpi-x86_64
 EOF
