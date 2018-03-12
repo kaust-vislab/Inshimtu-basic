@@ -69,13 +69,12 @@ EOF
     #make-profiler-libraries
   fi
 
-
+  # TODO: cmake should be able to find correct MPI: find_package(MPI REQUIRED)
   cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
         -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" \
         -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.${LIB_EXT}" \
         -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.${LIB_EXT}" \
         -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" \
-        -DBOOST_ROOT=$EBROOTBOOST \
         ..
 
   make -j 12
@@ -96,8 +95,9 @@ function buildIbex {
 
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
+  module cmake/3.9.4/gnu-6.4.0
   module use /sw/vis/ibex-gpu.modules
-  module add CMake/3.5.2 ParaView/5.4.1-openmpi-x86_64
+  module add ParaView/5.4.1-openmpi-x86_64
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
 
