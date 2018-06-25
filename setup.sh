@@ -29,9 +29,6 @@ function buildShaheen {
   cd "${INSHIMTU_BUILD_DIR}"
 
 
-  # Enable Cray profiling tools
-  module unload darshan
-
   module swap PrgEnv-cray PrgEnv-gnu
   module add cdt/17.12
 
@@ -54,26 +51,22 @@ EOF
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
     # Enable Cray profiling tools
-    module load perftools-base perftools
-    # Allinea support
-    # TODO: restore allinea support when available again
-    #module load allinea-reports/7.0 allinea-forge/7.0
+    module unload darshan
+    module load perftools-base
+    # TODO: choose type automatically
+    # Choose one: simple sampling, simple events based, advanced
+    #module load perftools-lite
+    #module load perftools-lite-events
+    module load perftools
+
+    # ARM Allinea support
+    module load arm-reports/18.0.2 arm-forge/18.0.2
+    # ARM Allinea support
+    make-profiler-libraries
   fi
 
 
-  if [ "$INSHIMTU_PROFILING" = true ] ; then
-    # Allinea support
-    # TODO: restore allinea support when available again
-    module av allinea-reports
-    module av allinea-forge
-    #make-profiler-libraries
-  fi
-
-  # TODO: cmake should be able to find correct MPI: find_package(MPI REQUIRED)
   cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-        -DMPI_C_INCLUDE_PATH="${MPICH_DIR}/include" -DMPI_CXX_INCLUDE_PATH="${MPICH_DIR}/include" \
-        -DMPI_C_LIBRARIES="${MPICH_DIR}/lib/libmpich.${LIB_EXT}" \
-        -DMPI_CXX_LIBRARIES="${MPICH_DIR}/lib/libmpichcxx.${LIB_EXT}" \
         -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" \
         ..
 
@@ -81,6 +74,8 @@ EOF
 
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then
+    # TODO: pat_build only needed for perftools
+    echo "pat_build Inshimtu -- for advanced perftools"
     pat_build Inshimtu
   fi
 }
