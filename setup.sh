@@ -128,7 +128,6 @@ EOF
   make -j 8
 }
 
-
 function buildKVL {
   INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.kvl"
   echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
