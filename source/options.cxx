@@ -45,6 +45,7 @@ Configuration::Configuration(int argc, const char* const argv[])
     ("files,f", po::value<std::string>()->default_value(""), "regular expression of watch directory files to process (ensure expression is 'quoted')")
     ("initial,i", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of pre-exisiting files to process (unquoted for shell expansion)")
     ("scripts,s", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "list of Catalyst scripts for visualization processing")
+    ("external_commands,x", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "list of external commands for post processing")
     ("variables,v", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of comma-separated variable sets to process")
     ("nodes,n", po::value<std::string>()->default_value(""), "comma-separated list of node-id intervals specifying inporter Catalyst nodes")
     ("pause,p", po::value<uint>()->default_value(0), "initial delay in seconds to wait for ParaView to connect before processing commences")
@@ -131,6 +132,7 @@ Configuration::Configuration(int argc, const char* const argv[])
     const bool fileFilter(hasFileFilter());
     const bool initialFiles(!collectInitialFiles().empty());
     const bool scriptFiles(!collectScripts().empty());
+    const bool externalCommands(!collectExternalCommands().empty());
 
     if (initialFiles)
     {
@@ -157,9 +159,9 @@ Configuration::Configuration(int argc, const char* const argv[])
       }
     }
 
-    if (!scriptFiles)
+    if (!scriptFiles && !externalCommands)
     {
-      throw std::runtime_error("the missing option '--scripts' is required");
+      throw std::runtime_error("the missing option '--scripts' or '--external_commands' is required");
     }
   }
 }
@@ -200,6 +202,39 @@ const std::vector<fs::path> Configuration::collectScripts() const
 
   return scripts;
 }
+
+const std::vector<fs::path> Configuration::collectExternalCommands() const
+{
+  std::vector<fs::path> commands;
+
+  boost::optional<const pt::ptree&> scripts_(configs.get_child_optional("pipeline.external_commands"));
+  if (scripts_.is_initialized())
+  {
+    for (const auto& s: scripts_.get())
+    {
+      commands.push_back(fs::absolute(s.second.get_value<fs::path>()));
+    }
+  }
+
+  if (opts.find("external_commands") != opts.end())
+  {
+    const std::vector<std::string>& ss(opts["external_commands"].as<std::vector<std::string>>());
+
+    if (!ss.empty())
+    {
+      commands.clear(); // options override configurations
+    }
+
+    for (const std::string &sn : ss)
+    {
+      fs::path p(sn);
+      commands.push_back(fs::absolute(p));
+    }
+  }
+
+  return commands;
+}
+
 
 const std::vector<fs::path> Configuration::collectInitialFiles() const
 {
@@ -308,7 +343,7 @@ const std::vector<Configuration::NodeRange> Configuration::collectInporterNodes(
 }
 
 
-const bool Configuration::hasWatchDirectory() const
+bool Configuration::hasWatchDirectory() const
 {
   return !configs.get<std::string>("input.watch.directory_path", "").empty()
       || !opts["watch"].as<std::string>().empty();
@@ -328,7 +363,7 @@ const fs::path Configuration::getWatchDirectory() const
 }
 
 
-const bool Configuration::hasOutputReadySignal() const
+bool Configuration::hasOutputReadySignal() const
 {
   return getOutputReadyConversion().is_initialized();
 }
@@ -354,7 +389,7 @@ const boost::optional<Configuration::ReplaceRegexFormat> Configuration::getOutpu
 
 
 
-const bool Configuration::hasDoneFile() const
+bool Configuration::hasDoneFile() const
 {
   return !configs.get<std::string>("control.done_watchfile", "").empty()
       || !opts["done"].as<std::string>().empty();
@@ -373,7 +408,7 @@ const fs::path Configuration::getDoneFile() const
   return fs::absolute(fs::path(watchfileStr));
 }
 
-const bool Configuration::hasFileFilter() const
+bool Configuration::hasFileFilter() const
 {
   return !configs.get<std::string>("input.watch.files_regex", "").empty()
       || !opts["files"].as<std::string>().empty();
@@ -392,7 +427,7 @@ const boost::regex Configuration::getFileFilter() const
   return boost::regex(fileRegexStr.empty() ? std::string(".*") : fileRegexStr);
 }
 
-const uint Configuration::getStartupDelay() const
+uint Configuration::getStartupDelay() const
 {
   uint delay(configs.get<uint>("control.initial_connection_wait_secs", 0));
 
@@ -404,7 +439,7 @@ const uint Configuration::getStartupDelay() const
   return delay;
 }
 
-const bool Configuration::getDeleteFilesFlag() const
+bool Configuration::getDeleteFilesFlag() const
 {
   bool cleanup(configs.get<bool>("control.delete_processed_input_files", false));
 

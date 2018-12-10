@@ -38,35 +38,25 @@ bool Notify::isDone() const
 INotify::INotify( const fs::path& watch
                 , const boost::regex& mask
                 , const fs::path& done)
+  : INotify(std::vector<InputSpecPaths>({InputSpecPaths(watch, mask)}), done)
+{
+}
+
+INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
+                , const fs::path& done)
   : Notify()
   , inotify_descriptor(-1)
-  , watch_descriptor(-1)
   , done_descriptor(-1)
-  , watch_directory(watch)
-  , watch_files_filter(mask)
   , done_file(done)
+  , watches()
 {
-  std::cout << "STARTED INotify" << std::endl;
 
-  if (!fs::is_directory(watch_directory))
-  {
-    std::cerr << "Failed: Cannot set inotify 'watch'. Expected an exisiting directory. "
-              << " Ensure directory '" << watch_directory << "' exists." << std::endl;
-    return;
-  }
+  std::cout << "STARTED INotify" << std::endl;
 
   if (!fs::is_regular_file(done_file))
   {
     std::cerr << "Failed: Cannot set inotify 'done'. Expected an exisiting file. "
               << " Ensure file '" << done_file << "' exists." << std::endl;
-    return;
-  }
-
-  if (fs::equivalent(done_file.parent_path(), watch_directory))
-  {
-    std::cerr << "Failed: Cannot set inotify 'done'. Expected file outside of 'watch' directory. "
-              << " Ensure file '" << done_file << "' is not within '"
-              << watch_directory << "' directory." << std::endl;
     return;
   }
 
@@ -88,17 +78,64 @@ INotify::INotify( const fs::path& watch
     return;
   }
 
-  watch_descriptor = inotify_add_watch( inotify_descriptor, watch_directory.c_str()
-                                      , IN_CLOSE_WRITE );
-
-  if (watch_descriptor < 0)
+  for (const auto& inSp: watch_paths)
   {
-    std::cerr << "Failed: Cannot add filesystem watcher."
-              << "Ensure directory '" << watch_directory << "' exists." << std::endl;
+
+    if (!fs::is_directory(inSp.directory))
+    {
+      std::cerr << "Failed: Cannot set inotify 'watch'. Expected an exisiting directory. "
+                << " Ensure directory '" << inSp.directory << "' exists." << std::endl;
+      continue;
+    }
+
+    if (fs::equivalent(done_file.parent_path(), inSp.directory))
+    {
+      std::cerr << "Failed: Cannot set inotify 'done'. Expected file outside of 'watch' directory. "
+                << " Ensure file '" << done_file << "' is not within '"
+                << inSp.directory << "' directory." << std::endl;
+      continue;
+    }
+
+    auto it = std::find_if( std::begin(watches), std::end(watches)
+                          , [&] (const WatchSpec& w) { return inSp.directory == w.directory; } );
+
+    if (it == std::end(watches))
+    {
+      WatchSpec ws(inSp.directory, inSp.filenames);
+
+      ws.descriptor = inotify_add_watch( inotify_descriptor, ws.directory.c_str()
+                                       , IN_CLOSE_WRITE );
+
+      if (ws.descriptor < 0)
+      {
+        std::cerr << "Failed: Cannot add filesystem watcher."
+                  << "Ensure directory '" << ws.directory << "' exists." << std::endl;
+        ws.descriptor = -1;
+        continue;
+      }
+
+      watches.push_back(ws);
+
+      std::cout << "Added filter '" << inSp.filenames << "' and watch directory '" << ws.directory << "'." << std::endl;
+    }
+    else
+    {
+      WatchSpec& ws(*it);
+
+      ws.files_filters.push_back(inSp.filenames);
+
+      std::cout << "Added filter '" << inSp.filenames << "' to watch directory '" << ws.directory << "'." << std::endl;
+    }
+  }
+
+  if (watches.empty())
+  {
     remove_watches();
-    return;
+
+    std::cerr << "Failed: No valid filesystem watchers found for notification." << std::endl;
   }
 }
+
 
 INotify::~INotify()
 {
@@ -119,7 +156,6 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
   constexpr size_t BUF_LEN = 1024 * ( EVENT_SIZE + 16 );
 
   bool done = false;
-  int i = 0;
   char buffer[BUF_LEN];
 
   if (!isReady())
@@ -136,34 +172,45 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
     return;
   }
 
+  int i = 0;
   while ( i < length )
   {
     struct inotify_event* event = static_cast<struct inotify_event*>(static_cast<void*>(&buffer[i]));
-    if (is_watched_event(*event) && is_closed_file(*event))
+
+    boost::optional<const WatchSpec> ows(get_watch_spec(*event));
+
+    if (ows.is_initialized())
     {
-      if (boost::regex_match(event->name, watch_files_filter))
+      const WatchSpec& watch(ows.get());
+
+      if (is_closed_file(*event))
       {
-        const fs::path name(watch_directory / event->name);
-
-        std::cout << "Watched file '" << name << "' was closed.\n" << std::endl;
-
-        // add to client's newly found files
-        out_newFiles.push_back(name);
-
-        // add to our bookkeeping list
-        auto fitr = std::find(found_files.begin(), found_files.end(), name);
-        if (fitr == found_files.end())
+        const fs::path name(watch.directory / event->name);
+        for(const auto& files_filter: watch.files_filters)
+        if (boost::regex_match(event->name, files_filter))
         {
-          found_files.push_back(name);
-          std::cout << "Added newly found file '" << name << "' to found files.\n" << std::endl;
+          std::cout << "Watched file '" << name << "' was closed.\n" << std::endl;
+
+          // add to client's newly found files
+          out_newFiles.push_back(name);
+
+          // add to our bookkeeping list
+          auto fitr = std::find(std::begin(found_files), std::end(found_files), name);
+          if (fitr == std::end(found_files))
+          {
+            found_files.push_back(name);
+            std::cout << "Added newly found file '" << name << "' to found files.\n" << std::endl;
+          }
         }
       }
     }
-    else if (is_done_event(*event))
+
+    if (is_done_event(*event))
     {
       done = true;
       std::cout << "DONE Event! file '" << done_file << "' was modified.\n" << std::endl;
     }
+
     i += EVENT_SIZE + event->len;
   }
 
@@ -204,10 +251,13 @@ void INotify::remove_watches()
     done_descriptor = -1;
   }
 
-  if (watch_descriptor >= 0)
+  for(auto& w: watches)
   {
-    inotify_rm_watch( inotify_descriptor, watch_descriptor );
-    watch_descriptor = -1;
+    if (w.descriptor >= 0)
+    {
+      inotify_rm_watch( inotify_descriptor, w.descriptor );
+      w.descriptor = -1;
+    }
   }
 }
 

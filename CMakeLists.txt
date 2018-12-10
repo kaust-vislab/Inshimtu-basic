@@ -27,6 +27,10 @@ include(vtkMPI)
 
 find_package(Boost 1.53 REQUIRED COMPONENTS
   program_options
+  #log
+  #log_setup
+  thread
+  date_time
   filesystem
   system
   regex
@@ -66,6 +70,7 @@ set(Executable_SRCS
   source/logger.cxx
   source/notification.cxx
   source/options.cxx
+  source/pipeline.cxx
 )
 
 add_executable(Inshimtu ${Executable_SRCS})

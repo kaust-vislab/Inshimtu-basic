@@ -50,13 +50,13 @@ public:
   virtual ~MPICatalystApplication();
 
   bool isNotifier() const { notifier; }
-  bool isInporter() const { return getInporterIndex() >= 0; }
+  bool isInporter() const { return getInporterNode() >= 0; }
 
   const Configuration& getConfigs() const { return configs; }
 
   const InporterSection& getInporterSection() const { return inporterSection; };
-  NodeRank getInporterIndex() const { return inporterSection.first; };
-  size_t getInporterCount() const { return inporterSection.second; };
+  NodeRank getInporterNode() const { return inporterSection.first; };
+  size_t getInporterIndex() const { return inporterSection.second; };
 
   vtkMPICommunicatorOpaqueComm& getInporterCommunicator();
   vtkMPICommunicatorOpaqueComm& getCoordinationCommunicator();

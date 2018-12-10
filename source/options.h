@@ -26,10 +26,14 @@ class Configuration
 {
 public:
 
+  // TODO: Fix - duplicated in pipeline
+  typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
+
   Configuration(int argc, const char* const argv[]);
   virtual ~Configuration();
 
   const std::vector<boost::filesystem::path> collectScripts() const;
+  const std::vector<boost::filesystem::path> collectExternalCommands() const;
 
   const std::vector<boost::filesystem::path> collectInitialFiles() const;
 
@@ -38,22 +42,23 @@ public:
   typedef std::pair<int, int> NodeRange;
   const std::vector<NodeRange> collectInporterNodes() const;
 
-  const bool hasWatchDirectory() const;
+  bool hasWatchDirectory() const;
   const boost::filesystem::path getWatchDirectory() const;
 
-  const bool hasDoneFile() const;
+  bool hasDoneFile() const;
   const boost::filesystem::path getDoneFile() const;
 
-  const bool hasFileFilter() const;
+  bool hasFileFilter() const;
   const boost::regex getFileFilter() const;
 
-  typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
-  const bool hasOutputReadySignal() const;
+  bool hasOutputReadySignal() const;
   const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
 
-  const uint getStartupDelay() const;
+  uint getStartupDelay() const;
 
-  const bool getDeleteFilesFlag() const;
+  bool getDeleteFilesFlag() const;
+
+
 
 protected:
   boost::program_options::variables_map opts;

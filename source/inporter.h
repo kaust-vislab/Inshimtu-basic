@@ -2,6 +2,8 @@
 #define INPORTER_HEADER
 
 #include "adaptor.h"
+#include "options.h"
+#include "pipeline.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkDataObject.h>
@@ -38,6 +40,7 @@ protected:
   const Descriptor::InporterSection section;
 
   const std::vector<std::string> variables;
+  const std::vector<PipelineSpec> pipelines;
 
   // time
   uint timeStep;

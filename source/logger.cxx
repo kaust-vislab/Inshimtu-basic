@@ -10,6 +10,9 @@
 #include <assert.h>
 #include <sys/types.h>
 
+// TODO: use boost.log and make std::cout / std::cerr point to Logger
+//#include <boost/logic/trivial.hpp>
+
 Logger* Logger::singleton = nullptr;
 
 Logger& Logger::instance()

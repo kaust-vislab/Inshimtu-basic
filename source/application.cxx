@@ -55,8 +55,8 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
   vtkNew<vtkProcessGroup> pgroupCoord;
   std::set<NodeRank> inporters;
 
-  NodeRank inporterIndex = -1;
-  size_t inporterCount = 0;
+  NodeRank inporterNode = -1;
+  size_t inporterIndex = 0;
 
   // generate inporter node ids from interval pairs
   {
@@ -96,13 +96,13 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
     // determine node inport properties
     if (getRank() == i)
     {
-      inporterIndex = inporterCount;
+      inporterNode = inporterIndex;
     }
-    ++inporterCount;
+    ++inporterIndex;
   }
 
-  inporterSection.first = inporterIndex;
-  inporterSection.second = inporterCount;
+  inporterSection.first = inporterNode;
+  inporterSection.second = inporterIndex;
 
   inportCommunicator->Initialize(pgroupInport.Get());
   coordCommunicator->Initialize(pgroupCoord.Get());

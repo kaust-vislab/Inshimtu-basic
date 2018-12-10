@@ -69,6 +69,10 @@ source "${INSHIMTU_MODULES}"
 
 # RUN
 
+# TODO: if profiling enabled...
+export PAT_RT_EXPDIR_NAME=expfile.${CRAYPAT_LITE}.${SLURM_JOBID}
+
+
 if [ ! -x "${INSHIMTU_EXEC}" ]; then
   echo "Expecting executable: ${INSHIMTU_EXEC}"
   exit 1

@@ -106,6 +106,20 @@ protected:
   //! \arg path   Filepath
   //! \return   Optional filepath which is nothing if input path is not a signal file
   boost::optional<boost::filesystem::path> getSignalledOutputFile(const boost::filesystem::path& path) const;
+
+private:
+
+  template<typename T>
+  T update_updateProcessedFiles();
+  template<typename S, typename T>
+  T update_gatherNewFiles( S
+                         , const std::vector<boost::filesystem::path>& newfiles
+                         , FileNotificationType ftype
+                         , const size_t total_global );
+  template<typename S, typename T>
+  T update_calculateReadyFiles( S, const bool is_done_global );
+  template<typename S>
+  void update_broadcastReadyFiles(S);
 };
 
 #endif

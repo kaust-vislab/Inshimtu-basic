@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "notification.h"
 #include "options.h"
+#include "pipeline.h"
 
 #include <iostream>
 #include <memory>
@@ -29,6 +30,19 @@ namespace
 {
 const int MSGTAG_COLLECT_NEWFILES = 10;
 }
+
+
+// TODO: explore better ways to constrain state transitions of update process
+//       https://yapb-soc.blogspot.com/2012/11/arrows-and-kleisli-in-c.html
+//       https://www.boost.org/doc/libs/1_31_0/libs/mpl/doc/paper/html/example.html
+namespace UpdateState
+{
+  struct S_update {};
+  struct S_gather {};
+  struct S_calculate {};
+  struct S_broadcast {};
+}
+
 
 const Coordinator::FileInfo::TimeInterval Coordinator::FileInfo::INVALID_TIMEIVAL = Coordinator::FileInfo::TimeInterval(1,0);
 
@@ -67,41 +81,32 @@ bool Coordinator::anyReadyFiles() const
   return  total_global > 0;
 }
 
-bool Coordinator::update( const std::vector<fs::path>& newfiles
-                        , FileNotificationType ftype)
+template<>
+UpdateState::S_update Coordinator::update_updateProcessedFiles<UpdateState::S_update>()
+//UpdateState::S_update Coordinator::update_updateProcessedFiles<UpdateState::S_update>()
+{
+  // update processed files
+  if (app.isRoot())
+  {
+    // NOTE: assume all previously ready ready files are now processed
+    for (const auto& f: readyFiles)
+    {
+      filesInfo[f].was_processed = true;
+    }
+  }
+
+  readyFiles.clear();
+
+  return UpdateState::S_update();
+}
+
+template<>
+UpdateState::S_gather Coordinator::update_gatherNewFiles( UpdateState::S_update
+                                       , const std::vector<fs::path>& newfiles
+                                       , FileNotificationType ftype
+                                       , const size_t total_global )
 {
   char message[PATH_MAX];
-  const size_t total_global = getTotalFiles(newfiles);
-  const bool is_done_global = isDone();
-
-
-  // Note: The following logic assumes:
-  //          a global filename space,
-  //          root node will coordinate,
-  //          all ready files are processed prior to calling update again
-
-  // update processed files
-  {
-    if (app.isRoot())
-    {
-      // NOTE: assume all previously ready ready files are now processed
-      for (const auto& f: readyFiles)
-      {
-        filesInfo[f].was_processed = true;
-      }
-    }
-
-    readyFiles.clear();
-  }
-
-  // early out if nothing to be done
-  if (total_global == 0 && !is_done_global)
-  {
-    // nothing to collect
-    return is_done_global;
-  }
-
-  ++collectTick;
 
   // root node gathers all new files (including root local)
   if (app.isRoot())
@@ -120,10 +125,10 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
     }
 
     // root node doesn't contribute to collect newfile messages
-    const int total_global_remaining = total_global - newfiles.size();
+    const size_t total_global_remaining = total_global - newfiles.size();
 
     // newfiles from other nodes
-    for (int i = 0; i < total_global_remaining; ++i)
+    for (size_t i = 0; i < total_global_remaining; ++i)
     {
       MPI_Recv( message, sizeof(message), MPI_CHAR
               , MPI_ANY_SOURCE, MSGTAG_COLLECT_NEWFILES, MPI_COMM_WORLD
@@ -145,7 +150,13 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
     }
   }
 
+  return UpdateState::S_gather();
+}
 
+template<>
+UpdateState::S_calculate Coordinator::update_calculateReadyFiles( UpdateState::S_gather
+                                                                , const bool is_done_global )
+{
   // process output ready signals
   if (app.isRoot())
   {
@@ -196,7 +207,7 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
         const fs::path& fpath(f.first);
         FileInfo& finfo(f.second);
 
-        // NOTE: isOlderFile test depends of filename ordering matching output
+        // NOTE: isOlderFile test depends on filename ordering matching output
         ++finfoIndex;
         const bool isOlderFile(finfoIndex < filesinfoSize);
 
@@ -246,6 +257,13 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
     }
   }
 
+  return UpdateState::S_calculate();
+}
+
+template<>
+void Coordinator::update_broadcastReadyFiles(UpdateState::S_calculate)
+{
+  char message[PATH_MAX];
 
   // broadcast readyfiles to inporter nodes
   if (app.isRoot() || app.isInporter())
@@ -253,7 +271,7 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
     assert(app.getCoordinationCommunicator().GetHandle() != nullptr);
     MPI_Comm coordComm = *app.getCoordinationCommunicator().GetHandle();
 
-    int readyCount;
+    size_t readyCount;
 
     if (app.isRoot())
     {
@@ -262,7 +280,7 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
 
     MPI_Bcast(&readyCount, 1, MPI_INT, MPIApplication::ROOT_RANK, coordComm);
 
-    for (int i = 0; i < readyCount; ++i)
+    for (size_t i = 0; i < readyCount; ++i)
     {
       if (app.isRoot())
       {
@@ -278,6 +296,40 @@ bool Coordinator::update( const std::vector<fs::path>& newfiles
       }
     }
   }
+}
+
+
+bool Coordinator::update( const std::vector<fs::path>& newfiles
+                        , FileNotificationType ftype)
+{
+  using namespace UpdateState;
+
+  const size_t total_global = getTotalFiles(newfiles);
+  const bool is_done_global = isDone();
+
+
+  // Note: The following logic assumes:
+  //          a global filename space,
+  //          root node will coordinate,
+  //          all ready files are processed prior to calling update again
+
+  auto s0 = update_updateProcessedFiles<S_update>();
+
+  // early out if nothing to be done
+  if (total_global == 0 && !is_done_global)
+  {
+    // nothing to collect
+    return is_done_global;
+  }
+
+  ++collectTick;
+
+  auto s1 = update_gatherNewFiles<S_update,S_gather>(s0, newfiles, ftype, total_global);
+
+  auto s2 = update_calculateReadyFiles<S_gather, S_calculate>(s1, is_done_global);
+
+  update_broadcastReadyFiles<S_calculate>(s2);
+
 
   // final synchronize for all nodes
   MPI_Barrier(MPI_COMM_WORLD);
@@ -305,14 +357,9 @@ boost::optional<fs::path> Coordinator::getSignalledOutputFile(const fs::path& pa
 
   if (conversion.is_initialized())
   {
-    std::string signalledFile(boost::regex_replace( path.string()
-                                                  , conversion->first, conversion->second
-                                                  , boost::match_default | boost::format_default | boost::format_no_copy));
+    ProcessingSpecReadyFile ready(conversion.get());
 
-    if (!signalledFile.empty())
-    {
-      signalledPath = fs::path(signalledFile);
-    }
+    signalledPath = ready.get(path);
   }
 
   return signalledPath;
