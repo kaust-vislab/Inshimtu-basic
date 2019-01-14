@@ -4,10 +4,10 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 
-#ifndef PIPELINE_HXXDER
-#define PIPELINE_HXXDER
+#ifndef PROCESSING_PIPELINE_HXXDER
+#define PROCESSING_PIPELINE_HXXDER
 
-#include "pipeline.h"
+#include "processing/pipeline.h"
 
 #include <iostream>
 #include <vector>
