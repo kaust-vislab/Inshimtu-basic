@@ -47,8 +47,7 @@ int main(int argc, char* argv[])
     if (!watchDirectory && !doneFile)
       notify.reset(new Notify());
     else
-      notify.reset(new INotify( configs.getWatchDirectory()
-                              , configs.getFileFilter()
+      notify.reset(new INotify( configs.getWatchPaths()
                               , configs.getDoneFile()));
   }
 

@@ -90,8 +90,6 @@ typedef boost::variant< InputSpecPaths
 
 // -- process --
 
-typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
-
 struct ProcessingSpecReadyFile
 {
   ProcessingSpecReadyFile(const ReplaceRegexFormat& convert);

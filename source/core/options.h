@@ -7,6 +7,8 @@
 #ifndef CORE_OPTIONS_HEADER
 #define CORE_OPTIONS_HEADER
 
+#include "core/specifications.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -26,9 +28,6 @@ class Configuration
 {
 public:
 
-  // TODO: Fix - duplicated in pipeline
-  typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
-
   Configuration(int argc, const char* const argv[]);
   virtual ~Configuration();
 
@@ -44,6 +43,9 @@ public:
 
   bool hasWatchDirectory() const;
   const boost::filesystem::path getWatchDirectory() const;
+
+  bool hasWatchPaths() const;
+  const std::vector<InputSpecPaths> getWatchPaths() const;
 
   bool hasDoneFile() const;
   const boost::filesystem::path getDoneFile() const;

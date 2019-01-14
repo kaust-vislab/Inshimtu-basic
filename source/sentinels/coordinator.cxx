@@ -7,8 +7,11 @@
 #include "core/options.h"
 #include "sentinels/coordinator.h"
 #include "sentinels/notification.h"
-#include "processing/pipeline.h"
 #include "utils/logger.h"
+
+// TODO: Remove bad dependency when calculateReadyFiles is part of process pipeline
+#include "processing/pipeline.h"
+
 
 #include <iostream>
 #include <memory>
@@ -358,7 +361,7 @@ bool Coordinator::isDone() const
 boost::optional<fs::path> Coordinator::getSignalledOutputFile(const fs::path& path) const
 {
   boost::optional<fs::path> signalledPath;
-  boost::optional<Configuration::ReplaceRegexFormat> conversion(configs.getOutputReadyConversion());
+  boost::optional<ReplaceRegexFormat> conversion(configs.getOutputReadyConversion());
 
   if (conversion.is_initialized())
   {

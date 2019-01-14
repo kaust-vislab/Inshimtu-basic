@@ -164,22 +164,3 @@ void Inporter::createInporters( Descriptor& descriptor, const fs::path& filename
   }
 }
 
-// TODO: Untested
-/*
-         // TODO: don't get the data now, pass in a lamda to delay reading until necessary
-        vtkSmartPointer<vtkDataObject> data;
-
-        else if (vtkMPASReader::CanReadFile(name.c_str()))
-        {
-          data = processMPASDataFile(name);
-        }
-        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
-        {
-          data = processNetCDFCFDataFile(name);
-        }
-        else if (vtkNetCDFCFReader::CanReadFile(name.c_str()))
-        {
-          data = processNetCDFDataFile(name);
-        }
-*/
-

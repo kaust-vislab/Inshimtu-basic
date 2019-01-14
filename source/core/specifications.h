@@ -72,6 +72,11 @@ enum class FileState {
 */
 
 
+// -- types --
+
+typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
+
+
 // -- input --
 
 struct InputSpecPaths

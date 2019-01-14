@@ -362,15 +362,31 @@ const fs::path Configuration::getWatchDirectory() const
   return fs::absolute(fs::path(watchdirectory));
 }
 
+bool Configuration::hasWatchPaths() const
+{
+  return hasWatchDirectory() && hasFileFilter();
+}
+
+const std::vector<InputSpecPaths> Configuration::getWatchPaths() const
+{
+  std::vector<InputSpecPaths> watchPaths;
+
+  watchPaths.push_back(InputSpecPaths(getWatchDirectory(), getFileFilter()));
+
+  // TODO: process pipelines and collect source pathspecs
+
+  return watchPaths;
+}
+
 
 bool Configuration::hasOutputReadySignal() const
 {
   return getOutputReadyConversion().is_initialized();
 }
 
-const boost::optional<Configuration::ReplaceRegexFormat> Configuration::getOutputReadyConversion() const
+const boost::optional<ReplaceRegexFormat> Configuration::getOutputReadyConversion() const
 {
-  boost::optional<Configuration::ReplaceRegexFormat> conversion;
+  boost::optional<ReplaceRegexFormat> conversion;
   boost::optional<const pt::ptree&> nodes_(configs.get_child_optional("input.output_ready_signal"));
 
   if (nodes_.is_initialized())

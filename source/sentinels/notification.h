@@ -36,9 +36,6 @@ public:
 class INotify : public Notify
 {
 public:
-  INotify( const boost::filesystem::path& watch_directory
-         , const boost::regex& watch_files_filter
-         , const boost::filesystem::path& done_file);
   INotify( const std::vector<InputSpecPaths>& watch_paths
          , const boost::filesystem::path& done_file);
   virtual ~INotify() override;

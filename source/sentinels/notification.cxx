@@ -41,13 +41,6 @@ bool Notify::isDone() const
 
 
 
-INotify::INotify( const fs::path& watch
-                , const boost::regex& mask
-                , const fs::path& done)
-  : INotify(std::vector<InputSpecPaths>({InputSpecPaths(watch, mask)}), done)
-{
-}
-
 INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
                 , const fs::path& done)
   : Notify()
