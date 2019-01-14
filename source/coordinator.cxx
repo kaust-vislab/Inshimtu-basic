@@ -70,7 +70,7 @@ size_t Coordinator::getTotalFiles(const std::vector<fs::path>& files) const
 
   // Note: The following logic assumes: a global filename space
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Allreduce(&total, &total_global, 1, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&total, &total_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   return total_global;
 }
@@ -83,7 +83,6 @@ bool Coordinator::anyReadyFiles() const
 
 template<>
 UpdateState::S_update Coordinator::update_updateProcessedFiles<UpdateState::S_update>()
-//UpdateState::S_update Coordinator::update_updateProcessedFiles<UpdateState::S_update>()
 {
   // update processed files
   if (app.isRoot())
@@ -278,7 +277,7 @@ void Coordinator::update_broadcastReadyFiles(UpdateState::S_calculate)
       readyCount = readyFiles.size();
     }
 
-    MPI_Bcast(&readyCount, 1, MPI_INT, MPIApplication::ROOT_RANK, coordComm);
+    MPI_Bcast(&readyCount, 1, MPI_UNSIGNED_LONG, MPIApplication::ROOT_RANK, coordComm);
 
     for (size_t i = 0; i < readyCount; ++i)
     {

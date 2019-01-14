@@ -58,12 +58,12 @@ protected:
   {
     FileInfo()
       : writers()
+      , modified(INVALID_TIMEIVAL)
       , is_initial(false)
       , is_ready(false)
       , is_signal(false)
       , was_signalled(false)
       , was_processed(false)
-      , modified(INVALID_TIMEIVAL)
     {}
 
     void setModified(size_t currenttick)

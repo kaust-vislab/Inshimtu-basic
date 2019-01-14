@@ -28,9 +28,9 @@ public:
 
   MPISection(NodeRank rank_, SectionIndex index_, SectionSize size_);
 
-  NodeRank getRank() const { return rank; };
-  SectionIndex getIndex() const { return index; };
-  SectionSize getSize() const { return size; };
+  NodeRank getRank() const { return rank; }
+  SectionIndex getIndex() const { return index; }
+  SectionSize getSize() const { return size; }
 
 private:
   NodeRank rank;
@@ -80,8 +80,8 @@ public:
   const Configuration& getConfigs() const { return configs; }
 
   const MPIInportSection& getInporterSection() const;
-  MPISection::NodeRank getInporterNode() const { return inporterSection->getRank(); };
-  size_t getInporterIndex() const { return inporterSection->getIndex(); };
+  MPISection::NodeRank getInporterNode() const { return inporterSection->getRank(); }
+  size_t getInporterIndex() const { return inporterSection->getIndex(); }
 
   vtkMPICommunicatorOpaqueComm& getInporterCommunicator();
   vtkMPICommunicatorOpaqueComm& getCoordinationCommunicator();

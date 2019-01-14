@@ -164,7 +164,7 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
     return;
   }
 
-  const int length = read( inotify_descriptor, buffer, BUF_LEN );
+  const long length = read( inotify_descriptor, buffer, BUF_LEN );
 
   if ( length < 0 )
   {
