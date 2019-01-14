@@ -45,7 +45,7 @@
 namespace fs = boost::filesystem;
 
 Inporter::Inporter( Processor& processor_
-                  , const Descriptor::InporterSection& section_
+                  , const MPIInportSection& section_
                   , const std::vector<std::string>& variables_)
   : processor(processor_)
   , section(section_)
@@ -106,7 +106,7 @@ void Inporter::process( const std::vector<fs::path>& newfiles
 
       // TODO: verify all inporter processing has completed before here
       // TODO: only a single node should delete on shared filesystem, all inporters on local filesystems
-      if (deleteFiles && section.first == 0)
+      if (deleteFiles && section.getIndex() == MPIInportSection::ROOT_INDEX)
       {
         std::cout << "Deleting file: '" << name << "'" << std::endl;
         fs::remove(name);
@@ -220,7 +220,7 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   , int global_extent_out[6])
 {
   std::cout << "Processing variable '" << varname
-            << "' on inport node " << getSection().first
+            << "' on inport node " << getSection().getIndex()
             << " from NetCDF Datafile:'" << filepath << "' with netcdf library"
             << std::endl;
 
@@ -308,7 +308,7 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   , int global_extent_out[6])
 {
   std::cout << "Processing variable '" << varname
-            << "' on inport node " << getSection().first
+            << "' on inport node " << getSection().getIndex()
             << "' from NetCDF Datafile:'" << filepath << "' with netcdf library"
             << std::endl;
 

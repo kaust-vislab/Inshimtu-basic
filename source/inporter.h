@@ -1,6 +1,7 @@
 #ifndef INPORTER_HEADER
 #define INPORTER_HEADER
 
+#include "application.h"
 #include "adaptor.h"
 #include "options.h"
 #include "pipeline.h"
@@ -23,7 +24,7 @@ class Inporter
 {
 public:
   Inporter( Processor& processor
-          , const Descriptor::InporterSection& section_
+          , const MPIInportSection& section_
           , const std::vector<std::string>& variables_);
   ~Inporter();
 
@@ -37,7 +38,7 @@ protected:
   std::vector<boost::filesystem::path> completedFiles;
 
   // inport section: idx of count
-  const Descriptor::InporterSection section;
+  const MPIInportSection section;
 
   const std::vector<std::string> variables;
   const std::vector<PipelineSpec> pipelines;

@@ -82,7 +82,7 @@ protected:
     typedef std::pair<size_t,size_t> TimeInterval;
     static const TimeInterval INVALID_TIMEIVAL;
 
-    std::set<MPIApplication::NodeRank> writers;
+    std::set<MPISection::NodeRank> writers; // nodes that have written this file
     TimeInterval modified;
     bool is_initial;
     bool is_ready;
@@ -94,7 +94,7 @@ protected:
   typedef std::map<boost::filesystem::path, FileInfo> FileInfoMap;
 
   size_t collectTick;
-  std::set<MPIApplication::NodeRank> writers; // every node found to write a file
+  std::set<MPISection::NodeRank> writers; // every node found to write a file
 
   FileInfoMap filesInfo;
   std::vector<boost::filesystem::path> readyFiles;

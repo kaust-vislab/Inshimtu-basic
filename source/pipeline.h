@@ -190,9 +190,11 @@ struct TaskState
 
 bool pipeline_AcceptInput( const PipelineSpec& pipeS
                          , const boost::filesystem::path& filename);
+
 std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
                                                   , const boost::filesystem::path& filename
                                                   , std::function<std::unique_ptr<Descriptor>()> mkDescriptor);
+
 void pipeline_ProcessTask(std::unique_ptr<TaskState>& taskS);
 
 

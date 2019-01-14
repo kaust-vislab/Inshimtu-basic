@@ -58,7 +58,7 @@ Processor::~Processor()
 
 
 Descriptor::Descriptor( Processor& processor_
-                      , const InporterSection& section_
+                      , const MPIInportSection& section_
                       , uint timeStep, double time, bool forceOutput)
   : processor(processor_)
   , requireProcessing(false)
@@ -107,18 +107,18 @@ bool Adaptor::doesRequireProcessing() const
 
 Adaptor::Extent Adaptor::getExtent(size_t max) const
 {
-  const Descriptor::InporterSection& section(descriptor.getSection());
+  const MPIInportSection& section(descriptor.getSection());
 
   size_t chunksize = static_cast<size_t>(
                        ceil(static_cast<double>(max) /
-                            static_cast<double>(section.second)));
-  size_t extstart = std::min(chunksize * section.first, max);
+                            static_cast<double>(section.getSize())));
+  size_t extstart = std::min(chunksize * section.getIndex(), max);
   size_t extsize = std::min(chunksize, max - extstart);
 
   return Extent(extstart, extsize);
 }
 
-const Descriptor::InporterSection& Adaptor::getSection() const
+const MPIInportSection& Adaptor::getSection() const
 {
   return descriptor.getSection();
 }

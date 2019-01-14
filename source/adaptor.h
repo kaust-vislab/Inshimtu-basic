@@ -1,6 +1,8 @@
 #ifndef ADAPTOR_HEADER
 #define ADAPTOR_HEADER
 
+#include "application.h"
+
 #include <vtkNew.h>
 #include <vtkCPProcessor.h>
 
@@ -32,17 +34,14 @@ class Descriptor
 {
 public:
 
-  typedef int NodeRank;
-  typedef std::pair<NodeRank, size_t> InporterSection;
-
   Descriptor( Processor& processor
-            , const InporterSection& section_
+            , const MPIInportSection& section_
             , uint timeStep, double time, bool forceOutput);
   virtual ~Descriptor();
 
   bool doesRequireProcessing() const;
 
-  const InporterSection& getSection() const { return section; }
+  const MPIInportSection& getSection() const { return section; }
 
 private:
   Processor& processor;
@@ -54,7 +53,7 @@ friend class Adaptor;
   bool requireProcessing;
 
   // inport section: idx of count
-  const InporterSection section;
+  const MPIInportSection section;
 };
 
 
@@ -75,7 +74,7 @@ protected:
 
   bool doesRequireProcessing() const;
   Extent getExtent(size_t max) const;
-  const Descriptor::InporterSection& getSection() const;
+  const MPIInportSection& getSection() const;
   void coprocess(vtkDataObject* data, int global_extent[6]);
 
 protected:

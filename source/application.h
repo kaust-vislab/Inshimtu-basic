@@ -18,25 +18,52 @@
 
 class vtkMPICommunicatorOpaqueComm;
 
+class MPISection
+{
+public:
+
+  typedef int NodeRank;
+  typedef size_t SectionIndex;
+  typedef size_t SectionSize;
+
+  MPISection(NodeRank rank_, SectionIndex index_, SectionSize size_);
+
+  NodeRank getRank() const { return rank; };
+  SectionIndex getIndex() const { return index; };
+  SectionSize getSize() const { return size; };
+
+private:
+  NodeRank rank;
+  SectionIndex index;
+  SectionSize size;
+};
+
+class MPIInportSection : public MPISection
+{
+public:
+
+  static const MPISection::SectionIndex ROOT_INDEX = 0;
+
+  MPIInportSection(NodeRank rank, SectionIndex index, SectionSize sz);
+};
+
 
 class MPIApplication
 {
 public:
+
+  static const MPISection::NodeRank ROOT_RANK = 0;
+
   MPIApplication(int* argc, char** argv[]);
   virtual ~MPIApplication();
 
-  typedef int NodeRank;
+  bool isRoot() const { return appSection->getRank() == ROOT_RANK; }
+  MPISection::NodeRank getRank() const { return appSection->getRank(); }
 
-  static const NodeRank ROOT_RANK = 0;
-
-  bool isRoot() const { return rank == ROOT_RANK; }
-  NodeRank getRank() const { return rank; }
-
-  int getSize() const { return size; }
+  MPISection::SectionSize getSize() const { return appSection->getSize(); }
 
 protected:
-  NodeRank rank;
-  int size;
+  std::unique_ptr<MPISection> appSection;
 };
 
 
@@ -44,29 +71,27 @@ class MPICatalystApplication : public MPIApplication
 {
 public:
 
-  typedef std::pair<NodeRank, size_t> InporterSection;
-
   MPICatalystApplication(int* argc, char** argv[]);
   virtual ~MPICatalystApplication();
 
-  bool isNotifier() const { notifier; }
+  bool isNotifier() const { return notifier; }
   bool isInporter() const { return getInporterNode() >= 0; }
 
   const Configuration& getConfigs() const { return configs; }
 
-  const InporterSection& getInporterSection() const { return inporterSection; };
-  NodeRank getInporterNode() const { return inporterSection.first; };
-  size_t getInporterIndex() const { return inporterSection.second; };
+  const MPIInportSection& getInporterSection() const;
+  MPISection::NodeRank getInporterNode() const { return inporterSection->getRank(); };
+  size_t getInporterIndex() const { return inporterSection->getIndex(); };
 
   vtkMPICommunicatorOpaqueComm& getInporterCommunicator();
   vtkMPICommunicatorOpaqueComm& getCoordinationCommunicator();
 
 protected:
   Configuration configs;
-  vtkNew<vtkMPICommunicator> inportCommunicator;
   vtkNew<vtkMPICommunicator> coordCommunicator;
+  vtkNew<vtkMPICommunicator> inportCommunicator;
   bool notifier;
-  InporterSection inporterSection;
+  std::unique_ptr<MPIInportSection> inporterSection;
 };
 
 #endif
