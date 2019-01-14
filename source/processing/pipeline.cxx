@@ -9,6 +9,9 @@
 #include "processing/adaptor.h"
 #include "utils/logger.h"
 
+#include "processing/inporters/inporterRawNetCDF.h"
+#include "processing/inporters/inporterXMLImage.h"
+
 #include <iostream>
 #include <vector>
 #include <string>

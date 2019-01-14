@@ -70,6 +70,8 @@ set(Executable_SRCS
   source/processing/pipeline.cxx
   source/processing/adaptor.cxx
   source/processing/inporter.cxx
+  source/processing/inporters/inporterRawNetCDF.cxx
+  source/processing/inporters/inporterXMLImage.cxx
   source/utils/help.cxx
   source/utils/logger.cxx
 )
