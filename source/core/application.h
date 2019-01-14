@@ -1,5 +1,11 @@
-#ifndef APPLICATION_HEADER
-#define APPLICATION_HEADER
+/* Inshimtu - An In-situ visualization co-processing shim
+ *
+ * Copyright 2015-2019, KAUST
+ * Licensed under GPL3 -- see LICENSE.txt
+ */
+
+#ifndef CORE_APPLICATION_HEADER
+#define CORE_APPLICATION_HEADER
 
 #include "options.h"
 

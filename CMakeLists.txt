@@ -54,23 +54,24 @@ if (Allinea_map_sampler_LIBRARY AND Allinea_map_sampler_pmpi_LIBRARY)
   set(PROFILER_EXE_LINKER_FLAGS "-L${CMAKE_BINARY_DIR} -lmap-sampler-pmpi -lmap-sampler -Wl,--eh-frame-hdr -Wl,-rpath=${CMAKE_BINARY_DIR}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${PROFILER_EXE_LINKER_FLAGS}")
 
-
   message("Found Allinea_LIBRARIES: ${Allinea_LIBRARIES}")
 endif()
 
 
 #add_subdirectory("source")
+include_directories("source")
 set(Executable_SRCS
-  source/adaptor.cxx
-  source/application.cxx
-  source/coordinator.cxx
-  source/help.cxx
-  source/inporter.cxx
   source/inshimtu.cxx
-  source/logger.cxx
-  source/notification.cxx
-  source/options.cxx
-  source/pipeline.cxx
+  source/core/application.cxx
+  source/core/options.cxx
+  source/core/specifications.cxx
+  source/sentinels/notification.cxx
+  source/sentinels/coordinator.cxx
+  source/processing/pipeline.cxx
+  source/processing/adaptor.cxx
+  source/processing/inporter.cxx
+  source/utils/help.cxx
+  source/utils/logger.cxx
 )
 
 add_executable(Inshimtu ${Executable_SRCS})

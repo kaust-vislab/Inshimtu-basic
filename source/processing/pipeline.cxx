@@ -1,13 +1,13 @@
 /* Inshimtu - An In-situ visualization co-processing shim
  *
- * Copyright 2015, KAUST
+ * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
 
-#include "pipeline.hxx"
-#include "inporter.h"
-#include "adaptor.h"
-#include "logger.h"
+#include "processing/pipeline.hxx"
+#include "processing/inporter.h"
+#include "processing/adaptor.h"
+#include "utils/logger.h"
 
 #include <iostream>
 #include <vector>
@@ -26,21 +26,6 @@
 
 
 namespace fs = boost::filesystem;
-
-
-InputSpecPaths::InputSpecPaths(const fs::path& dir
-                              , const boost::regex& filemask)
-  : directory(fs::absolute(dir))
-  , filenames(filemask)
-{
-}
-
-bool InputSpecPaths::match(const fs::path& filename) const
-{
-  const auto filepath = fs::absolute(filename);
-  return filepath.parent_path() == directory
-      && boost::regex_match(filepath.filename().c_str(), filenames);
-}
 
 
 ProcessingSpecReadyFile::ProcessingSpecReadyFile(const ReplaceRegexFormat& convert)

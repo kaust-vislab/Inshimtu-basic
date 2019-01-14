@@ -1,10 +1,16 @@
-#ifndef INPORTER_HEADER
-#define INPORTER_HEADER
+/* Inshimtu - An In-situ visualization co-processing shim
+ *
+ * Copyright 2015-2019, KAUST
+ * Licensed under GPL3 -- see LICENSE.txt
+ */
 
-#include "application.h"
-#include "adaptor.h"
-#include "options.h"
-#include "pipeline.h"
+#ifndef PROCESSING_INPORTER_HEADER
+#define PROCESSING_INPORTER_HEADER
+
+#include "core/options.h"
+#include "core/application.h"
+#include "processing/adaptor.h"
+#include "processing/pipeline.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkDataObject.h>

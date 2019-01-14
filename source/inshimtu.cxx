@@ -1,15 +1,15 @@
 /* Inshimtu - An In-situ visualization co-processing shim
  *
- * Copyright 2015, KAUST
+ * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
 
-#include "application.h"
-#include "coordinator.h"
-#include "notification.h"
-#include "inporter.h"
-#include "adaptor.h"
-#include "options.h"
+#include "core/options.h"
+#include "core/application.h"
+#include "sentinels/notification.h"
+#include "sentinels/coordinator.h"
+#include "processing/adaptor.h"
+#include "processing/inporter.h"
 
 #include <iostream>
 #include <memory>

@@ -1,7 +1,13 @@
-#ifndef COORDINATOR_HEADER
-#define COORDINATOR_HEADER
+/* Inshimtu - An In-situ visualization co-processing shim
+ *
+ * Copyright 2015-2019, KAUST
+ * Licensed under GPL3 -- see LICENSE.txt
+ */
 
-#include "application.h"
+#ifndef SENTINELS_COORDINATOR_HEADER
+#define SENTINELS_COORDINATOR_HEADER
+
+#include "core/application.h"
 
 #include <vector>
 #include <map>

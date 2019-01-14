@@ -1,7 +1,13 @@
-#ifndef ADAPTOR_HEADER
-#define ADAPTOR_HEADER
+/* Inshimtu - An In-situ visualization co-processing shim
+ *
+ * Copyright 2015-2019, KAUST
+ * Licensed under GPL3 -- see LICENSE.txt
+ */
 
-#include "application.h"
+#ifndef PROCESSING_ADAPTOR_HEADER
+#define PROCESSING_ADAPTOR_HEADER
+
+#include "core/application.h"
 
 #include <vtkNew.h>
 #include <vtkCPProcessor.h>

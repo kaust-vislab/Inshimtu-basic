@@ -1,7 +1,13 @@
-#include "inporter.h"
-#include "adaptor.h"
-#include "logger.h"
-#include "pipeline.hxx"
+/* Inshimtu - An In-situ visualization co-processing shim
+ *
+ * Copyright 2015-2019, KAUST
+ * Licensed under GPL3 -- see LICENSE.txt
+ */
+
+#include "processing/inporter.h"
+#include "processing/adaptor.h"
+#include "processing/pipeline.hxx"
+#include "utils/logger.h"
 
 #include <vtkNew.h>
 #include <vtkSmartPointer.h>
