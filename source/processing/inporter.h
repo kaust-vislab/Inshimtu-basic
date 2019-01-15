@@ -54,8 +54,8 @@ protected:
   const double lengthTimeStep;
 
 private:
-  void createInporters( Descriptor& descriptor, const boost::filesystem::path& filename
-                      , std::vector<std::unique_ptr<Adaptor>>& outInporters);
+  void createTasks( double time, const boost::filesystem::path& filename, bool forceOutput
+                  , std::vector<std::unique_ptr<TaskState>>& outTasks);
 };
 
 

@@ -55,6 +55,51 @@ boost::optional<fs::path> ProcessingSpecReadyFile::get(const fs::path& filename)
 }
 
 
+ProcessingSpecCatalyst::ProcessingSpecCatalyst( std::vector<fs::path> scripts_
+                                              , std::vector<std::string> variables_) :
+  scripts(scripts_)
+, variables(variables_)
+{
+}
+
+void ProcessingSpecCatalyst::process( const boost::filesystem::path &filename
+                                    , Descriptor& descriptor) const
+{
+  std::vector<std::unique_ptr<Adaptor>> inporters;
+
+  for (const auto& vsets : variables)
+  {
+    if (RawNetCDFDataFileInporter::canProcess(filename))
+    {
+      std::cout << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'" << std::endl;
+
+      std::vector<std::string> vars;
+      boost::split(vars, vsets, boost::is_any_of(","), boost::token_compress_on);
+
+      for (const auto& v : vars)
+      {
+        inporters.push_back(
+            std::unique_ptr<Adaptor>(
+                new RawNetCDFDataFileInporter(descriptor, v)));
+      }
+    }
+    else if (XMLImageDataFileInporter::canProcess(filename))
+    {
+      std::cout << "Creating XMLImageDataFileInporter for: '" << vsets << "'" << std::endl;
+
+      inporters.push_back(
+          std::unique_ptr<Adaptor>(
+              new XMLImageDataFileInporter(descriptor, vsets)));
+    }
+  }
+
+  for (auto& inporter : inporters)
+  {
+    inporter->process(filename);
+  }
+}
+
+
 OutputSpecDone::OutputSpecDone()
   : deleteInput(false)
 {
@@ -124,171 +169,143 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 
 
   auto visitorInput = make_lambda_visitor<bool>(
-                    [&](const InputSpecPaths& inSp)
-                    {
-                      if (!taskS->canContinue())
-                        return false;
+      [&](const InputSpecPaths& inSp)
+      {
+        if (!taskS->canContinue())
+          return false;
 
-                      std::vector<boost::filesystem::path> matchingFiles;
+        std::vector<boost::filesystem::path> matchingFiles;
 
-                      for (const auto& path: taskS->readyFiles)
-                      {
-                        if (inSp.match(path))
-                          matchingFiles.push_back(path);
-                      }
-                      taskS->products.swap(matchingFiles);
+        for (const auto& path: taskS->readyFiles)
+        {
+          if (inSp.match(path))
+            matchingFiles.push_back(path);
+        }
+        taskS->products.swap(matchingFiles);
 
-                      if (taskS->products.empty())
-                        taskS->taskStatus = TaskState::TS_FailedInput;
+        if (taskS->products.empty())
+          taskS->taskStatus = TaskState::TS_FailedInput;
 
-                      return taskS->canContinue();
-                    }
-                  , [&](const InputSpecPipeline&)
-                      {
-                        if (!taskS->canContinue())
-                          return false;
+        return taskS->canContinue();
+      }
+    , [&](const InputSpecPipeline&)
+        {
+          if (!taskS->canContinue())
+            return false;
 
-                        taskS->products = taskS->readyFiles;
+          taskS->products = taskS->readyFiles;
 
-                        return taskS->canContinue();
-                      });
+          return taskS->canContinue();
+        });
+
   auto visitorProcessing = make_lambda_visitor<bool>(
-                    [&](const ProcessingSpecReadyFile& proSp)
-                      {
-                        if (!taskS->canContinue())
-                          return false;
+      [&](const ProcessingSpecReadyFile& proSp)
+        {
+          if (!taskS->canContinue())
+            return false;
 
-                        std::vector<boost::filesystem::path> correspondingFiles;
+          std::vector<boost::filesystem::path> correspondingFiles;
 
-                        for (const auto& path: taskS->readyFiles)
-                        {
-                          auto oPath = proSp.get(path);
-                          if (oPath.is_initialized())
-                            correspondingFiles.push_back(oPath.get());
-                        }
-                        taskS->products.swap(correspondingFiles);
+          for (const auto& path: taskS->readyFiles)
+          {
+            auto oPath = proSp.get(path);
+            if (oPath.is_initialized())
+              correspondingFiles.push_back(oPath.get());
+          }
+          taskS->products.swap(correspondingFiles);
 
-                        if (taskS->products.empty())
-                          taskS->taskStatus = TaskState::TS_FailedInput;
+          if (taskS->products.empty())
+            taskS->taskStatus = TaskState::TS_FailedInput;
 
-                        return taskS->canContinue();
-                      }
-                  , [&](const ProcessingSpecCatalyst& proSp)
-                      {
-                        if (!taskS->canContinue())
-                          return false;
+          return taskS->canContinue();
+        }
+    , [&](const ProcessingSpecCatalyst& proSp)
+        {
+          if (!taskS->canContinue())
+            return false;
 
-                        if (!taskS->mkDescriptor.is_initialized())
-                        {
-                          taskS->taskStatus = TaskState::TS_FailedProcessing;
-                          return false;
-                        }
+          if (!taskS->mkDescriptor.is_initialized())
+          {
+            taskS->taskStatus = TaskState::TS_FailedProcessing;
+            return false;
+          }
 
-                        // TODO: Implement Catalyst Processing
+          // TODO: Implement Catalyst Processing
 
-                        for (const auto& filename: taskS->readyFiles)
-                        {
-                          std::unique_ptr<Descriptor> descriptor(taskS->mkDescriptor.get()());
-                          std::vector<std::unique_ptr<Adaptor>> inporters;
+          for (const auto& filename: taskS->readyFiles)
+          {
+            std::unique_ptr<Descriptor> descriptor(taskS->mkDescriptor.get()());
 
-                          for (const auto& vsets : proSp.variables)
-                          {
-                            if (RawNetCDFDataFileInporter::canProcess(filename))
-                            {
-                              std::cout << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'" << std::endl;
+            proSp.process(filename, *descriptor.get());
 
-                              std::vector<std::string> vars;
-                              boost::split(vars, vsets, boost::is_any_of(","), boost::token_compress_on);
+            // TODO: what are the file products / output? Make inporter->process return created files?
+          }
 
-                              for (const auto& v : vars)
-                              {
-                                inporters.push_back(
-                                    std::unique_ptr<Adaptor>(
-                                        new RawNetCDFDataFileInporter(*descriptor.get(), v)));
-                              }
-                            }
-                            else if (XMLImageDataFileInporter::canProcess(filename))
-                            {
-                              std::cout << "Creating XMLImageDataFileInporter for: '" << vsets << "'" << std::endl;
+          return taskS->canContinue();
+        }
+    , [&](const ProcessingSpecCommands& proSp)
+        {
+          if (!taskS->canContinue())
+            return false;
 
-                              inporters.push_back(
-                                  std::unique_ptr<Adaptor>(
-                                      new XMLImageDataFileInporter(*descriptor.get(), vsets)));
-                            }
-                          }
+          // TODO: Implement Command Processing
+          taskS->taskStatus = TaskState::TS_FailedProcessing;
 
-                          for (auto& inporter : inporters)
-                          {
-                            inporter->process(filename);
-                          }
+          return taskS->canContinue();
+        });
 
-                          // TODO: what are the file products / output? Make inporter->process return created files?
-                        }
-
-                        return taskS->canContinue();
-                      }
-                  , [&](const ProcessingSpecCommands& proSp)
-                      {
-                        if (!taskS->canContinue())
-                          return false;
-
-                        // TODO: Implement Command Processing
-                        taskS->taskStatus = TaskState::TS_FailedProcessing;
-
-                        return taskS->canContinue();
-                      });
   auto visitorOutput = make_lambda_visitor<bool>(
-                    [&](const OutputSpecPipeline& outSp)
-                      {
-                        if (!taskS->canContinue())
-                          return false;
+      [&](const OutputSpecPipeline& outSp)
+        {
+          if (!taskS->canContinue())
+            return false;
 
-                        if (outSp.deleteInput)
-                        {
-                          // TODO: remove input files
-                          //       issue: original input files (readyFiles) were lost in previous step
-                          //       issue: only first inporter (section.first == 0) should remove on shared filesystem
-                          // fs::remove(path)
-                        }
+          if (outSp.deleteInput)
+          {
+            // TODO: remove input files
+            //       issue: original input files (readyFiles) were lost in previous step
+            //       issue: only first inporter (section.first == 0) should remove on shared filesystem
+            // fs::remove(path)
+          }
 
-                        // input readyFiles are output products
-                        std::swap(taskS->readyFiles, taskS->products);
-                        taskS->readyFiles.clear();
+          // input readyFiles are output products
+          std::swap(taskS->readyFiles, taskS->products);
+          taskS->readyFiles.clear();
 
-                        taskS->stage.reset();
-                        if (outSp.pipeline != nullptr)
-                        {
-                          taskS->stage = *outSp.pipeline;
-                        }
-                        else
-                        {
-                          taskS->taskStatus = TaskState::TS_Done;
-                        }
+          taskS->stage.reset();
+          if (outSp.pipeline != nullptr)
+          {
+            taskS->stage = *outSp.pipeline;
+          }
+          else
+          {
+            taskS->taskStatus = TaskState::TS_Done;
+          }
 
-                        return taskS->canContinue();
-                      }
-                  , [&](const OutputSpecDone& outSp)
-                      {
-                        if (!taskS->canContinue())
-                          return false;
+          return taskS->canContinue();
+        }
+    , [&](const OutputSpecDone& outSp)
+        {
+          if (!taskS->canContinue())
+            return false;
 
-                        if (outSp.deleteInput)
-                        {
-                          // TODO: remove input files
-                          //       issue: original input files (readyFiles) were lost in previous step
-                          //       issue: only first inporter (section.first == 0) should remove on shared filesystem
-                          // fs::remove(path)
-                        }
+          if (outSp.deleteInput)
+          {
+            // TODO: remove input files
+            //       issue: original input files (readyFiles) were lost in previous step
+            //       issue: only first inporter (section.first == 0) should remove on shared filesystem
+            // fs::remove(path)
+          }
 
-                        // input readyFiles are output products
-                        std::swap(taskS->readyFiles, taskS->products);
-                        taskS->readyFiles.clear();
+          // input readyFiles are output products
+          std::swap(taskS->readyFiles, taskS->products);
+          taskS->readyFiles.clear();
 
-                        taskS->stage.reset();
-                        taskS->taskStatus = TaskState::TS_Done;
+          taskS->stage.reset();
+          taskS->taskStatus = TaskState::TS_Done;
 
-                        return taskS->canContinue();
-                      });
+          return taskS->canContinue();
+        });
 
   bool ok = true;
 

@@ -69,11 +69,10 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     {
       const double time = timeStep * lengthTimeStep;
       const bool forceOutput = false;
-      Descriptor descriptor(processor, section, timeStep, time, forceOutput);
-      std::vector<std::unique_ptr<Adaptor>> inporters;
+      std::vector<std::unique_ptr<TaskState>> tasks;
 
-      // Create inporters
-      createInporters(descriptor, name, inporters);
+      // Create inport tasks
+      createTasks(time, name, forceOutput, tasks);
 
       // new file is new
       std::cout << "New working file: '" << name << "'" << std::endl;
@@ -82,14 +81,17 @@ void Inporter::process( const std::vector<fs::path>& newfiles
 
       std::cout << "Inporter: Updating data and Catalyst..." << std::endl;
 
-      // Inport file
-      for (auto& inporter : inporters)
+      // TODO: Schedule tasks on inporter nodes
+      // Process tasks
+      for (auto& task : tasks)
       {
-        inporter->process(name);
+        pipeline_ProcessTask(task);
       }
 
+      // TODO: Fix assumption that processing of file is done
       completedFiles.push_back(name);
 
+      // TODO: Fix - delete should be part of task requests
       // TODO: verify all inporter processing has completed before here
       // TODO: only a single node should delete on shared filesystem, all inporters on local filesystems
       if (deleteFiles && section.getIndex() == MPIInportSection::ROOT_INDEX)
@@ -98,6 +100,7 @@ void Inporter::process( const std::vector<fs::path>& newfiles
         fs::remove(name);
       }
 
+      // TODO: Fix assumption that each file represents a timestep
       ++timeStep;
 
       std::cout << "\t\t...Done UpdateFields" << std::endl;
@@ -112,54 +115,33 @@ void Inporter::process( const std::vector<fs::path>& newfiles
   }
 }
 
-void Inporter::createInporters( Descriptor& descriptor, const fs::path& filename
-                              , std::vector<std::unique_ptr<Adaptor>>& outInporters)
+void Inporter::createTasks( double time, const boost::filesystem::path& filename, bool forceOutput
+                          , std::vector<std::unique_ptr<TaskState>>& outTasks)
 {
-  // TODO: Schedule tasks on inporter nodes
+  std::vector<PipelineSpec> pipelines(this->pipelines);
+
+  // legacy
+  {
+    std::vector<fs::path> scripts; // TODO: Processor has scripts (but they apply to all input files).
+    ProcessingSpecCatalyst catalystProcess(scripts, variables);
+
+    PipelineSpec pipeline( InputSpecPipeline()
+                         , ProcessingSpecCatalyst(scripts, variables)
+                         , OutputSpecDone());
+
+    pipelines.push_back(pipeline);
+  }
+
   for (const auto& pipeline: pipelines)
   {
     if (pipeline_AcceptInput(pipeline, filename))
     {
-      const double time = timeStep * lengthTimeStep;
-      const bool forceOutput = false;
       auto mkDescriptor = [&](){ return std::unique_ptr<Descriptor> (new Descriptor(processor, section, timeStep, time, forceOutput)); };
 
+      // TODO: Schedule tasks on inporter nodes
       auto task = pipeline_MkPipelineTask( pipeline, filename, mkDescriptor);
 
-      // TODO: Schedule tasks on inporter nodes
-      // outPipelines.push_back(task);
-      // TODO: for testing...
-      pipeline_ProcessTask(task);
-    }
-  }
-
-  const bool process_legacy = false;
-  if (process_legacy)
-  {
-    for (const auto& vsets : variables)
-    {
-      if (RawNetCDFDataFileInporter::canProcess(filename))
-      {
-        std::cout << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'" << std::endl;
-
-        std::vector<std::string> vars;
-        boost::split(vars, vsets, boost::is_any_of(","), boost::token_compress_on);
-
-        for (const auto& v : vars)
-        {
-          outInporters.push_back(
-              std::unique_ptr<Adaptor>(
-                  new RawNetCDFDataFileInporter(descriptor, v)));
-        }
-      }
-      else if (XMLImageDataFileInporter::canProcess(filename))
-      {
-        std::cout << "Creating XMLImageDataFileInporter for: '" << vsets << "'" << std::endl;
-
-        outInporters.push_back(
-            std::unique_ptr<Adaptor>(
-                new XMLImageDataFileInporter(descriptor, vsets)));
-      }
+      outTasks.push_back(std::move(task));
     }
   }
 }

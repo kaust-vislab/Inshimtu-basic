@@ -101,6 +101,12 @@ struct ProcessingSpecReadyFile
 
 struct ProcessingSpecCatalyst
 {
+  ProcessingSpecCatalyst( std::vector<boost::filesystem::path> scripts_
+                        , std::vector<std::string> variables_);
+
+  void process( const boost::filesystem::path &filename
+              , Descriptor& descriptor) const;
+
   std::vector<boost::filesystem::path> scripts;
   std::vector<std::string> variables;
 };
@@ -139,6 +145,12 @@ typedef boost::variant< OutputSpecDone
 
 struct PipelineSpec
 {
+  PipelineSpec(InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
+    input(input_)
+  , process(process_)
+  , out(out_)
+  {}
+
   InputSpec input;
   ProcessingSpec process;
   OutputSpec out;
@@ -183,7 +195,7 @@ bool pipeline_AcceptInput( const PipelineSpec& pipeS
 
 std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
                                                   , const boost::filesystem::path& filename
-                                                  , std::function<std::unique_ptr<Descriptor>()> mkDescriptor);
+                                                  , TaskState::MkDescriptorFn mkDescriptor);
 
 void pipeline_ProcessTask(std::unique_ptr<TaskState>& taskS);
 
