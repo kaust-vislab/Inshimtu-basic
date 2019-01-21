@@ -101,8 +101,8 @@ struct ProcessingSpecReadyFile
 
 struct ProcessingSpecCatalyst
 {
-  ProcessingSpecCatalyst( std::vector<boost::filesystem::path> scripts_
-                        , std::vector<std::string> variables_);
+  ProcessingSpecCatalyst( const std::vector<boost::filesystem::path>& scripts_
+                        , const std::vector<std::string>& variables_);
 
   void process( const boost::filesystem::path &filename
               , Descriptor& descriptor) const;
@@ -113,7 +113,17 @@ struct ProcessingSpecCatalyst
 
 struct ProcessingSpecCommands
 {
-  std::vector<boost::filesystem::path> commands;
+  static const std::string FILENAME_ARG; //"$FILENAME";
+
+  typedef boost::filesystem::path Exe;
+  typedef std::vector<std::string> Args;
+  typedef std::pair<Exe, Args> Command;
+
+  ProcessingSpecCommands(const std::vector<Command>& cmds_);
+
+  void process(const boost::filesystem::path &filename) const;
+
+  std::vector<Command> commands;
 };
 
 typedef boost::variant< ProcessingSpecReadyFile
@@ -145,11 +155,7 @@ typedef boost::variant< OutputSpecDone
 
 struct PipelineSpec
 {
-  PipelineSpec(InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
-    input(input_)
-  , process(process_)
-  , out(out_)
-  {}
+  PipelineSpec(InputSpec input_, ProcessingSpec process_, OutputSpec out_);
 
   InputSpec input;
   ProcessingSpec process;

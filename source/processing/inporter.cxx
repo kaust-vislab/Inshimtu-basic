@@ -4,9 +4,9 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 
+#include "core/lambda_visitor.hxx"
 #include "processing/inporter.h"
 #include "processing/adaptor.h"
-#include "processing/pipeline.hxx"
 #include "utils/logger.h"
 
 #include "processing/inporters/inporterRawNetCDF.h"

@@ -6,7 +6,6 @@
 
 #include "processing/inporters/inporterRawNetCDF.h"
 #include "processing/adaptor.h"
-#include "processing/pipeline.hxx"
 #include "utils/logger.h"
 
 #include <vtkNew.h>

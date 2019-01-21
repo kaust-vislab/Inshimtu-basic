@@ -4,8 +4,8 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 
-#include "processing/pipeline.hxx"
-#include "processing/inporter.h"
+#include "core/lambda_visitor.hxx"
+#include "processing/pipeline.h"
 #include "processing/adaptor.h"
 #include "utils/logger.h"
 
@@ -15,6 +15,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
 
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
@@ -29,6 +30,10 @@
 
 
 namespace fs = boost::filesystem;
+
+// TODO: use boost.process and bp.system bp.child to process commands
+//#include <boost/process.hpp>
+//namespace bp = boost::process;
 
 
 ProcessingSpecReadyFile::ProcessingSpecReadyFile(const ReplaceRegexFormat& convert)
@@ -55,8 +60,52 @@ boost::optional<fs::path> ProcessingSpecReadyFile::get(const fs::path& filename)
 }
 
 
-ProcessingSpecCatalyst::ProcessingSpecCatalyst( std::vector<fs::path> scripts_
-                                              , std::vector<std::string> variables_) :
+const std::string ProcessingSpecCommands::FILENAME_ARG("$FILENAME");
+
+ProcessingSpecCommands::ProcessingSpecCommands(const std::vector<Command>& cmds_) :
+  commands(cmds_)
+{
+  for (auto& cmd: commands)
+  {
+    cmd.first = fs::absolute(cmd.first);
+  }
+}
+
+void ProcessingSpecCommands::process(const boost::filesystem::path &filename) const
+{
+  for (const auto& cmd: commands)
+  {
+    std::string exe = cmd.first.string();
+    std::vector<std::string> args(cmd.second);
+
+    for (auto& arg: args)
+    {
+      if (arg == FILENAME_ARG)
+        arg = filename.string();
+    }
+
+    // TODO: use boost.process
+    //bp.system(exe, args);
+
+    // legacy
+    {
+      std::stringstream ss;
+
+      ss << cmd.first;
+
+      for (auto& arg: args)
+      {
+        ss << " " << arg;
+      }
+
+      system(ss.str().c_str());
+    }
+  }
+}
+
+
+ProcessingSpecCatalyst::ProcessingSpecCatalyst( const std::vector<fs::path>& scripts_
+                                              , const std::vector<std::string>& variables_) :
   scripts(scripts_)
 , variables(variables_)
 {
@@ -111,6 +160,13 @@ OutputSpecPipeline::OutputSpecPipeline()
 {
 }
 
+
+PipelineSpec::PipelineSpec(InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
+  input(input_)
+, process(process_)
+, out(out_)
+{
+}
 
 
 TaskState::TaskState()

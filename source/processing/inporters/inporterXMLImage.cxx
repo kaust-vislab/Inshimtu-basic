@@ -6,7 +6,6 @@
 
 #include "processing/inporters/inporterXMLImage.h"
 #include "processing/adaptor.h"
-#include "processing/pipeline.hxx"
 #include "utils/logger.h"
 
 #include <vtkNew.h>
