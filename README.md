@@ -79,7 +79,7 @@ For WRF: see README.namelist
   ;; Works
   history_outname = 'wrfout_d<domain>_<date>.nc' ; you may change the output file name
 
-##Building
+## Building
 
 ```
 ./setup.sh
@@ -87,6 +87,13 @@ For WRF: see README.namelist
 # module add kvl-applications paraview
 # cd build
 # cmake ..
+```
+
+## Testing
+
+```
+cd build.*
+ctest
 ```
 
 ## Running

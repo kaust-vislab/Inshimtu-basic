@@ -155,11 +155,11 @@ if (BUILD_TESTING)
   #include(CTest) # TODO: Only for Dashboard support
   enable_testing()
 
-  add_test(TestInputSpecPaths testComponents "InputSpecPaths")
-  add_test(TestProcessingSpecReadyFile testComponents "ProcessingSpecReadyFile")
-  add_test(TestProcessingSpecCommands testComponents "ProcessingSpecCommands")
-  add_test(TestPythonicSpec testComponents "PythonicSpec")
-  add_test(TestPythonicSpecFile testComponents "PythonicSpecFile")
+  add_test(TestInputSpecPaths testComponents "InputSpecPaths" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
+  add_test(TestProcessingSpecReadyFile testComponents "ProcessingSpecReadyFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
+  add_test(TestProcessingSpecCommands testComponents "ProcessingSpecCommands" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
+  add_test(TestPythonicSpec testComponents "PythonicSpec" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
+  add_test(TestPythonicSpecFile testComponents "PythonicFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing pythonic_tests/pythonicSpec.py)
 
   #add_test(VTKDataTest Inshimtu ${CMAKE_CURRENT_SOURCE_DIR}/testing/vtkdataTest.py)
   #add_test(NetCDFTest Inshimtu ${CMAKE_CURRENT_SOURCE_DIR}/testing/netcdfTest.py)

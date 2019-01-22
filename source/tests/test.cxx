@@ -20,6 +20,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include <boost/format.hpp>
 #include <boost/python.hpp>
 
 #include <unistd.h>
@@ -36,11 +37,13 @@ namespace py = boost::python;
 int main(int argc, char* argv[])
 {
   // process arguments
-  if (argc < 2)
+  if (argc < 3)
   {
+    std::cerr << "testComponent expected testname argv[1] and testpath argv[2]" << std::endl;
     return 1;
   }
   std::string testname(argv[1]);
+  fs::path testpath(argv[2]);
 
 
   // TESTS
@@ -50,7 +53,7 @@ int main(int argc, char* argv[])
     ProcessingSpecCommands s({ ProcessingSpecCommands::Command("/usr/bin/echo",{"Reading File: ", ProcessingSpecCommands::FILENAME_ARG})
                              , ProcessingSpecCommands::Command("/usr/bin/cat",{ProcessingSpecCommands::FILENAME_ARG})});
 
-    s.process("/home/holstgr/Development/Inshimtu/testing/configs/vti_notified.json");
+    s.process(testpath / "configs/vti_notified.json");
 
     // TODO: get result from process, verify stdout, and return appropriate result;
     return 0;
@@ -61,21 +64,21 @@ int main(int argc, char* argv[])
     ProcessingSpecReadyFile s(ReplaceRegexFormat(boost::regex("^(.*)/wrfoutReady_(.*)$"), "${1}/wrfout_${2}"));
     bool result(true);
 
-    auto out = s.get("/home/holstgr/Development/Inshimtu/testing/data/wrfoutReady_d01_2015-10-30_23:00:00.nc");
+    auto out = s.get(testpath / "data/wrfoutReady_d01_2015-10-30_23:00:00.nc");
 
     result = out.is_initialized();
-    result = out->string() == "/home/holstgr/Development/Inshimtu/testing/data/wrfout_d01_2015-10-30_23:00:00.nc" && result;
+    result = *out == testpath / "data/wrfout_d01_2015-10-30_23:00:00.nc" && result;
 
     return (result ? 0 : 1);
   }
 
   if (testname == "InputSpecPaths")
   {
-    InputSpecPaths s("/home/holstgr/Development/Inshimtu/testing/data", boost::regex("wrfoutReady_d01_.*"));
+    InputSpecPaths s(testpath / "data", boost::regex("wrfoutReady_d01_.*"));
     bool result(true);
 
-    result = s.match("/home/holstgr/Development/Inshimtu/testing/data/wrfoutReady_d01_2015-10-30_23:00:00.nc") && result;
-    result = !s.match("/home/holstgr/Development/Inshimtu/testing/data/wrfout_d01_2015-10-30_23:00:00.nc") && result;
+    result = s.match(testpath / "data/wrfoutReady_d01_2015-10-30_23:00:00.nc") && result;
+    result = !s.match(testpath / "data/wrfout_d01_2015-10-30_23:00:00.nc") && result;
 
     return (result ? 0 : 1);
   }
@@ -128,53 +131,58 @@ int main(int argc, char* argv[])
 
     bool result(true);
 
+    std::string script((boost::format(
+        "import os, sys \n"
+        "sys.path.insert(0, os.getcwd()) \n"
+        "import InshimtuLib as pplz \n"
+        "dir(pplz) \n"
+        "ispi = pplz.InputSpecPipeline() \n"
+        "dp = pplz.FilesystemPath('%1%/data') \n"
+        "r = pplz.Regex('wrfoutReady_d01_.*') \n"
+        "isp = pplz.InputSpecPaths(dp, r) \n"
+        "fp_match = pplz.FilesystemPath('%1%/data/wrfoutReady_d01_2015-10-30_23:00:00.nc') \n"
+        "fp_nomatch = pplz.FilesystemPath('%1%/data/wrfout_d01_2015-10-30_23:00:00.nc') \n"
+        "isp.match(fp_match) \n"
+        "isp.match(fp_nomatch) \n"
+        "ispec = pplz.InputSpec(isp) \n"
+        "print(type(ispec)) \n"
+        "pr = pplz.Regex('^(.*)/wrfoutReady_(.*)$') \n"
+        "rf = pplz.ReplaceRegexFormat(pr, '${1}/wrfout_${2}') \n"
+        "psrf = pplz.ProcessingSpecReadyFile(rf) \n"
+        "orf = psrf.get(fp_match) \n"
+        "print(orf.get().string() if orf.is_initialized() else None) \n"
+        "sf = pplz.FilesystemPath('%1%/configs/vti_notified.json') \n"
+        "ex_echo = pplz.FilesystemPath('/usr/bin/echo') \n"
+        "ex_cat = pplz.FilesystemPath('/usr/bin/cat') \n"
+        "args0 = pplz.VectorString() \n"
+        "args1 = pplz.VectorString() \n"
+        "args0.extend(['Reading File: ', pplz.ProcessingSpecCommands.FILENAME_ARG]) \n"
+        "args1.extend([pplz.ProcessingSpecCommands.FILENAME_ARG]) \n"
+        "cmd0 = pplz.Command(ex_echo, args0) \n"
+        "cmd1 = pplz.Command(ex_cat, args1) \n"
+        "cmds = pplz.CommandSequence() \n"
+        "cmds.extend([cmd0, cmd1]) \n"
+        "psc = pplz.ProcessingSpecCommands(cmds) \n"
+        "psc.process(sf) \n"
+        "cscpts = pplz.VectorFilesystemPath() \n"
+        "cscpts.extend([pplz.FilesystemPath(i) for i in ['%1%/pipelines/gridwriter.py','%1%/pipelines/gridviewer_vti_velocity.py']]) \n"
+        "cvars = pplz.VectorString() \n"
+        "cvars.extend(['U,V,W,QVAPOR']) \n"
+        "pscc = pplz.ProcessingSpecCatalyst(cscpts, cvars) \n"
+        "pspec = pplz.ProcessingSpec(psc) \n"
+        "osp = pplz.OutputSpecDone() \n"
+        "ospp = pplz.OutputSpecPipeline() \n"
+        "ospec = pplz.OutputSpec(ospp) \n"
+        "pipeline = pplz.PipelineSpec(ispec, pspec, ospec) \n"
+      ) % testpath.string()).str()
+    );
+
     try
     {
       py::object main_module = py::import("__main__");
       py::object main_namespace = main_module.attr("__dict__");
       py::object pyresult =
-          py::exec( "import os, sys \n"
-                    "sys.path.insert(0, os.getcwd()) \n"
-                    "import InshimtuLib as pplz \n"
-                    "dir(pplz) \n"
-                    "ispi = pplz.InputSpecPipeline() \n"
-                    "dp = pplz.FilesystemPath('/home/holstgr/Development/Inshimtu/testing/data') \n"
-                    "r = pplz.Regex('wrfoutReady_d01_.*') \n"
-                    "isp = pplz.InputSpecPaths(dp, r) \n"
-                    "fp_match = pplz.FilesystemPath('/home/holstgr/Development/Inshimtu/testing/data/wrfoutReady_d01_2015-10-30_23:00:00.nc') \n"
-                    "fp_nomatch = pplz.FilesystemPath('/home/holstgr/Development/Inshimtu/testing/data/wrfout_d01_2015-10-30_23:00:00.nc') \n"
-                    "isp.match(fp_match) \n"
-                    "isp.match(fp_nomatch) \n"
-                    "ispec = pplz.InputSpec(isp) \n"
-                    "print(type(ispec)) \n"
-                    "pr = pplz.Regex('^(.*)/wrfoutReady_(.*)$') \n"
-                    "rf = pplz.ReplaceRegexFormat(pr, '${1}/wrfout_${2}') \n"
-                    "psrf = pplz.ProcessingSpecReadyFile(rf) \n"
-                    "orf = psrf.get(fp_match) \n"
-                    "print(orf.get().string() if orf.is_initialized() else None) \n"
-                    "sf = pplz.FilesystemPath('/home/holstgr/Development/Inshimtu/testing/configs/vti_notified.json') \n"
-                    "ex_echo = pplz.FilesystemPath('/usr/bin/echo') \n"
-                    "ex_cat = pplz.FilesystemPath('/usr/bin/cat') \n"
-                    "args0 = pplz.VectorString() \n"
-                    "args1 = pplz.VectorString() \n"
-                    "args0.extend(['Reading File: ', pplz.ProcessingSpecCommands.FILENAME_ARG]) \n"
-                    "args1.extend([pplz.ProcessingSpecCommands.FILENAME_ARG]) \n"
-                    "cmd0 = pplz.Command(ex_echo, args0) \n"
-                    "cmd1 = pplz.Command(ex_cat, args1) \n"
-                    "cmds = pplz.CommandSequence() \n"
-                    "cmds.extend([cmd0, cmd1]) \n"
-                    "psc = pplz.ProcessingSpecCommands(cmds) \n"
-                    "psc.process(sf) \n"
-                    "cscpts = pplz.VectorFilesystemPath() \n"
-                    "cscpts.extend([pplz.FilesystemPath(i) for i in ['/home/holstgr/Development/Inshimtu/testing/pipelines/gridwriter.py','/home/holstgr/Development/Inshimtu/testing/pipelines/gridviewer_vti_velocity.py']]) \n"
-                    "cvars = pplz.VectorString() \n"
-                    "cvars.extend(['U,V,W,QVAPOR']) \n"
-                    "pscc = pplz.ProcessingSpecCatalyst(cscpts, cvars) \n"
-                    "pspec = pplz.ProcessingSpec(psc) \n"
-                    "osp = pplz.OutputSpecDone() \n"
-                    "ospp = pplz.OutputSpecPipeline() \n"
-                    "ospec = pplz.OutputSpec(ospp) \n"
-                    "pipeline = pplz.PipelineSpec(ispec, pspec, ospec) \n"
+          py::exec( script.c_str()
                   , main_namespace);
 
     }
@@ -187,8 +195,16 @@ int main(int argc, char* argv[])
     return (result ? 0 : 1);
   }
 
-  if (testname == "PythonicSpecFile")
+  if (testname == "PythonicFile")
   {
+    // process arguments
+    if (argc < 4)
+    {
+      std::cerr << "testname='PythonicFile' expected testscript argv[3]" << std::endl;
+      return 1;
+    }
+    fs::path testscript(argv[3]);
+
     Py_Initialize();
 
     bool result(true);
@@ -198,7 +214,7 @@ int main(int argc, char* argv[])
       py::object main_module = py::import("__main__");
       py::object main_namespace = main_module.attr("__dict__");
       py::object pyresult =
-          py::exec_file( "../testing/pythonic_tests/pythonicSpec.py"
+          py::exec_file( (testpath / testscript).c_str()
                   , main_namespace);
 
     }
@@ -210,6 +226,7 @@ int main(int argc, char* argv[])
 
     return (result ? 0 : 1);
   }
+
 
   /*
   MPICatalystApplication app(&argc, &argv);
