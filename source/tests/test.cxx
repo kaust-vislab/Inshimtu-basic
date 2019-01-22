@@ -181,9 +181,7 @@ int main(int argc, char* argv[])
     {
       py::object main_module = py::import("__main__");
       py::object main_namespace = main_module.attr("__dict__");
-      py::object pyresult =
-          py::exec( script.c_str()
-                  , main_namespace);
+      py::object pyresult = py::exec( script.c_str(), main_namespace);
 
     }
     catch (py::error_already_set const &)
@@ -213,9 +211,15 @@ int main(int argc, char* argv[])
     {
       py::object main_module = py::import("__main__");
       py::object main_namespace = main_module.attr("__dict__");
-      py::object pyresult =
-          py::exec_file( (testpath / testscript).c_str()
-                  , main_namespace);
+      main_namespace["TESTPATH"] = testpath.string();
+      py::object pyresult;
+
+      pyresult = py::exec( "import os, sys \n"
+                           "sys.path.insert(0, os.getcwd()) \n"
+                         , main_namespace);
+
+      pyresult = py::exec_file( (testpath / testscript).c_str()
+                              , main_namespace);
 
     }
     catch (py::error_already_set const &)

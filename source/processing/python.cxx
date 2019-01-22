@@ -20,6 +20,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include <unistd.h>
@@ -53,32 +54,28 @@ inline std::string get_string(T& o)
   return o.string();
 }
 
-
-// TODO: remove afer testing...
-struct PythonTestStruct
+template<typename S, typename T>
+inline T convert(const S& o)
 {
-  PythonTestStruct() : s("hello world") {}
-  //PythonTestStruct(std::string s_) : s(s_) {}
-  PythonTestStruct(const std::string& s_) : s(s_) {}
-  PythonTestStruct(const boost::filesystem::path& p_) : s(p_.string()) {}
+  return T(o);
+}
 
-  bool match(std::string s_) { return s == s_; }
+// https://stackoverflow.com/questions/4819707/passing-python-list-to-c-vector-using-boost-python
+// https://stackoverflow.com/questions/18793952/boost-python-how-do-i-provide-a-custom-constructor-wrapper-function
+template<typename T>
+boost::shared_ptr<std::vector<T>> pylist_to_vector(py::list o)
+{
+  std::vector<T> v;
+  py::stl_input_iterator<T> begin(o);
+  py::stl_input_iterator<T> end;
 
-  void display() { std::cout << s << std::endl; }
-
-  std::string s;
-};
+  v.insert(v.end(), begin, end);
+  return boost::shared_ptr<std::vector<T>>(new std::vector<T>(v));
+}
 
 
 BOOST_PYTHON_MODULE(InshimtuLib)
 {
-  class_<PythonTestStruct>("PythonTestStruct")
-      .def(init<const std::string&>())
-      .def(init<boost::filesystem::path&>())
-      .def("match", &PythonTestStruct::match)
-      .def("display", &PythonTestStruct::display)
-  ;
-
   // Std Boost Utils
   class_<fs::path>("FilesystemPath", init<const std::string&>())
       .def("string", &get_string<fs::path>)
@@ -98,19 +95,26 @@ BOOST_PYTHON_MODULE(InshimtuLib)
 
 
   class_<std::vector<std::string>>("VectorString")
-      .def(vector_indexing_suite<std::vector<std::string>>());
+      .def(init<size_t>())
+      .def(init<std::vector<std::string>>())
+      .def("__init__", make_constructor(&pylist_to_vector<std::string>))
+      .def(vector_indexing_suite<std::vector<std::string>>())
   ;
 
   class_<std::vector<fs::path>>("VectorFilesystemPath")
-      .def(vector_indexing_suite<std::vector<fs::path>>());
+      .def(init<size_t>())
+      .def(init<std::vector<fs::path>>())
+      .def("__init__", make_constructor(&pylist_to_vector<fs::path>))
+      .def(vector_indexing_suite<std::vector<fs::path>>())
   ;
 
+  def("CommandExe", &convert<std::string, fs::path>);
 
   class_<ProcessingSpecCommands::Command>("Command", init<ProcessingSpecCommands::Exe, ProcessingSpecCommands::Args>())
   ;
 
   class_<std::vector<ProcessingSpecCommands::Command>>("CommandSequence")
-      .def(vector_indexing_suite<std::vector<ProcessingSpecCommands::Command>>());
+      .def(vector_indexing_suite<std::vector<ProcessingSpecCommands::Command>>())
   ;
 
 
