@@ -114,6 +114,9 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   ;
 
   class_<std::vector<ProcessingSpecCommands::Command>>("CommandSequence")
+      .def(init<size_t>())
+      .def(init<std::vector<ProcessingSpecCommands::Command>>())
+      .def("__init__", make_constructor(&pylist_to_vector<ProcessingSpecCommands::Command>))
       .def(vector_indexing_suite<std::vector<ProcessingSpecCommands::Command>>())
   ;
 
@@ -123,9 +126,23 @@ BOOST_PYTHON_MODULE(InshimtuLib)
       .def(init<InputSpecPipeline>())
   ;
 
-  class_<InputSpecPaths>("InputSpecPaths", init<const boost::filesystem::path&, const boost::regex&>())
-      .def("match", &InputSpecPaths::match)
-  ;
+  {
+    scope scope =
+    class_<InputSpecPaths>("InputSpecPaths", init<const boost::filesystem::path&, const boost::regex&>())
+        .def("setAcceptFirst", &InputSpecPaths::setAcceptFirst)
+        .def("setAcceptAll", &InputSpecPaths::setAcceptAll)
+        .def("setAcceptScript", &InputSpecPaths::setAcceptScript)
+        .def("match", &InputSpecPaths::match)
+        .def("accept", &InputSpecPaths::accept)
+    ;
+
+    enum_<InputSpecPaths::AcceptType>("AcceptType")
+      .value("ACCEPT_FIRST", InputSpecPaths::Accept_First)
+      .value("ACCEPT_ALL", InputSpecPaths::Accept_All)
+      .value("ACCEPT_ALL", InputSpecPaths::Accept_Script)
+      .export_values()
+    ;
+  }
 
   class_<InputSpecPipeline>("InputSpecPipeline")
   ;
@@ -162,7 +179,8 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   ;
 
   // PipelineSpec
-  class_<PipelineSpec>("PipelineSpec", init<InputSpec, ProcessingSpec, OutputSpec>())
+  class_<PipelineSpec>("PipelineSpec", init<std::string, InputSpec, ProcessingSpec, OutputSpec>())
+      .def_readonly("name",&PipelineSpec::name)
   ;
 
 }

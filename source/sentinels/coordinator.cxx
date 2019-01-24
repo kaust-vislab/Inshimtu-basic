@@ -259,7 +259,7 @@ UpdateState::S_calculate Coordinator::update_calculateReadyFiles( UpdateState::S
 
         if (finfo.is_ready && !finfo.was_processed)
         {
-          readyFiles.push_back(fpath.string());
+          readyFiles.push_back(fpath);
         }
       }
     }

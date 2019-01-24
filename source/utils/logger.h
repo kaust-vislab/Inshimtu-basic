@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <sys/types.h>
 
 class Logger
@@ -33,5 +34,17 @@ protected:
 
   std::ofstream logfile;
 };
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& input)
+{
+  os << "[";
+  for (const auto& i : input)
+  {
+    os << i << ",";
+  }
+  os << "]";
+  return os;
+}
 
 #endif

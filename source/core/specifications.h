@@ -81,12 +81,31 @@ typedef std::pair<boost::regex, std::string> ReplaceRegexFormat;
 
 struct InputSpecPaths
 {
+  enum AcceptType
+  {
+    Accept_First
+  , Accept_All
+  , Accept_Script
+  };
+
+
   InputSpecPaths(const boost::filesystem::path& dir, const boost::regex& filemask);
+
+  void setAcceptFirst();
+  void setAcceptAll();
+  void setAcceptScript(const std::string& acceptScript_);
+
 
   bool match(const boost::filesystem::path& filename) const;
 
+  bool accept( const std::vector<boost::filesystem::path>& available
+             , std::vector<boost::filesystem::path>& outAccepted) const;
+
   boost::filesystem::path directory;
   boost::regex filenames;
+
+  AcceptType acceptType;
+  std::string acceptScript;
 };
 
 

@@ -71,7 +71,7 @@ ProcessingSpecCommands::ProcessingSpecCommands(const std::vector<Command>& cmds_
   }
 }
 
-void ProcessingSpecCommands::process(const boost::filesystem::path &filename) const
+void ProcessingSpecCommands::process(const fs::path &filename) const
 {
   for (const auto& cmd: commands)
   {
@@ -111,7 +111,7 @@ ProcessingSpecCatalyst::ProcessingSpecCatalyst( const std::vector<fs::path>& scr
 {
 }
 
-void ProcessingSpecCatalyst::process( const boost::filesystem::path &filename
+void ProcessingSpecCatalyst::process( const fs::path &filename
                                     , Descriptor& descriptor) const
 {
   std::vector<std::unique_ptr<Adaptor>> inporters;
@@ -161,8 +161,10 @@ OutputSpecPipeline::OutputSpecPipeline()
 }
 
 
-PipelineSpec::PipelineSpec(InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
-  input(input_)
+PipelineSpec::PipelineSpec( const std::string& name_
+                          , InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
+  name(name_)
+, input(input_)
 , process(process_)
 , out(out_)
 {
@@ -193,23 +195,25 @@ bool TaskState::hasError() const
 }
 
 
-bool pipeline_AcceptInput(const PipelineSpec& pipeS, const boost::filesystem::path& filename)
+bool pipeline_AcceptInput( const PipelineSpec& pipeS
+                         , const std::vector<fs::path>& available
+                         , std::vector<fs::path>& outAccepted)
 {
   auto visitor = make_lambda_visitor<bool>(
-                    [&](const InputSpecPaths& inSp) { return inSp.match(filename); }
+                    [&](const InputSpecPaths& inSp) { return inSp.accept(available, outAccepted); }
                   , [](const InputSpecPipeline&) { return true; });
 
   return boost::apply_visitor(visitor, pipeS.input);
 }
 
 std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
-                                                  , const boost::filesystem::path& filename
+                                                  , const std::vector<fs::path>& working
                                                   , std::function<std::unique_ptr<Descriptor>()> mkDescriptor)
 {
   std::unique_ptr<TaskState> task;
 
   task->stage = pipeS;
-  task->readyFiles.push_back(filename);
+  task->readyFiles.insert(std::end(task->readyFiles), std::begin(working), std::end(working));
 
   task->mkDescriptor = mkDescriptor;
 
@@ -230,7 +234,7 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
         if (!taskS->canContinue())
           return false;
 
-        std::vector<boost::filesystem::path> matchingFiles;
+        std::vector<fs::path> matchingFiles;
 
         for (const auto& path: taskS->readyFiles)
         {
@@ -260,7 +264,7 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
           if (!taskS->canContinue())
             return false;
 
-          std::vector<boost::filesystem::path> correspondingFiles;
+          std::vector<fs::path> correspondingFiles;
 
           for (const auto& path: taskS->readyFiles)
           {

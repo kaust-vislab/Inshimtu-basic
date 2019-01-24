@@ -155,7 +155,7 @@ MPICatalystApplication::~MPICatalystApplication()
 
 const MPIInportSection& MPICatalystApplication::getInporterSection() const
 {
-  assert (inporterSection.get() != nullptr);
+  assert(inporterSection.get() != nullptr);
 
   return *inporterSection;
 };

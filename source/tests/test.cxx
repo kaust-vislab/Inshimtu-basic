@@ -42,6 +42,8 @@ int main(int argc, char* argv[])
     std::cerr << "testComponent expected testname argv[1] and testpath argv[2]" << std::endl;
     return 1;
   }
+  fs::path testexe(fs::canonical(fs::path(argv[0])));
+  fs::path testexedir(testexe.parent_path());
   std::string testname(argv[1]);
   fs::path testpath(argv[2]);
 
@@ -133,15 +135,15 @@ int main(int argc, char* argv[])
 
     std::string script((boost::format(
         "import os, sys \n"
-        "sys.path.insert(0, os.getcwd()) \n"
+        "sys.path.insert(0, '%1%') \n"
         "import InshimtuLib as pplz \n"
         "dir(pplz) \n"
         "ispi = pplz.InputSpecPipeline() \n"
-        "dp = pplz.FilesystemPath('%1%/data') \n"
+        "dp = pplz.FilesystemPath('%2%/data') \n"
         "r = pplz.Regex('wrfoutReady_d01_.*') \n"
         "isp = pplz.InputSpecPaths(dp, r) \n"
-        "fp_match = pplz.FilesystemPath('%1%/data/wrfoutReady_d01_2015-10-30_23:00:00.nc') \n"
-        "fp_nomatch = pplz.FilesystemPath('%1%/data/wrfout_d01_2015-10-30_23:00:00.nc') \n"
+        "fp_match = pplz.FilesystemPath('%2%/data/wrfoutReady_d01_2015-10-30_23:00:00.nc') \n"
+        "fp_nomatch = pplz.FilesystemPath('%2%/data/wrfout_d01_2015-10-30_23:00:00.nc') \n"
         "isp.match(fp_match) \n"
         "isp.match(fp_nomatch) \n"
         "ispec = pplz.InputSpec(isp) \n"
@@ -151,7 +153,7 @@ int main(int argc, char* argv[])
         "psrf = pplz.ProcessingSpecReadyFile(rf) \n"
         "orf = psrf.get(fp_match) \n"
         "print(orf.get().string() if orf.is_initialized() else None) \n"
-        "sf = pplz.FilesystemPath('%1%/configs/vti_notified.json') \n"
+        "sf = pplz.FilesystemPath('%2%/configs/vti_notified.json') \n"
         "ex_echo = pplz.FilesystemPath('/usr/bin/echo') \n"
         "ex_cat = pplz.FilesystemPath('/usr/bin/cat') \n"
         "args0 = pplz.VectorString() \n"
@@ -165,7 +167,7 @@ int main(int argc, char* argv[])
         "psc = pplz.ProcessingSpecCommands(cmds) \n"
         "psc.process(sf) \n"
         "cscpts = pplz.VectorFilesystemPath() \n"
-        "cscpts.extend([pplz.FilesystemPath(i) for i in ['%1%/pipelines/gridwriter.py','%1%/pipelines/gridviewer_vti_velocity.py']]) \n"
+        "cscpts.extend([pplz.FilesystemPath(i) for i in ['%2%/pipelines/gridwriter.py','%2%/pipelines/gridviewer_vti_velocity.py']]) \n"
         "cvars = pplz.VectorString() \n"
         "cvars.extend(['U,V,W,QVAPOR']) \n"
         "pscc = pplz.ProcessingSpecCatalyst(cscpts, cvars) \n"
@@ -173,8 +175,10 @@ int main(int argc, char* argv[])
         "osp = pplz.OutputSpecDone() \n"
         "ospp = pplz.OutputSpecPipeline() \n"
         "ospec = pplz.OutputSpec(ospp) \n"
-        "pipeline = pplz.PipelineSpec(ispec, pspec, ospec) \n"
-      ) % testpath.string()).str()
+        "pipeline = pplz.PipelineSpec('pipeline', ispec, pspec, ospec) \n"
+      ) % testexedir.string()
+        % testpath.string()
+      ).str()
     );
 
     try
@@ -207,6 +211,13 @@ int main(int argc, char* argv[])
 
     bool result(true);
 
+    std::string init_script((boost::format(
+        "import os, sys \n"
+        "sys.path.insert(0, '%1%') \n"
+      ) % testexedir.string()
+      ).str()
+    );
+
     try
     {
       py::object main_module = py::import("__main__");
@@ -214,9 +225,7 @@ int main(int argc, char* argv[])
       main_namespace["TESTPATH"] = testpath.string();
       py::object pyresult;
 
-      pyresult = py::exec( "import os, sys \n"
-                           "sys.path.insert(0, os.getcwd()) \n"
-                         , main_namespace);
+      pyresult = py::exec( init_script.c_str(), main_namespace);
 
       pyresult = py::exec_file( (testpath / testscript).c_str()
                               , main_namespace);

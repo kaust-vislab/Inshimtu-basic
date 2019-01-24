@@ -155,7 +155,10 @@ typedef boost::variant< OutputSpecDone
 
 struct PipelineSpec
 {
-  PipelineSpec(InputSpec input_, ProcessingSpec process_, OutputSpec out_);
+  PipelineSpec( const std::string& name_
+              , InputSpec input_, ProcessingSpec process_, OutputSpec out_);
+
+  std::string name;
 
   InputSpec input;
   ProcessingSpec process;
@@ -197,10 +200,11 @@ struct TaskState
 
 
 bool pipeline_AcceptInput( const PipelineSpec& pipeS
-                         , const boost::filesystem::path& filename);
+                         , const std::vector<boost::filesystem::path>& available
+                         , std::vector<boost::filesystem::path>& outAccepted);
 
 std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
-                                                  , const boost::filesystem::path& filename
+                                                  , const std::vector<boost::filesystem::path>& working
                                                   , TaskState::MkDescriptorFn mkDescriptor);
 
 void pipeline_ProcessTask(std::unique_ptr<TaskState>& taskS);

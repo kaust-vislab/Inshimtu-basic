@@ -33,8 +33,9 @@ namespace fs = boost::filesystem;
 Inporter::Inporter( Processor& processor_
                   , const MPIInportSection& section_
                   , const std::vector<std::string>& variables_)
-  : processor(processor_)
-  , section(section_)
+  : section(section_)
+  , processor(processor_)
+  , availableFiles()
   , variables(variables_)
   , timeStep(0)
   , lengthTimeStep(1.0)
@@ -52,20 +53,75 @@ void Inporter::process( const std::vector<fs::path>& newfiles
 {
   for(const fs::path& name : newfiles)
   {
+    // TODO: verify comparisons are canonical
+    //assert(name.is_absolute());
+
+    assert(std::find(std::begin(availableFiles), std::end(availableFiles), name) == std::end(availableFiles));
+    assert(std::find(std::begin(workingFiles), std::end(workingFiles), name) == std::end(workingFiles));
+    assert(std::find(std::begin(completedFiles), std::end(completedFiles), name) == std::end(completedFiles));
+
+    availableFiles.push_back(name);
+
+    // new file is new
+    std::cout << "New available file: '" << name << "'" << std::endl;
+  }
+
+  {
+    const double time = timeStep * lengthTimeStep;
+    const bool forceOutput = false;
+    std::vector<std::unique_ptr<TaskState>> tasks;
+
+    // Create inport tasks
+    createTasks(time, forceOutput, tasks);
+
+    // TODO: Schedule tasks on inporter nodes
+    // Process tasks
+    for (auto& task : tasks)
+    {
+      std::cout << "Processing Task: " << (task->stage.is_initialized() ? task->stage.get().name : "<INVALID>") << std::endl;
+
+      pipeline_ProcessTask(task);
+
+      // TODO: move process accepted files from workingFiles to completeFiles
+      // TODO: Fix assumption that processing of file is done
+      //completedFiles.push_back(name);
+    }
+
+    // TODO: Fix - delete should be part of task requests
+    // TODO: verify all inporter processing has completed before here
+    // TODO: only a single node should delete on shared filesystem, all inporters on local filesystems
+    if (deleteFiles && section.getIndex() == MPIInportSection::ROOT_INDEX)
+    {
+      for (const auto& name : completedFiles)
+      {
+        if (std::find(std::begin(workingFiles), std::end(workingFiles), name) != std::end(workingFiles))
+        {
+          std::cout << "Deleting file: '" << name << "'" << std::endl;
+          fs::remove(name);
+        }
+      }
+    }
+
+    // TODO: Fix assumptions about timesteps
+    if (!tasks.empty())
+    {
+      ++timeStep;
+    }
+
+    // TODO: Fix assumption that processing of file is done
+    workingFiles.clear();
+
+    std::cout << "\t\t...Done UpdateFields" << std::endl;
+  }
+
+/*
+  for(const fs::path& name : availableFiles)
+  {
+    auto afitr = std::find(std::begin(availableFiles), std::end(availableFiles), name);
     auto wfitr = std::find(std::begin(workingFiles), std::end(workingFiles), name);
     auto cfitr = std::find(std::begin(completedFiles), std::end(completedFiles), name);
-    if (cfitr != completedFiles.end())
-    {
-      // TODO: Verify: is this event ever expected?  Duplicates functionality from Coordinator?
 
-      // expected event
-      std::cout << "Completed file: '" << name << "'" << std::endl;
-
-      completedFiles.erase(cfitr);
-
-      assert(wfitr != workingFiles.end() && "Expected file in working set");
-    }
-    else if (wfitr == workingFiles.end())
+    if (wfitr == workingFiles.end())
     {
       const double time = timeStep * lengthTimeStep;
       const bool forceOutput = false;
@@ -113,19 +169,23 @@ void Inporter::process( const std::vector<fs::path>& newfiles
                 << std::endl;
     }
   }
+  */
 }
 
-void Inporter::createTasks( double time, const boost::filesystem::path& filename, bool forceOutput
+void Inporter::createTasks( double time, bool forceOutput
                           , std::vector<std::unique_ptr<TaskState>>& outTasks)
 {
+  std::vector<fs::path> accepted;
   std::vector<PipelineSpec> pipelines(this->pipelines);
 
   // legacy
   {
-    std::vector<fs::path> scripts; // TODO: Processor has scripts (but they apply to all input files).
+    // TODO: Processor has scripts (but they apply to all input files).
+    std::vector<fs::path> scripts;
     ProcessingSpecCatalyst catalystProcess(scripts, variables);
 
-    PipelineSpec pipeline( InputSpecPipeline()
+    PipelineSpec pipeline( "LegacyCatalyst"
+                         , InputSpecPipeline()
                          , ProcessingSpecCatalyst(scripts, variables)
                          , OutputSpecDone());
 
@@ -134,12 +194,25 @@ void Inporter::createTasks( double time, const boost::filesystem::path& filename
 
   for (const auto& pipeline: pipelines)
   {
-    if (pipeline_AcceptInput(pipeline, filename))
+    accepted.clear();
+
+    if (pipeline_AcceptInput(pipeline, availableFiles, accepted))
     {
       auto mkDescriptor = [&](){ return std::unique_ptr<Descriptor> (new Descriptor(processor, section, timeStep, time, forceOutput)); };
 
+      std::cout << "Pipeline accepted files: " << accepted << std::endl;
+
+      for (const auto& name : accepted)
+      {
+        auto afitr = std::find(std::begin(availableFiles), std::end(availableFiles), name);
+        assert(afitr != std::end(availableFiles));
+
+        availableFiles.erase(afitr);
+        workingFiles.push_back(name);
+      }
+
       // TODO: Schedule tasks on inporter nodes
-      auto task = pipeline_MkPipelineTask( pipeline, filename, mkDescriptor);
+      auto task = pipeline_MkPipelineTask( pipeline, accepted, mkDescriptor);
 
       outTasks.push_back(std::move(task));
     }

@@ -42,5 +42,6 @@ osp = pplz.OutputSpecDone()
 ospp = pplz.OutputSpecPipeline()
 ospec = pplz.OutputSpec(ospp)
 
-pipeline = pplz.PipelineSpec(ispec, pspec, ospec)
+pipeline = pplz.PipelineSpec('pipeline', ispec, pspec, ospec)
+print(pipeline.name)
 
