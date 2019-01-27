@@ -49,12 +49,16 @@ void InputSpecPaths::setAcceptAll()
   acceptScript.clear();
 }
 
-void InputSpecPaths::setAcceptScript(const std::string& acceptScript_)
+void InputSpecPaths::setAcceptScript( const std::string& acceptScript_
+                                    , const boost::filesystem::path& libPath_)
 {
   assert(!acceptScript_.empty());
+  assert(!libPath_.empty());
+  assert(fs::is_directory(libPath_));
 
   acceptType = Accept_Script;
   acceptScript = acceptScript_;
+  libPath = libPath_;
 }
 
 
@@ -69,7 +73,6 @@ bool InputSpecPaths::match(const fs::path& filename) const
 bool InputSpecPaths::accept( const std::vector<fs::path>& available
                            , std::vector<fs::path>& outAccepted) const
 {
-  // TODO:
   std::vector<fs::path> filteredAvailable;
 
   for (const auto& name : available)
@@ -93,16 +96,11 @@ bool InputSpecPaths::accept( const std::vector<fs::path>& available
       Py_Initialize();
     }
 
-    // TODO: fix hard coded constant:
-    //  fs::path testexe(fs::canonical(fs::path(argv[0])));
-    //  fs::path libdir(testexe.parent_path());
-    fs::path libdir("/home/holstgr/Development/Inshimtu/build.kvl");
-
     std::string init_script((boost::format(
         "import os, sys \n"
         "sys.path.insert(0, '%1%') \n"
         "import InshimtuLib as inshimtu \n"
-      ) % libdir.string()
+      ) % libPath.string()
       ).str()
     );
 

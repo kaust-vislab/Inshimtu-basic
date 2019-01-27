@@ -1,5 +1,5 @@
 import InshimtuLib as pplz
-import os.path
+import os.path, sys
 
 # Pipeline Spec
 
@@ -143,7 +143,7 @@ def accept(available, outAccepted):
   result = acceptFileset(ts, (varz, extz), available, outAccepted)
   return result
 '''
-isp.setAcceptScript(script)
+isp.setAcceptScript(script, pplz.FilesystemPath(sys.path[0]))
 readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()
 r = isp.accept(readyFiles, acceptedFiles)

@@ -61,10 +61,13 @@ public:
   bool getDeleteFilesFlag() const;
 
 
+  const boost::filesystem::path& getLibPath() const;
+
 
 protected:
   boost::program_options::variables_map opts;
   boost::property_tree::ptree configs;
+  boost::filesystem::path libPath;
 };
 
 #endif

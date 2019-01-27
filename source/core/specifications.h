@@ -23,8 +23,6 @@
 #include <sys/types.h>
 
 
-
-
 // TODO: explore notes and type representations of workflows
 /*
 enum class Responsibility {
@@ -93,7 +91,8 @@ struct InputSpecPaths
 
   void setAcceptFirst();
   void setAcceptAll();
-  void setAcceptScript(const std::string& acceptScript_);
+  void setAcceptScript( const std::string& acceptScript_
+                      , const boost::filesystem::path& libPath_);
 
 
   bool match(const boost::filesystem::path& filename) const;
@@ -106,6 +105,7 @@ struct InputSpecPaths
 
   AcceptType acceptType;
   std::string acceptScript;
+  boost::filesystem::path libPath;
 };
 
 

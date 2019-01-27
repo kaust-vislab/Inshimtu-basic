@@ -34,6 +34,8 @@ namespace fs = boost::filesystem;
 
 Configuration::Configuration(int argc, const char* const argv[])
   : opts()
+  , configs()
+  , libPath(fs::canonical(fs::path(argc > 0 ? argv[0] : "./invalid")).parent_path())
 {
   po::options_description basicDesc("basic usage options");
   basicDesc.add_options()
@@ -465,5 +467,11 @@ bool Configuration::getDeleteFilesFlag() const
   }
 
   return cleanup;
+}
+
+
+const fs::path& Configuration::getLibPath() const
+{
+  return libPath;
 }
 
