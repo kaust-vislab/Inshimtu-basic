@@ -36,6 +36,14 @@ namespace fs = boost::filesystem;
 //namespace bp = boost::process;
 
 
+bool InputSpecAny::accept( const std::vector<boost::filesystem::path>& available
+                              , std::vector<boost::filesystem::path>& outAccepted) const
+{
+  outAccepted.insert(std::end(outAccepted), std::begin(available), std::end(available));
+  return true;
+}
+
+
 ProcessingSpecReadyFile::ProcessingSpecReadyFile(const ReplaceRegexFormat& convert)
   : conversion(convert)
 {
@@ -61,46 +69,150 @@ boost::optional<fs::path> ProcessingSpecReadyFile::get(const fs::path& filename)
 
 
 const std::string ProcessingSpecCommands::FILENAME_ARG("$FILENAME");
+const std::string ProcessingSpecCommands::FILENAMES_ARRAY_ARG("$FILENAMES_ARRAY");
 
 ProcessingSpecCommands::ProcessingSpecCommands(const std::vector<Command>& cmds_) :
   commands(cmds_)
+, processCommandsBy(ProcessCommands_All)
+, processFilesBy(ProcessFiles_All)
 {
-  for (auto& cmd: commands)
-  {
-    cmd.first = fs::absolute(cmd.first);
-  }
 }
 
-void ProcessingSpecCommands::process(const fs::path &filename) const
+void ProcessingSpecCommands::setProcessingType(ProcessCommandsType pCmds, ProcessFilesType pFiles)
 {
+  processCommandsBy = pCmds;
+  processFilesBy = pFiles;
+}
+
+bool ProcessingSpecCommands::process(const std::vector<fs::path>& files) const
+{
+  bool result = true;
+
+  if (processFilesBy == ProcessFiles_Single && files.size() > 1)
+  {
+    if (processCommandsBy == ProcessCommands_Separate)
+    {
+      for (const auto& cmd: commands)
+      {
+        for (const auto& filename: files)
+        {
+          std::vector<fs::path> file({filename});
+
+          bool ret = processCommand(cmd, file);
+
+          // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
+          if (!ret)
+          {
+            result = false;
+          }
+        }
+      }
+      return result;
+    }
+    else
+    {
+      for (const auto& filename: files)
+      {
+        std::vector<fs::path> file({filename});
+
+        bool ret = process(file);
+
+        // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
+        if (!ret)
+        {
+          result = false;
+        }
+      }
+    }
+
+  }
+
   for (const auto& cmd: commands)
   {
-    std::string exe = cmd.first.string();
-    std::vector<std::string> args(cmd.second);
+    bool ret = processCommand(cmd, files);
+
+    // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
+    if (!ret)
+    {
+      result = false;
+    }
+  }
+
+  return result;
+}
+
+bool ProcessingSpecCommands::processCommand( const Command& cmd
+                                           , const std::vector<fs::path>& files) const
+{
+  bool result = true;
+
+  std::string exe = cmd.first.string();
+  std::vector<std::string> args;
+
+  for (const auto& arg: cmd.second)
+  {
+    if (arg == FILENAME_ARG)
+    {
+      assert(!files.empty());
+
+      // TODO: log warning (user based error handling policy)
+      // assert(files.size() == 1);
+
+      args.push_back(files[0].string());
+    }
+    else if (arg == FILENAMES_ARRAY_ARG)
+    {
+      assert(!files.empty());
+
+      for (const auto& file: files)
+      {
+        args.push_back(file.string());
+      }
+    }
+    else
+    {
+      args.push_back(arg);
+    }
+  }
+
+  // TODO: use boost.process
+  //bp.system(exe, args);
+
+  // legacy
+  {
+    int ret;
+    std::stringstream ss;
+
+    ss << cmd.first;
 
     for (auto& arg: args)
     {
-      if (arg == FILENAME_ARG)
-        arg = filename.string();
+      // TODO: encode args (replace spaces with "\ ")
+      ss << " " << arg;
     }
 
-    // TODO: use boost.process
-    //bp.system(exe, args);
+    ret = system(ss.str().c_str());
 
-    // legacy
+    // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
+    if (ret < 0)
     {
-      std::stringstream ss;
-
-      ss << cmd.first;
-
-      for (auto& arg: args)
+      // strerror(errno)
+      result = false;
+    }
+    else if (WIFEXITED(ret))
+    {
+      if (WEXITSTATUS(ret) != 0)
       {
-        ss << " " << arg;
+        result = false;
       }
-
-      system(ss.str().c_str());
+    }
+    else
+    {
+      result = false;
     }
   }
+
+  return result;
 }
 
 
@@ -174,8 +286,8 @@ PipelineSpec::PipelineSpec( const std::string& name_
 TaskState::TaskState()
   : taskStatus(TaskState::TS_OK)
   , stage()
-  , readyFiles()
-  , products()
+  , inputFiles()
+  , outputFiles()
 {
 }
 
@@ -201,7 +313,7 @@ bool pipeline_AcceptInput( const PipelineSpec& pipeS
 {
   auto visitor = make_lambda_visitor<bool>(
                     [&](const InputSpecPaths& inSp) { return inSp.accept(available, outAccepted); }
-                  , [](const InputSpecPipeline&) { return true; });
+                  , [&](const InputSpecAny& inSp) { return inSp.accept(available, outAccepted); });
 
   return boost::apply_visitor(visitor, pipeS.input);
 }
@@ -210,15 +322,16 @@ std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
                                                   , const std::vector<fs::path>& working
                                                   , std::function<std::unique_ptr<Descriptor>()> mkDescriptor)
 {
-  std::unique_ptr<TaskState> task;
+  std::unique_ptr<TaskState> task(new TaskState());
 
   task->stage = pipeS;
-  task->readyFiles.insert(std::end(task->readyFiles), std::begin(working), std::end(working));
+  task->inputFiles.insert(std::end(task->inputFiles), std::begin(working), std::end(working));
 
   task->mkDescriptor = mkDescriptor;
 
   return task;
 }
+
 
 void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 {
@@ -236,24 +349,24 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 
         std::vector<fs::path> matchingFiles;
 
-        for (const auto& path: taskS->readyFiles)
+        for (const auto& path: taskS->inputFiles)
         {
           if (inSp.match(path))
             matchingFiles.push_back(path);
         }
-        taskS->products.swap(matchingFiles);
+        taskS->outputFiles.swap(matchingFiles);
 
-        if (taskS->products.empty())
+        if (taskS->outputFiles.empty())
           taskS->taskStatus = TaskState::TS_FailedInput;
 
         return taskS->canContinue();
       }
-    , [&](const InputSpecPipeline&)
+    , [&](const InputSpecAny&)
         {
           if (!taskS->canContinue())
             return false;
 
-          taskS->products = taskS->readyFiles;
+          taskS->outputFiles = taskS->inputFiles;
 
           return taskS->canContinue();
         });
@@ -266,15 +379,15 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 
           std::vector<fs::path> correspondingFiles;
 
-          for (const auto& path: taskS->readyFiles)
+          for (const auto& path: taskS->inputFiles)
           {
             auto oPath = proSp.get(path);
             if (oPath.is_initialized())
               correspondingFiles.push_back(oPath.get());
           }
-          taskS->products.swap(correspondingFiles);
+          taskS->outputFiles.swap(correspondingFiles);
 
-          if (taskS->products.empty())
+          if (taskS->outputFiles.empty())
             taskS->taskStatus = TaskState::TS_FailedInput;
 
           return taskS->canContinue();
@@ -292,7 +405,7 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 
           // TODO: Implement Catalyst Processing
 
-          for (const auto& filename: taskS->readyFiles)
+          for (const auto& filename: taskS->inputFiles)
           {
             std::unique_ptr<Descriptor> descriptor(taskS->mkDescriptor.get()());
 
@@ -308,8 +421,21 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
           if (!taskS->canContinue())
             return false;
 
-          // TODO: Implement Command Processing
-          taskS->taskStatus = TaskState::TS_FailedProcessing;
+          {
+            std::vector<fs::path> producedFiles;
+            bool result = proSp.process(taskS->inputFiles);
+
+            if (result)
+            {
+              // TODO: get produced files from process
+              //producedFiles.push_back(filename);
+            }
+            else
+            {
+              taskS->taskStatus = TaskState::TS_FailedProcessing;
+            }
+            taskS->outputFiles.swap(producedFiles);
+          }
 
           return taskS->canContinue();
         });
@@ -329,8 +455,8 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
           }
 
           // input readyFiles are output products
-          std::swap(taskS->readyFiles, taskS->products);
-          taskS->readyFiles.clear();
+          std::swap(taskS->inputFiles, taskS->outputFiles);
+          taskS->inputFiles.clear();
 
           taskS->stage.reset();
           if (outSp.pipeline != nullptr)
@@ -358,8 +484,8 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
           }
 
           // input readyFiles are output products
-          std::swap(taskS->readyFiles, taskS->products);
-          taskS->readyFiles.clear();
+          std::swap(taskS->inputFiles, taskS->outputFiles);
+          taskS->inputFiles.clear();
 
           taskS->stage.reset();
           taskS->taskStatus = TaskState::TS_Done;
@@ -372,22 +498,22 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
   ok = boost::apply_visitor(visitorInput, taskS->stage->input);
   if (ok)
   {
-     std::swap(taskS->readyFiles, taskS->products);
-     taskS->products.clear();
+     std::swap(taskS->inputFiles, taskS->outputFiles);
+     taskS->outputFiles.clear();
   }
 
   ok = boost::apply_visitor(visitorProcessing, taskS->stage->process);
   if (ok)
   {
-     std::swap(taskS->readyFiles, taskS->products);
-     taskS->products.clear();
+     std::swap(taskS->inputFiles, taskS->outputFiles);
+     taskS->outputFiles.clear();
   }
 
   ok = boost::apply_visitor(visitorOutput, taskS->stage->out);
   if (ok)
   {
-    std::swap(taskS->readyFiles, taskS->products);
-    taskS->products.clear();
+    std::swap(taskS->inputFiles, taskS->outputFiles);
+    taskS->outputFiles.clear();
   }
 }
 
@@ -410,7 +536,7 @@ class  input_handler : public boost::static_visitor<void>
 {
 public:
   void operator()(const InputSpecPaths& inSp) const { std::cout << "InputSpecFile"; }
-  void operator()(const InputSpecPipeline& inSp) const { std::cout << "InputSpecPipeline"; }
+  void operator()(const InputSpecAny& inSp) const { std::cout << "InputSpecAny"; }
 };
 
 void doPipeline(TaskState& pipeSt)

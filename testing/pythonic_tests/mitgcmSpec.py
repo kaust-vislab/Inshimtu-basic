@@ -1,6 +1,9 @@
 import InshimtuLib as pplz
 import os.path, sys
 
+# Python interpreter Hack
+# TESTPATH = "../testing"
+
 # Pipeline Spec
 
 dp = pplz.FilesystemPath('/lustre/scratch/inshimtu-testing/mitgcm_4km-output/mitgcmrun-output')
@@ -8,12 +11,10 @@ varz = ['Convtave','ETAtave','Eta','PhHytave','S','Stave','T', 'Tdiftave', 'Ttav
 extz = ['data', 'meta']
 r = pplz.Regex('(' + '|'.join(varz) + ')\.[0-9]+\.(' + '|'.join(extz) + ')')
 isp = pplz.InputSpecPaths(dp, r)
-ispec = pplz.InputSpec(isp)
 
 ex_zip = pplz.CommandExe('echo') #('zip')
 # TODO: Implement ProcessingSpecCommands.TIMECODE
-# TODO: Implement ProcessingSpecCommands.FILENAMES_ARG
-args0 = pplz.VectorString(['zip', '-j', '-m', '-T', '/lustre/scratch/mitgcm-output/mitgcm.$TIMECODE.zip', '-i', pplz.ProcessingSpecCommands.FILENAME_ARG]) 
+args0 = pplz.VectorString(['zip', '-j', '-m', '-T', '/lustre/scratch/mitgcm-output/mitgcm.$TIMECODE.zip', '-i', pplz.ProcessingSpecCommands.FILENAMES_ARRAY_ARG]) 
 cmd0 = pplz.Command(ex_zip, args0)
 cmds = pplz.CommandSequence([cmd0])
 psc = pplz.ProcessingSpecCommands(cmds)
@@ -23,11 +24,8 @@ osp = pplz.OutputSpecDone()
 ospp = pplz.OutputSpecPipeline()
 ospec = pplz.OutputSpec(ospp)
 
-pipeline = pplz.PipelineSpec('mitgcm-zip-pipeline', ispec, pspec, ospec)
 
-
-# Pipeline Tests
-
+# Input Spec Tests
 filenameList = os.path.join(TESTPATH, 'data/mitgcm-output.example-ls.txt')
 with open(filenameList) as f:
   filenames = f.readlines()
@@ -53,6 +51,7 @@ isp.accept(readyFiles, acceptedFiles)
 print("Accepted:")
 for p in acceptedFiles:
   print(p.string())
+
 
 # InputSpec Logic Script
 ''' Collect Timesteps '''
@@ -102,6 +101,7 @@ print("Accepted Filesets:", res)
 for p in accepted:
   print(p.string())
 
+
 # InputSpec Logic Script - 2
 script = '''
 import re
@@ -143,7 +143,8 @@ def accept(available, outAccepted):
   result = acceptFileset(ts, (varz, extz), available, outAccepted)
   return result
 '''
-isp.setAcceptScript(script, pplz.FilesystemPath(sys.path[0]))
+
+isp.setAcceptScript(script, pplz.FilesystemPath(os.path.abspath(sys.path[0])))
 readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()
 r = isp.accept(readyFiles, acceptedFiles)
@@ -155,5 +156,26 @@ for p in acceptedFiles:
 
 # Pipeline Execute
 
-print(pipeline.name)
+ispec = pplz.InputSpec(isp)
+pipeline = pplz.PipelineSpec('mitgcm-zip-pipeline', ispec, pspec, ospec)
+
+readyFiles = pplz.VectorFilesystemPath(filepaths)
+acceptedFiles = pplz.VectorFilesystemPath()
+
+if pplz.pipelineAcceptInput(pipeline, readyFiles, acceptedFiles):
+  print('Pipeline "%s" accepted %s file(s)' % (pipeline.name, len(acceptedFiles)))
+  task = pplz.pipelineMkPipelineTaskNoCatalyst(pipeline, acceptedFiles)
+  print("Running pipeline...")
+  pplz.pipelineProcessTask(task)
+  print("Done.")
+  print("Task - wasSuccessful: %s, canContinue: %s, hasError: %s, taskStatus: %s" % \
+        (task.get().wasSuccessful(), task.get().canContinue(), task.get().hasError(), task.get().taskStatus))
+  print("Input Files:")
+  for p in task.get().inputFiles:
+    print(p.string())  
+  print("Output Files:")
+  for p in task.get().outputFiles:
+    print(p.string())  
+
+
 

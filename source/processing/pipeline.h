@@ -80,12 +80,14 @@ struct PipelineSpec;
 
 // -- input --
 
-struct InputSpecPipeline
+struct InputSpecAny
 {
+  bool accept( const std::vector<boost::filesystem::path>& available
+             , std::vector<boost::filesystem::path>& outAccepted) const;
 };
 
 typedef boost::variant< InputSpecPaths
-                      , InputSpecPipeline > InputSpec;
+                      , InputSpecAny > InputSpec;
 
 
 // -- process --
@@ -114,6 +116,24 @@ struct ProcessingSpecCatalyst
 struct ProcessingSpecCommands
 {
   static const std::string FILENAME_ARG; //"$FILENAME";
+  static const std::string FILENAMES_ARRAY_ARG; //"$FILENAMES_ARRAY";
+
+  /// ProcessCommands_All x ProcessFiles_All: Each command is run with all files
+  /// ProcessCommands_Separate x ProcessFiles_All: Each command is run with all files
+  /// ProcessCommands_All x ProcessFiles_Single: Each file has all commands run on it
+  /// ProcessCommands_Separate x ProcessFiles_Single: For each command and for each file the command is run on the file
+  enum ProcessCommandsType
+  {
+    ProcessCommands_All
+  , ProcessCommands_Separate
+  };
+
+  enum ProcessFilesType
+  {
+    ProcessFiles_All
+  , ProcessFiles_Single
+  };
+
 
   typedef boost::filesystem::path Exe;
   typedef std::vector<std::string> Args;
@@ -121,9 +141,18 @@ struct ProcessingSpecCommands
 
   ProcessingSpecCommands(const std::vector<Command>& cmds_);
 
-  void process(const boost::filesystem::path &filename) const;
+  void setProcessingType(ProcessCommandsType pCmds, ProcessFilesType pFiles);
+
+  //bool process(const boost::filesystem::path& filename) const;
+  bool process(const std::vector<boost::filesystem::path>& files) const;
 
   std::vector<Command> commands;
+  ProcessCommandsType processCommandsBy;
+  ProcessFilesType processFilesBy;
+
+protected:
+  bool processCommand( const Command& cmd
+                     , const std::vector<boost::filesystem::path>& files) const;
 };
 
 typedef boost::variant< ProcessingSpecReadyFile
@@ -189,9 +218,9 @@ struct TaskState
 
   boost::optional<PipelineSpec> stage;
 
-  std::vector<boost::filesystem::path> readyFiles;
+  std::vector<boost::filesystem::path> inputFiles;
 
-  std::vector<boost::filesystem::path> products;
+  std::vector<boost::filesystem::path> outputFiles;
 
   // ProcessingSpecCatalyst state
   typedef std::function<std::unique_ptr<Descriptor>()> MkDescriptorFn;

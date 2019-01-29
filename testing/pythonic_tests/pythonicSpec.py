@@ -3,7 +3,7 @@ import os.path
 
 dir(pplz)
 
-ispi = pplz.InputSpecPipeline()
+ispi = pplz.InputSpecAny()
 dp = pplz.FilesystemPath(os.path.join(TESTPATH, 'data'))
 r = pplz.Regex('wrfoutReady_d01_.*')
 isp = pplz.InputSpecPaths(dp, r)
@@ -31,7 +31,7 @@ cmd1 = pplz.Command(ex_cat, args1)
 cmds = pplz.CommandSequence()
 cmds.extend([cmd0, cmd1])
 psc = pplz.ProcessingSpecCommands(cmds)
-psc.process(sf)
+psc.process(pplz.VectorFilesystemPath([sf]))
 
 cscpts = pplz.VectorFilesystemPath([pplz.FilesystemPath(i) for i in [os.path.join(TESTPATH, 'pipelines/gridwriter.py'), os.path.join(TESTPATH, 'pipelines/gridviewer_vti_velocity.py')]])
 cvars = pplz.VectorString(['U,V,W,QVAPOR'])

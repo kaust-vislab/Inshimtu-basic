@@ -185,7 +185,7 @@ void Inporter::createTasks( double time, bool forceOutput
     ProcessingSpecCatalyst catalystProcess(scripts, variables);
 
     PipelineSpec pipeline( "LegacyCatalyst"
-                         , InputSpecPipeline()
+                         , InputSpecAny()
                          , ProcessingSpecCatalyst(scripts, variables)
                          , OutputSpecDone());
 

@@ -52,13 +52,39 @@ int main(int argc, char* argv[])
 
   if (testname == "ProcessingSpecCommands")
   {
-    ProcessingSpecCommands s({ ProcessingSpecCommands::Command("/usr/bin/echo",{"Reading File: ", ProcessingSpecCommands::FILENAME_ARG})
-                             , ProcessingSpecCommands::Command("/usr/bin/cat",{ProcessingSpecCommands::FILENAME_ARG})});
+    ProcessingSpecCommands s({ ProcessingSpecCommands::Command("/usr/bin/echo",{"Reading File: ", ProcessingSpecCommands::FILENAMES_ARRAY_ARG})
+                             , ProcessingSpecCommands::Command("/usr/bin/cat",{ProcessingSpecCommands::FILENAMES_ARRAY_ARG})});
+    ProcessingSpecCommands ss({ ProcessingSpecCommands::Command("/usr/bin/echo",{"Reading File: ", ProcessingSpecCommands::FILENAME_ARG})
+                              , ProcessingSpecCommands::Command("/usr/bin/cat",{ProcessingSpecCommands::FILENAME_ARG})});
+    std::vector<fs::path> files;
 
-    s.process(testpath / "configs/vti_notified.json");
+    files.push_back(testpath / "configs/vti_notified.json");
+    files.push_back(testpath / "configs/gdm_outready.json");
+    files.push_back(testpath / "configs/gdm_relpath.json");
 
-    // TODO: get result from process, verify stdout, and return appropriate result;
-    return 0;
+    bool result(true);
+    bool ret;
+
+    ret = s.process(files);
+    result = result && ret;
+
+    ss.setProcessingType( ProcessingSpecCommands::ProcessCommands_All
+                       , ProcessingSpecCommands::ProcessFiles_Single);
+    ret = ss.process(files);
+    result = result && ret;
+
+    s.setProcessingType( ProcessingSpecCommands::ProcessCommands_Separate
+                       , ProcessingSpecCommands::ProcessFiles_All);
+    ret = s.process(files);
+    result = result && ret;
+
+    ss.setProcessingType( ProcessingSpecCommands::ProcessCommands_Separate
+                        , ProcessingSpecCommands::ProcessFiles_Single);
+    ret = ss.process(files);
+    result = result && ret;
+
+    // TODO: verify stdout and incorporate into result;
+    return (result ? 0 : 1);
   }
 
   if (testname == "ProcessingSpecReadyFile")
@@ -138,7 +164,7 @@ int main(int argc, char* argv[])
         "sys.path.insert(0, '%1%') \n"
         "import InshimtuLib as pplz \n"
         "dir(pplz) \n"
-        "ispi = pplz.InputSpecPipeline() \n"
+        "ispi = pplz.InputSpecAny() \n"
         "dp = pplz.FilesystemPath('%2%/data') \n"
         "r = pplz.Regex('wrfoutReady_d01_.*') \n"
         "isp = pplz.InputSpecPaths(dp, r) \n"
@@ -165,7 +191,7 @@ int main(int argc, char* argv[])
         "cmds = pplz.CommandSequence() \n"
         "cmds.extend([cmd0, cmd1]) \n"
         "psc = pplz.ProcessingSpecCommands(cmds) \n"
-        "psc.process(sf) \n"
+        "psc.process(pplz.VectorFilesystemPath([sf])) \n"
         "cscpts = pplz.VectorFilesystemPath() \n"
         "cscpts.extend([pplz.FilesystemPath(i) for i in ['%2%/pipelines/gridwriter.py','%2%/pipelines/gridviewer_vti_velocity.py']]) \n"
         "cvars = pplz.VectorString() \n"
