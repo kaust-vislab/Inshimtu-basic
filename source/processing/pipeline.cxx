@@ -20,8 +20,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <boost/variant.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/format.hpp>
+#include <boost/python.hpp>
 
 #include <unistd.h>
 #include <assert.h>
@@ -30,10 +33,88 @@
 
 
 namespace fs = boost::filesystem;
+namespace py = boost::python;
+
 
 // TODO: use boost.process and bp.system bp.child to process commands
 //#include <boost/process.hpp>
 //namespace bp = boost::process;
+
+
+namespace
+{
+bool accept_InputSpecPaths( const InputSpecPaths& ispec
+                          , const std::vector<fs::path>& available
+                          , std::vector<fs::path>& outAccepted
+                          , Attributes& outAttributes)
+{
+  std::vector<fs::path> filteredAvailable;
+
+  for (const auto& name : available)
+  {
+    if (ispec.match(name))
+    {
+      filteredAvailable.push_back(name);
+
+      if (ispec.acceptType == InputSpecPaths::Accept_First)
+      {
+        break;
+      }
+    }
+  }
+
+
+  if (ispec.acceptType == InputSpecPaths::Accept_Script)
+  {
+    if (!Py_IsInitialized())
+    {
+      Py_Initialize();
+    }
+
+    std::string init_script((boost::format(
+        "import os, sys \n"
+        "sys.path.insert(0, '%1%') \n"
+        "import InshimtuLib as inshimtu \n"
+      ) % ispec.libPath.string()
+      ).str()
+    );
+
+
+    try
+    {
+      py::object main_module = py::import("__main__");
+      py::object main_namespace = main_module.attr("__dict__");
+      py::object pyresult;
+
+      pyresult = py::exec( init_script.c_str(), main_namespace);
+
+      main_namespace["ACCEPT_DIRECTORY"] = ispec.directory;
+      main_namespace["IN_AVAILABLE"] = filteredAvailable;
+      main_namespace["OUT_ACCEPTED"] = py::ptr(&outAccepted);
+      main_namespace["OUT_ATTRIBUTES"] = py::ptr(&outAttributes);
+
+      pyresult = py::exec( ispec.acceptScript.c_str(), main_namespace);
+
+      pyresult = py::eval( "accept(IN_AVAILABLE, OUT_ACCEPTED, OUT_ATTRIBUTES)", main_namespace);
+      bool result = py::extract<bool>(pyresult);
+
+      return result;
+    }
+    catch (py::error_already_set const &)
+    {
+      PyErr_Print();
+    }
+  }
+  else if (!filteredAvailable.empty())
+  {
+    outAccepted.insert(std::end(outAccepted), std::begin(filteredAvailable), std::end(filteredAvailable));
+
+    return true;
+  }
+
+  return false;
+};
+}
 
 
 bool InputSpecAny::accept( const std::vector<boost::filesystem::path>& available
@@ -70,6 +151,7 @@ boost::optional<fs::path> ProcessingSpecReadyFile::get(const fs::path& filename)
 
 const std::string ProcessingSpecCommands::FILENAME_ARG("$FILENAME");
 const std::string ProcessingSpecCommands::FILENAMES_ARRAY_ARG("$FILENAMES_ARRAY");
+const std::string ProcessingSpecCommands::TIMESTEP_CODE_ARG("${TIMESTEP_CODE}");
 
 ProcessingSpecCommands::ProcessingSpecCommands(const std::vector<Command>& cmds_) :
   commands(cmds_)
@@ -84,7 +166,8 @@ void ProcessingSpecCommands::setProcessingType(ProcessCommandsType pCmds, Proces
   processFilesBy = pFiles;
 }
 
-bool ProcessingSpecCommands::process(const std::vector<fs::path>& files) const
+bool ProcessingSpecCommands::process( const Attributes& attributes
+                                    , const std::vector<fs::path>& files) const
 {
   bool result = true;
 
@@ -98,7 +181,7 @@ bool ProcessingSpecCommands::process(const std::vector<fs::path>& files) const
         {
           std::vector<fs::path> file({filename});
 
-          bool ret = processCommand(cmd, file);
+          bool ret = processCommand(attributes, cmd, file);
 
           // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
           if (!ret)
@@ -115,7 +198,7 @@ bool ProcessingSpecCommands::process(const std::vector<fs::path>& files) const
       {
         std::vector<fs::path> file({filename});
 
-        bool ret = process(file);
+        bool ret = process(attributes, file);
 
         // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
         if (!ret)
@@ -129,7 +212,7 @@ bool ProcessingSpecCommands::process(const std::vector<fs::path>& files) const
 
   for (const auto& cmd: commands)
   {
-    bool ret = processCommand(cmd, files);
+    bool ret = processCommand(attributes, cmd, files);
 
     // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
     if (!ret)
@@ -141,7 +224,8 @@ bool ProcessingSpecCommands::process(const std::vector<fs::path>& files) const
   return result;
 }
 
-bool ProcessingSpecCommands::processCommand( const Command& cmd
+bool ProcessingSpecCommands::processCommand( const Attributes& attributes
+                                           , const Command& cmd
                                            , const std::vector<fs::path>& files) const
 {
   bool result = true;
@@ -171,7 +255,21 @@ bool ProcessingSpecCommands::processCommand( const Command& cmd
     }
     else
     {
-      args.push_back(arg);
+      std::string targ(arg);
+
+      const auto& otimecode = attributes.getAttribute(TIMESTEP_CODE_ARG);
+
+      if (otimecode.is_initialized())
+      {
+        if (otimecode->type() == typeid(std::string))
+        {
+          const auto& value = boost::get<std::string>(otimecode.get());
+          boost::replace_all(targ, TIMESTEP_CODE_ARG, value);
+        }
+        // TODO: log warning about invalid TIMESTEP_CODE types
+      }
+
+      args.push_back(targ);
     }
   }
 
@@ -283,6 +381,33 @@ PipelineSpec::PipelineSpec( const std::string& name_
 }
 
 
+bool Attributes::hasAttribute(const AttributeKey& key) const
+{
+  const auto& fitr = attributes.find(key);
+
+  return fitr != std::end(attributes);
+}
+
+boost::optional<Attributes::AttributeValue> Attributes::getAttribute(const AttributeKey& key) const
+{
+  boost::optional<AttributeValue> ovalue;
+
+  const auto& fitr = attributes.find(key);
+
+  if (fitr != std::end(attributes))
+  {
+    ovalue = fitr->second;
+  }
+
+  return ovalue;
+}
+
+void Attributes::setAttribute(const AttributeKey& key, const AttributeValue& value)
+{
+  attributes[key] = value;
+}
+
+
 TaskState::TaskState()
   : taskStatus(TaskState::TS_OK)
   , stage()
@@ -307,25 +432,48 @@ bool TaskState::hasError() const
 }
 
 
-bool pipeline_AcceptInput( const PipelineSpec& pipeS
+bool TaskState::hasAttribute(const Attributes::AttributeKey& key) const
+{
+  return attributes.hasAttribute(key);
+}
+
+boost::optional<Attributes::AttributeValue> TaskState::getAttribute(const Attributes::AttributeKey& key) const
+{
+  return attributes.getAttribute(key);
+}
+
+void TaskState::setAttribute(const Attributes::AttributeKey& key, const Attributes::AttributeValue& value)
+{
+  attributes.setAttribute(key, value);
+}
+
+
+bool pipeline_AcceptInput( const InputSpec& inputS
                          , const std::vector<fs::path>& available
-                         , std::vector<fs::path>& outAccepted)
+                         , std::vector<fs::path>& outAccepted
+                         , Attributes& outAttributes)
 {
   auto visitor = make_lambda_visitor<bool>(
-                    [&](const InputSpecPaths& inSp) { return inSp.accept(available, outAccepted); }
+                    [&](const InputSpecPaths& inSp) { return accept_InputSpecPaths( inSp
+                                                                                  , available
+                                                                                  , outAccepted, outAttributes); }
                   , [&](const InputSpecAny& inSp) { return inSp.accept(available, outAccepted); });
 
-  return boost::apply_visitor(visitor, pipeS.input);
+  return boost::apply_visitor(visitor, inputS);
 }
 
 std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
                                                   , const std::vector<fs::path>& working
+                                                  , const Attributes& attributes
                                                   , std::function<std::unique_ptr<Descriptor>()> mkDescriptor)
 {
   std::unique_ptr<TaskState> task(new TaskState());
 
   task->stage = pipeS;
   task->inputFiles.insert(std::end(task->inputFiles), std::begin(working), std::end(working));
+
+  // TODO: task->appendAttributes(attributes)
+  task->attributes = attributes;
 
   task->mkDescriptor = mkDescriptor;
 
@@ -423,7 +571,7 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 
           {
             std::vector<fs::path> producedFiles;
-            bool result = proSp.process(taskS->inputFiles);
+            bool result = proSp.process(taskS->attributes, taskS->inputFiles);
 
             if (result)
             {

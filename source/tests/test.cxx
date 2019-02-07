@@ -64,23 +64,24 @@ int main(int argc, char* argv[])
 
     bool result(true);
     bool ret;
+    Attributes attribs;
 
-    ret = s.process(files);
+    ret = s.process(attribs, files);
     result = result && ret;
 
     ss.setProcessingType( ProcessingSpecCommands::ProcessCommands_All
-                       , ProcessingSpecCommands::ProcessFiles_Single);
-    ret = ss.process(files);
+                        , ProcessingSpecCommands::ProcessFiles_Single);
+    ret = ss.process(attribs, files);
     result = result && ret;
 
     s.setProcessingType( ProcessingSpecCommands::ProcessCommands_Separate
                        , ProcessingSpecCommands::ProcessFiles_All);
-    ret = s.process(files);
+    ret = s.process(attribs, files);
     result = result && ret;
 
     ss.setProcessingType( ProcessingSpecCommands::ProcessCommands_Separate
                         , ProcessingSpecCommands::ProcessFiles_Single);
-    ret = ss.process(files);
+    ret = ss.process(attribs, files);
     result = result && ret;
 
     // TODO: verify stdout and incorporate into result;
@@ -191,7 +192,7 @@ int main(int argc, char* argv[])
         "cmds = pplz.CommandSequence() \n"
         "cmds.extend([cmd0, cmd1]) \n"
         "psc = pplz.ProcessingSpecCommands(cmds) \n"
-        "psc.process(pplz.VectorFilesystemPath([sf])) \n"
+        "psc.process(pplz.Attributes(), pplz.VectorFilesystemPath([sf])) \n"
         "cscpts = pplz.VectorFilesystemPath() \n"
         "cscpts.extend([pplz.FilesystemPath(i) for i in ['%2%/pipelines/gridwriter.py','%2%/pipelines/gridviewer_vti_velocity.py']]) \n"
         "cvars = pplz.VectorString() \n"
@@ -265,86 +266,6 @@ int main(int argc, char* argv[])
 
     return (result ? 0 : 1);
   }
-
-
-  /*
-  MPICatalystApplication app(&argc, &argv);
-  const Configuration& configs(app.getConfigs());
-
-  // TODO: WatchFilesystem replaces INotify;
-  //       WatchFS uses INotify (if all nodes have a node master)
-  //       or PollFS (for shared filesystem)
-  std::unique_ptr<Notify> notify;
-
-  {
-    const bool watchDirectory(configs.hasWatchDirectory());
-    const bool doneFile(configs.hasDoneFile());
-
-    if (!watchDirectory && !doneFile)
-      notify.reset(new Notify());
-    else
-      notify.reset(new INotify( configs.getWatchPaths()
-                              , configs.getDoneFile()));
-  }
-
-  Coordinator coordinator(app, *notify.get(), configs);
-
-
-  std::unique_ptr<Processor> processor;
-  std::unique_ptr<Inporter> inporter;
-
-  if (app.isInporter())
-  {
-    processor.reset(new Processor( app.getInporterCommunicator()
-                                 , configs.collectScripts()
-                                 , configs.getStartupDelay()));
-    inporter.reset(new Inporter( *processor.get()
-                               , app.getInporterSection()
-                               , configs.collectVariables()));
-  }
-
-  const bool shouldDelete = configs.getDeleteFilesFlag();
-  bool isFinished = false;
-
-  std::cout << "READY" << std::endl;
-
-  // TODO: Fix logic to support per-node, local files (e.g., from a RAM Disk)
-  //       Make each notification node an inporter, each inporter process the file
-  //       from its node (the files may have different names), the coordinator node
-  //       (root) must syncronize the inporters to process their fragment of the
-  //       same frame as other inporters.
-
-  std::vector<fs::path> newfiles;
-
-  // process initial files (don't delete)
-  {
-    if (app.isRoot())
-    {
-      newfiles = configs.collectInitialFiles();
-    }
-
-    coordinator.update(newfiles, Coordinator::InitialFiles);
-    newfiles.clear();
-    if (app.isInporter())
-    {
-      inporter->process(coordinator.getReadyFiles(), false);
-    }
-  }
-
-  // process watched files
-  do
-  {
-    notify->processEvents(newfiles);
-
-    isFinished = coordinator.update(newfiles);
-    newfiles.clear();
-
-    if (app.isInporter())
-    {
-      inporter->process(coordinator.getReadyFiles(), shouldDelete);
-    }
-  } while (!isFinished);
-  */
 
   return 1;
 }

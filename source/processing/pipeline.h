@@ -25,57 +25,11 @@
 #include <sys/types.h>
 
 
-
-
-// TODO: explore notes and type representations of workflows
-/*
-enum class Responsibility {
-  Coordinator = 0x0 // rank-0 mangager; only 1 total
-, INotify // only 1 per node; each simulation writer node must have 1
-, IPoll // only 1 per node; poll private filesystem, e.g., /dev/shm
-, SPoll // only 1 total; poll shared filesystem, e.g., /scratch
-, CatalystLiveRemote // only 1 total; Inports ready files from shared filesystem, transmits to ParaView
-, CatalystWriter // Inports ready files, writes into shared filesystem
-};
-
-enum class FileProcessPolicy {
-  ProcessOnClose // requires INotify event
-, ProcessAfterAllWritersOpenAndClose // requires INotify event
-, ProcessOnNextTimeStep // ses either INotify or ?Poll, but requires name policy
-};
-
-enum class FilePostProcessPolicy {
-  DeleteWhenDone // all processing with it must be completed
-, MoveWhenDone // all processing with it must be completed
-, ExternalActionWhenDone // calls a post processing tool
-};
-
-enum class FileOrganization {
-  SingleFilePerTimestep
-, FragmentedFilesPerTimestep
-, SingleCompoundFileTotalAllTimesteps // must be data format like NetCDF or HDF5 which allows parallel reading, must contain time step, and allow access indexed by time step
-, FragmentedCompoundFileTotalAllTimesteps // must be data format like NetCDF or HDF5 which allows parallel reading, must contain time step, and allow access indexed by time step
-};
-
-enum class FileState {
-  OpenedByNodeDict
-, ClosedByNodeDict
-, IsReady
-, NeedsProcessing
-, GetData
-, WasProcessed
-, IsDone
-};
-
-// type Workflows =
-//   OnFileReady -> InFile -> PreProcess -> Process -> Inport -> CatalystWriter -> OutFile -> PostProcess
-//   OnFileReady -> InFile -> PreProcess -> CatalystLiveRemote -> PostProcess
-//   OnFileReady -> InFile -> PreProcess -> Process -> Inport -> CatalystLiveRemote -> OutFile -> PostProcess
-*/
-
 class Descriptor;
 
 struct PipelineSpec;
+struct Attributes;
+struct TaskState;
 
 
 // -- input --
@@ -117,6 +71,7 @@ struct ProcessingSpecCommands
 {
   static const std::string FILENAME_ARG; //"$FILENAME";
   static const std::string FILENAMES_ARRAY_ARG; //"$FILENAMES_ARRAY";
+  static const std::string TIMESTEP_CODE_ARG; //"${TIMESTEP_CODE}";
 
   /// ProcessCommands_All x ProcessFiles_All: Each command is run with all files
   /// ProcessCommands_Separate x ProcessFiles_All: Each command is run with all files
@@ -144,14 +99,16 @@ struct ProcessingSpecCommands
   void setProcessingType(ProcessCommandsType pCmds, ProcessFilesType pFiles);
 
   //bool process(const boost::filesystem::path& filename) const;
-  bool process(const std::vector<boost::filesystem::path>& files) const;
+  bool process( const Attributes& attributes
+              , const std::vector<boost::filesystem::path>& files) const;
 
   std::vector<Command> commands;
   ProcessCommandsType processCommandsBy;
   ProcessFilesType processFilesBy;
 
 protected:
-  bool processCommand( const Command& cmd
+  bool processCommand( const Attributes& attributes
+                     , const Command& cmd
                      , const std::vector<boost::filesystem::path>& files) const;
 };
 
@@ -173,6 +130,7 @@ struct OutputSpecPipeline
   OutputSpecPipeline();
 
   bool deleteInput;
+  //std::unique_ptr<const PipelineSpec> pipelineu;
   const PipelineSpec* pipeline;
 };
 
@@ -195,6 +153,24 @@ struct PipelineSpec
 };
 
 
+// -- runtime attributes --
+
+struct Attributes
+{
+  typedef std::string AttributeKey;
+  typedef boost::variant< std::string
+                        , boost::filesystem::path> AttributeValue;
+  typedef std::map<AttributeKey, AttributeValue> AttributeMap;
+
+
+  bool hasAttribute(const AttributeKey& key) const;
+  boost::optional<AttributeValue> getAttribute(const AttributeKey& key) const;
+  void setAttribute(const AttributeKey& key, const AttributeValue& value);
+
+
+  AttributeMap attributes;
+};
+
 // -- task --
 
 struct TaskState
@@ -214,13 +190,20 @@ struct TaskState
   bool wasSuccessful() const;
   bool hasError() const;
 
+  bool hasAttribute(const Attributes::AttributeKey& key) const;
+  boost::optional<Attributes::AttributeValue> getAttribute(const Attributes::AttributeKey& key) const;
+  void setAttribute(const Attributes::AttributeKey& key, const Attributes::AttributeValue& value);
+
+
   TaskStatus taskStatus;
 
   boost::optional<PipelineSpec> stage;
 
   std::vector<boost::filesystem::path> inputFiles;
-
   std::vector<boost::filesystem::path> outputFiles;
+
+  Attributes attributes;
+
 
   // ProcessingSpecCatalyst state
   typedef std::function<std::unique_ptr<Descriptor>()> MkDescriptorFn;
@@ -228,12 +211,14 @@ struct TaskState
 };
 
 
-bool pipeline_AcceptInput( const PipelineSpec& pipeS
+bool pipeline_AcceptInput( const InputSpec& inputS
                          , const std::vector<boost::filesystem::path>& available
-                         , std::vector<boost::filesystem::path>& outAccepted);
+                         , std::vector<boost::filesystem::path>& outAccepted
+                         , Attributes& outAttributes);
 
 std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
                                                   , const std::vector<boost::filesystem::path>& working
+                                                  , const Attributes& attributes
                                                   , TaskState::MkDescriptorFn mkDescriptor);
 
 void pipeline_ProcessTask(std::unique_ptr<TaskState>& taskS);

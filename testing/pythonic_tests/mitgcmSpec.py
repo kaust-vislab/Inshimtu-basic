@@ -13,8 +13,7 @@ r = pplz.Regex('(' + '|'.join(varz) + ')\.[0-9]+\.(' + '|'.join(extz) + ')')
 isp = pplz.InputSpecPaths(dp, r)
 
 ex_zip = pplz.CommandExe('echo') #('zip')
-# TODO: Implement ProcessingSpecCommands.TIMECODE
-args0 = pplz.VectorString(['zip', '-j', '-m', '-T', '/lustre/scratch/mitgcm-output/mitgcm.$TIMECODE.zip', '-i', pplz.ProcessingSpecCommands.FILENAMES_ARRAY_ARG]) 
+args0 = pplz.VectorString(['zip', '-j', '-m', '-T', '/lustre/scratch/mitgcm-output/mitgcm.${TIMESTEP_CODE}.zip', '-i', pplz.ProcessingSpecCommands.FILENAMES_ARRAY_ARG]) 
 cmd0 = pplz.Command(ex_zip, args0)
 cmds = pplz.CommandSequence([cmd0])
 psc = pplz.ProcessingSpecCommands(cmds)
@@ -44,9 +43,11 @@ print("Matched = False:")
 for p, m in matched_false:
   print(p.string(), m)
 
+ispec = pplz.InputSpec(isp)
 readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()
-isp.accept(readyFiles, acceptedFiles)
+outAttributes = pplz.Attributes()
+r = pplz.pipelineAcceptInput(ispec, readyFiles, acceptedFiles, outAttributes)
 
 print("Accepted:")
 for p in acceptedFiles:
@@ -122,32 +123,40 @@ def collectTimestepFilepaths(timestep, zzs, filepaths):
   matches = [p for p in filepaths if re.match(r, p.string())]
   return matches
 
-def acceptFileset(timesteps, zzs, filepaths, outAccepted):
+def acceptFileset(timesteps, zzs, filepaths):
   (varz, extz) = zzs
   expectedCount = len(varz) * len(extz)
   assert(expectedCount > 0)
   ts = sorted(list(set(timesteps)))
-  firstPS = None
+  firstTPS = None
   for t in ts:
     ps = collectTimestepFilepaths(t, zzs, filepaths)
     psLen = len(ps)
-    if firstPS == None and psLen > 0:
-      firstPS = ps
+    if firstTPS == None and psLen > 0:
+      firstTPS = (t, ps)
     if psLen == expectedCount:
-      outAccepted.extend(firstPS)
-      return True
-  return False
+      return firstTPS
+  return None
 
-def accept(available, outAccepted):
+def accept(available, outAccepted, outAttributes):
   ts = [o.get().string() for o in [preplace.get(fp) for fp in available] if o.is_initialized()]
-  result = acceptFileset(ts, (varz, extz), available, outAccepted)
-  return result
+  result = acceptFileset(ts, (varz, extz), available)
+  if not result:
+    return False
+  t, ps = result
+  if len(t) > 0:
+    tv = pplz.AttributeValue(t)
+    outAttributes.setAttribute(pplz.ProcessingSpecCommands.TIMESTEP_CODE_ARG, tv)
+  outAccepted.extend(ps)
+  return True
 '''
 
 isp.setAcceptScript(script, pplz.FilesystemPath(os.path.abspath(sys.path[0])))
+ispec = pplz.InputSpec(isp)
 readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()
-r = isp.accept(readyFiles, acceptedFiles)
+attributes = pplz.Attributes()
+r = pplz.pipelineAcceptInput(ispec, readyFiles, acceptedFiles, attributes)
 
 print("Accepted Script:", r)
 for p in acceptedFiles:
@@ -161,10 +170,11 @@ pipeline = pplz.PipelineSpec('mitgcm-zip-pipeline', ispec, pspec, ospec)
 
 readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()
+attributes = pplz.Attributes()
 
-if pplz.pipelineAcceptInput(pipeline, readyFiles, acceptedFiles):
+if pplz.pipelineAcceptInput(pipeline.input, readyFiles, acceptedFiles, attributes):
   print('Pipeline "%s" accepted %s file(s)' % (pipeline.name, len(acceptedFiles)))
-  task = pplz.pipelineMkPipelineTaskNoCatalyst(pipeline, acceptedFiles)
+  task = pplz.pipelineMkPipelineTaskNoCatalyst(pipeline, acceptedFiles, attributes)
   print("Running pipeline...")
   pplz.pipelineProcessTask(task)
   print("Done.")

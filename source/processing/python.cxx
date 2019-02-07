@@ -83,23 +83,26 @@ boost::shared_ptr<std::vector<T>> pylist_to_vector(py::list o)
 ///////////////////////////////////////////////
 /// TODO: Fix this abomination when we have a better way to pass all required runtime environments to tasks
 std::unique_ptr<TaskState> pipeline_MkPipelineTask_NoCatalyst( const PipelineSpec& pipeS
-                                                  , const std::vector<fs::path>& working)
+                                                  , const std::vector<fs::path>& working
+                                                  , const Attributes& attributes)
 {
   std::unique_ptr<TaskState> task(new TaskState());
 
   task->stage = pipeS;
   task->inputFiles.insert(std::end(task->inputFiles), std::begin(working), std::end(working));
-
+  task->attributes = attributes;
   return task;
 }
 
 boost::shared_ptr<TaskState> pipeline_MkPipelineTask_NoCatalyst_ptr( const PipelineSpec& pipeS
-                                                 , const std::vector<boost::filesystem::path>& working)
+                                                 , const std::vector<boost::filesystem::path>& working
+                                                 , const Attributes& attributes)
 {
-  std::unique_ptr<TaskState> ptr(pipeline_MkPipelineTask_NoCatalyst(pipeS, working));
+  std::unique_ptr<TaskState> ptr(pipeline_MkPipelineTask_NoCatalyst(pipeS, working, attributes));
 
   return boost::shared_ptr<TaskState>(ptr.release());
 }
+
 void pipeline_ProcessTask_ptr(boost::shared_ptr<TaskState>& taskS)
 {
   std::unique_ptr<TaskState> ptr(taskS.get());
@@ -171,7 +174,6 @@ BOOST_PYTHON_MODULE(InshimtuLib)
         .def("setAcceptAll", &InputSpecPaths::setAcceptAll)
         .def("setAcceptScript", &InputSpecPaths::setAcceptScript)
         .def("match", &InputSpecPaths::match)
-        .def("accept", &InputSpecPaths::accept)
     ;
 
     enum_<InputSpecPaths::AcceptType>("AcceptType")
@@ -183,7 +185,6 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   }
 
   class_<InputSpecAny>("InputSpecAny")
-      .def("accept", &InputSpecAny::accept)
   ;
 
   // ProcessingSpec
@@ -209,6 +210,7 @@ BOOST_PYTHON_MODULE(InshimtuLib)
         .def("setProcessingType", &ProcessingSpecCommands::setProcessingType)
         .def_readonly("FILENAME_ARG",&ProcessingSpecCommands::FILENAME_ARG)
         .def_readonly("FILENAMES_ARRAY_ARG",&ProcessingSpecCommands::FILENAMES_ARRAY_ARG)
+        .def_readonly("TIMESTEP_CODE_ARG",&ProcessingSpecCommands::TIMESTEP_CODE_ARG)
     ;
 
     enum_<ProcessingSpecCommands::ProcessCommandsType>("ProcessCommandsType")
@@ -238,6 +240,9 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   // PipelineSpec
   class_<PipelineSpec>("PipelineSpec", init<std::string, InputSpec, ProcessingSpec, OutputSpec>())
       .def_readonly("name",&PipelineSpec::name)
+      .def_readonly("input",&PipelineSpec::input)
+      .def_readonly("process",&PipelineSpec::process)
+      .def_readonly("out",&PipelineSpec::out)
   ;
 
   class_<boost::optional<PipelineSpec>>("OptionalPipelineSpec", no_init)
@@ -247,12 +252,29 @@ BOOST_PYTHON_MODULE(InshimtuLib)
 
 
   // PipelineProcessing
+  class_<Attributes::AttributeKey>("AttributeKey", init<std::string>())
+  ;
+
+  class_<Attributes::AttributeValue>("AttributeValue", init<std::string>())
+      .def(init<fs::path>())
+  ;
+
+  class_<Attributes>("Attributes")
+      .def("hasAttribute", &Attributes::hasAttribute)
+      .def("getAttribute", &Attributes::getAttribute)
+      .def("setAttribute", &Attributes::setAttribute)
+  ;
+
+
   {
     scope scope =
     class_<TaskState>("TaskState", no_init)
         .def("canContinue", &TaskState::canContinue)
         .def("wasSuccessful", &TaskState::wasSuccessful)
         .def("hasError", &TaskState::hasError)
+        .def("hasAttribute", &TaskState::hasAttribute)
+        .def("getAttribute", &TaskState::getAttribute)
+        .def("setAttribute", &TaskState::setAttribute)
         .def_readonly("taskStatus", &TaskState::taskStatus)
         .def_readonly("inputFiles", &TaskState::inputFiles)
         .def_readonly("outputFiles", &TaskState::outputFiles)

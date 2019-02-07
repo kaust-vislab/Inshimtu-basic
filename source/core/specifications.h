@@ -97,14 +97,13 @@ struct InputSpecPaths
 
   bool match(const boost::filesystem::path& filename) const;
 
-  bool accept( const std::vector<boost::filesystem::path>& available
-             , std::vector<boost::filesystem::path>& outAccepted) const;
 
   boost::filesystem::path directory;
   boost::regex filenames;
 
   AcceptType acceptType;
   std::string acceptScript;
+  // TODO: move libPath to pipeline runtime
   boost::filesystem::path libPath;
 };
 

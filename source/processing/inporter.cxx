@@ -175,8 +175,9 @@ void Inporter::process( const std::vector<fs::path>& newfiles
 void Inporter::createTasks( double time, bool forceOutput
                           , std::vector<std::unique_ptr<TaskState>>& outTasks)
 {
-  std::vector<fs::path> accepted;
   std::vector<PipelineSpec> pipelines(this->pipelines);
+  std::vector<fs::path> accepted;
+  Attributes attributes;
 
   // legacy
   {
@@ -195,8 +196,9 @@ void Inporter::createTasks( double time, bool forceOutput
   for (const auto& pipeline: pipelines)
   {
     accepted.clear();
+    attributes.attributes.clear();
 
-    if (pipeline_AcceptInput(pipeline, availableFiles, accepted))
+    if (pipeline_AcceptInput(pipeline.input, availableFiles, accepted, attributes))
     {
       auto mkDescriptor = [&](){ return std::unique_ptr<Descriptor> (new Descriptor(processor, section, timeStep, time, forceOutput)); };
 
@@ -212,7 +214,7 @@ void Inporter::createTasks( double time, bool forceOutput
       }
 
       // TODO: Schedule tasks on inporter nodes
-      auto task = pipeline_MkPipelineTask( pipeline, accepted, mkDescriptor);
+      auto task = pipeline_MkPipelineTask( pipeline, accepted, attributes, mkDescriptor);
 
       outTasks.push_back(std::move(task));
     }
