@@ -9,10 +9,6 @@
 #include "sentinels/notification.h"
 #include "utils/logger.h"
 
-// TODO: Remove bad dependency when calculateReadyFiles is part of process pipeline
-#include "processing/pipeline.h"
-
-
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -30,6 +26,29 @@
 
 #include <vtkProcessGroup.h>
 #include <vtkMPI.h>
+
+// TODO: Remove bad dependency when calculateReadyFiles is part of process pipeline
+#include "processing/pipeline.h"
+namespace
+{
+boost::optional<boost::filesystem::path> getSignalledOutputFile( const Configuration& configs
+                                                               , const boost::filesystem::path& path)
+{
+  boost::optional<boost::filesystem::path> signalledPath;
+  boost::optional<ReplaceRegexFormat> conversion(configs.getOutputReadyConversion());
+
+  if (conversion.is_initialized())
+  {
+    ProcessingSpecReadyFile ready(conversion.get());
+
+    signalledPath = ready.get(path);
+  }
+
+  return signalledPath;
+}
+
+}
+
 
 
 namespace po = boost::program_options;
@@ -177,7 +196,7 @@ UpdateState::S_calculate Coordinator::update_calculateReadyFiles( UpdateState::S
 
       if (!finfo.was_processed)
       {
-        boost::optional<fs::path> outputFile(getSignalledOutputFile(fpath));
+        boost::optional<fs::path> outputFile(getSignalledOutputFile(configs, fpath));
 
         if (outputFile.is_initialized())
         {
@@ -356,20 +375,5 @@ bool Coordinator::isDone() const
   MPI_Allreduce(&done, &done_global, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
   return done_global == DONE;
-}
-
-boost::optional<fs::path> Coordinator::getSignalledOutputFile(const fs::path& path) const
-{
-  boost::optional<fs::path> signalledPath;
-  boost::optional<ReplaceRegexFormat> conversion(configs.getOutputReadyConversion());
-
-  if (conversion.is_initialized())
-  {
-    ProcessingSpecReadyFile ready(conversion.get());
-
-    signalledPath = ready.get(path);
-  }
-
-  return signalledPath;
 }
 

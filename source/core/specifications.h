@@ -95,6 +95,9 @@ struct InputSpecPaths
                       , const boost::filesystem::path& libPath_);
 
 
+  //! \brief Determine if file can be accepted as input for pipeline
+  //! \arg filename   Filepath
+  //! \return   True if given filepath matches the directory / filenames specifications
   bool match(const boost::filesystem::path& filename) const;
 
 
