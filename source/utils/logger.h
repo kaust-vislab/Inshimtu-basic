@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include <sys/types.h>
 
 class Logger
@@ -38,12 +39,42 @@ protected:
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& input)
 {
+  bool first = true;
   os << "[";
   for (const auto& i : input)
   {
-    os << i << ",";
+    if (first)
+    {
+      first = false;
+    }
+    else
+    {
+      os << ",";
+    }
+    os << i;
   }
-  os << "]";
+  os << "]" << std::flush;
+  return os;
+}
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::set<T>& input)
+{
+  bool first = true;
+  os << "[";
+  for (const auto& i : input)
+  {
+    if (first)
+    {
+      first = false;
+    }
+    else
+    {
+      os << ",";
+    }
+    os << i;
+  }
+  os << "]" << std::flush;
   return os;
 }
 

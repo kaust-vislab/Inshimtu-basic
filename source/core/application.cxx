@@ -138,8 +138,8 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
     ++inporterCount;
   }
 
-  assert(inporterRank >= 0);
-  assert(inporterIndex != INVALID_INDEX);
+  assert(inporterRank == getRank() || inporterRank < 0);
+  assert(inporterIndex != INVALID_INDEX || inporterRank < 0);
   assert(inporters.size() > 0);
 
   inporterSection.reset(new MPIInportSection(inporterRank, inporterIndex, inporters.size()));

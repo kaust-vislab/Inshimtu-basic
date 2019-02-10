@@ -36,7 +36,7 @@ MAX_AVAILABLE_HOSTS_LMEM=1
 
 export HOST_DOMAINNAME
 HOST_DOMAINNAME="$(hostname -d)"
-HOST_DOMAINNAME=${HOST_DOMAINNAME=//.vis.kaust.edu.sa/}
+HOST_DOMAINNAME=${HOST_DOMAINNAME//.vis.kaust.edu.sa/}
 
 export HOST_NAME
 HOST_NAME="$(hostname -s)"
@@ -392,6 +392,7 @@ fi
 # Launch
 
 echo "Lanching Inshimtu: ${INSHIMTU_EXEC}"
+echo "    MPI - nodes:${NODES} hosts:${HOSTS}"
 
 
 if [ -n "$FILES_WATCH_REGEX" ]; then

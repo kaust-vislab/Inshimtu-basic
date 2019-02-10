@@ -65,6 +65,8 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     assert(std::find(std::begin(workingFiles), std::end(workingFiles), name) == std::end(workingFiles));
     assert(std::find(std::begin(completedFiles), std::end(completedFiles), name) == std::end(completedFiles));
 
+    // TODO: Fix issue with deleteFiles applying to previous unprocessed files
+    //       deleteFile status should be associated with the files
     availableFiles.push_back(name);
 
     // new file is new
@@ -87,7 +89,9 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     // Process tasks
     for (auto& task : tasks)
     {
-      std::cout << "\tProcessing Task: " << (task->stage.is_initialized() ? task->stage.get().name : "<INVALID>") << std::endl;
+      std::cout << "\tProcessing Task: " << (task->stage.is_initialized() ? task->stage.get().name : "<INVALID>")
+                << " -- Section index:" << section.getIndex() << " size:" << section.getSize() << " rank:" << section.getRank()
+                << std::endl;
 
       pipeline_ProcessTask(task);
 
