@@ -5,11 +5,22 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti
 ##TODOs
 ### Testing Example...
 
+```
 module add kvl-applications paraview/5.3.0-mpich-x86_64
+```
 
-#### Example of running on GPGPU with 16 nodes total, and 9 nodes as inporters (extent import + Catalyst)
+Running on local KVL desktop
+
+```
+time testing/launchers/launch_inshimtu_kvl.sh -S GDM -n 0 -N 1
+```
+
+
+Running on KVL cluster with 16 nodes total, and 9 nodes as inporters (extent import + Catalyst)
+
+```
 time testing/launchers/launch_inshimtu_kvl.sh -S GDM -n 0-8 -N 1-16
-
+```
 
 build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti -v input
 

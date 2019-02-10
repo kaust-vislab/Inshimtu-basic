@@ -185,6 +185,8 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   }
 
   class_<InputSpecAny>("InputSpecAny")
+      .def("setAcceptFirst", &InputSpecAny::setAcceptFirst)
+      .def("setAcceptAll", &InputSpecAny::setAcceptAll)
   ;
 
   // ProcessingSpec

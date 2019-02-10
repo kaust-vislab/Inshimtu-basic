@@ -117,11 +117,37 @@ bool accept_InputSpecPaths( const InputSpecPaths& ispec
 }
 
 
+InputSpecAny::InputSpecAny()
+  : acceptType(InputSpecPaths::Accept_All)
+{
+}
+
+void InputSpecAny::setAcceptFirst()
+{
+  acceptType = InputSpecPaths::Accept_First;
+}
+
+void InputSpecAny::setAcceptAll()
+{
+  acceptType = InputSpecPaths::Accept_All;
+}
+
 bool InputSpecAny::accept( const std::vector<boost::filesystem::path>& available
                               , std::vector<boost::filesystem::path>& outAccepted) const
 {
-  outAccepted.insert(std::end(outAccepted), std::begin(available), std::end(available));
-  return true;
+  if (acceptType == InputSpecPaths::Accept_All)
+  {
+    outAccepted.insert(std::end(outAccepted), std::begin(available), std::end(available));
+
+    return true;
+  }
+  else if (acceptType == InputSpecPaths::Accept_First && !available.empty())
+  {
+    outAccepted.push_back(available.front());
+    return true;
+  }
+
+  return false;
 }
 
 

@@ -36,8 +36,15 @@ struct TaskState;
 
 struct InputSpecAny
 {
+  InputSpecAny();
+
   bool accept( const std::vector<boost::filesystem::path>& available
              , std::vector<boost::filesystem::path>& outAccepted) const;
+
+  void setAcceptFirst();
+  void setAcceptAll();
+
+  InputSpecPaths::AcceptType acceptType;
 };
 
 typedef boost::variant< InputSpecPaths
