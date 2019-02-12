@@ -32,14 +32,13 @@ namespace fs = boost::filesystem;
 
 Inporter::Inporter( Processor& processor_
                   , const MPIInportSection& section_
-                  , const std::vector<std::string>& variables_)
+                  , const std::vector<PipelineSpec>& pipelines_)
   : section(section_)
-  , pipelines()
+  , pipelines(pipelines_)
   , availableFiles()
   , workingFiles()
   , completedFiles()
   , processor(processor_)
-  , variables(variables_)
   , timeStep(0)
   , lengthTimeStep(1.0)
 {
@@ -89,7 +88,7 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     // Process tasks
     for (auto& task : tasks)
     {
-      std::cout << "\tProcessing Task: " << (task->stage.is_initialized() ? task->stage.get().name : "<INVALID>")
+      std::cout << "\tProcessing Task: " << (task->getStage().is_initialized() ? task->getStage()->name : "<UNKNOWN>")
                 << " -- Section index:" << section.getIndex() << " size:" << section.getSize() << " rank:" << section.getRank()
                 << std::endl;
 
@@ -133,33 +132,16 @@ void Inporter::process( const std::vector<fs::path>& newfiles
 void Inporter::createTasks( double time, bool forceOutput
                           , std::vector<std::unique_ptr<TaskState>>& outTasks)
 {
-  std::vector<PipelineSpec> pipelines(this->pipelines);
   std::vector<fs::path> accepted;
   Attributes attributes;
-
-  // legacy
-  {
-    // TODO: Processor has scripts (but they apply to all input files).
-    std::vector<fs::path> scripts;
-    ProcessingSpecCatalyst catalystProcess(scripts, variables);
-    InputSpecAny inputSpecAny;
-
-    inputSpecAny.setAcceptFirst();
-
-    PipelineSpec pipeline( "LegacyCatalyst"
-                         , inputSpecAny
-                         , ProcessingSpecCatalyst(scripts, variables)
-                         , OutputSpecDone());
-
-    pipelines.push_back(pipeline);
-  }
 
   for (const auto& pipeline: pipelines)
   {
     accepted.clear();
     attributes.attributes.clear();
 
-    if (pipeline_AcceptInput(pipeline.input, availableFiles, accepted, attributes))
+    if (pipeline_AcceptInput( pipeline.getInput()
+                            , availableFiles, accepted, attributes))
     {
       auto mkDescriptor = [&,time,forceOutput](){ return std::unique_ptr<Descriptor> (new Descriptor(processor, section, timeStep, time, forceOutput)); };
 

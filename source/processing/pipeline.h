@@ -64,14 +64,16 @@ struct ProcessingSpecReadyFile
 
 struct ProcessingSpecCatalyst
 {
-  ProcessingSpecCatalyst( const std::vector<boost::filesystem::path>& scripts_
-                        , const std::vector<std::string>& variables_);
+  typedef boost::filesystem::path Script;
+  typedef std::string Variables;
+  typedef std::pair<Script, Variables> ScriptSpec;
+
+  ProcessingSpecCatalyst(const std::vector<ScriptSpec>& scripts_);
 
   void process( const boost::filesystem::path &filename
               , Descriptor& descriptor) const;
 
-  std::vector<boost::filesystem::path> scripts;
-  std::vector<std::string> variables;
+  std::vector<ScriptSpec> scripts;
 };
 
 struct ProcessingSpecCommands
@@ -105,7 +107,6 @@ struct ProcessingSpecCommands
 
   void setProcessingType(ProcessCommandsType pCmds, ProcessFilesType pFiles);
 
-  //bool process(const boost::filesystem::path& filename) const;
   bool process( const Attributes& attributes
               , const std::vector<boost::filesystem::path>& files) const;
 
@@ -138,7 +139,7 @@ struct OutputSpecPipeline
 
   bool deleteInput;
   //std::unique_ptr<const PipelineSpec> pipelineu;
-  const PipelineSpec* pipeline;
+  //const PipelineSpec* pipeline;
 };
 
 typedef boost::variant< OutputSpecDone
@@ -147,16 +148,31 @@ typedef boost::variant< OutputSpecDone
 
 // -- pipeline --
 
-struct PipelineSpec
+struct PipelineStage
 {
-  PipelineSpec( const std::string& name_
-              , InputSpec input_, ProcessingSpec process_, OutputSpec out_);
+  PipelineStage( const std::string& name_
+               , InputSpec input_, ProcessingSpec process_, OutputSpec out_);
 
   std::string name;
 
   InputSpec input;
   ProcessingSpec process;
   OutputSpec out;
+};
+
+struct PipelineSpec
+{
+  PipelineSpec( const std::string& name_
+              , InputSpec input_, ProcessingSpec process_, OutputSpec out_);
+  PipelineSpec( const PipelineStage& stage_);
+  PipelineSpec( const std::string& name_
+              , const std::vector<PipelineStage>& stages_);
+
+  const InputSpec getInput() const;
+
+  std::string name;
+
+  std::vector<PipelineStage> stages;
 };
 
 
@@ -182,7 +198,7 @@ struct Attributes
 
 struct TaskState
 {
-  TaskState();
+  TaskState(const PipelineSpec& pipeline_);
 
   enum TaskStatus
   {
@@ -201,10 +217,17 @@ struct TaskState
   boost::optional<Attributes::AttributeValue> getAttribute(const Attributes::AttributeKey& key) const;
   void setAttribute(const Attributes::AttributeKey& key, const Attributes::AttributeValue& value);
 
+  boost::optional<PipelineStage> getStage() const;
+
+  bool nextStage();
+
 
   TaskStatus taskStatus;
 
-  boost::optional<PipelineSpec> stage;
+  PipelineSpec pipeline;
+  std::vector<PipelineStage>::const_iterator stageItr;
+
+  //boost::optional<PipelineStage> stage;
 
   std::vector<boost::filesystem::path> inputFiles;
   std::vector<boost::filesystem::path> outputFiles;

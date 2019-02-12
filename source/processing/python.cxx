@@ -86,9 +86,8 @@ std::unique_ptr<TaskState> pipeline_MkPipelineTask_NoCatalyst( const PipelineSpe
                                                   , const std::vector<fs::path>& working
                                                   , const Attributes& attributes)
 {
-  std::unique_ptr<TaskState> task(new TaskState());
+  std::unique_ptr<TaskState> task(new TaskState(pipeS));
 
-  task->stage = pipeS;
   task->inputFiles.insert(std::end(task->inputFiles), std::begin(working), std::end(working));
   task->attributes = attributes;
   return task;
@@ -134,6 +133,9 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   class_<ReplaceRegexFormat>("ReplaceRegexFormat", init<boost::regex, std::string>())
   ;
 
+  class_<ProcessingSpecCatalyst::ScriptSpec>("ScriptSpec", init<fs::path, std::string>())
+  ;
+
 
   class_<std::vector<std::string>>("VectorString")
       .def(init<size_t>())
@@ -149,6 +151,12 @@ BOOST_PYTHON_MODULE(InshimtuLib)
       .def(vector_indexing_suite<std::vector<fs::path>>())
   ;
 
+  class_<std::vector<ProcessingSpecCatalyst::ScriptSpec>>("VectorScriptSpec")
+      .def(init<std::vector<ProcessingSpecCatalyst::ScriptSpec>>())
+      .def("__init__", make_constructor(&pylist_to_vector<ProcessingSpecCatalyst::ScriptSpec>))
+      .def(vector_indexing_suite<std::vector<ProcessingSpecCatalyst::ScriptSpec>>())
+  ;
+
   def("CommandExe", &convert<std::string, fs::path>);
 
   class_<ProcessingSpecCommands::Command>("Command", init<ProcessingSpecCommands::Exe, ProcessingSpecCommands::Args>())
@@ -160,6 +168,8 @@ BOOST_PYTHON_MODULE(InshimtuLib)
       .def("__init__", make_constructor(&pylist_to_vector<ProcessingSpecCommands::Command>))
       .def(vector_indexing_suite<std::vector<ProcessingSpecCommands::Command>>())
   ;
+
+
 
 
   // InputSpec
@@ -199,8 +209,7 @@ BOOST_PYTHON_MODULE(InshimtuLib)
       .def("get", &ProcessingSpecReadyFile::get)
   ;
 
-  class_<ProcessingSpecCatalyst>("ProcessingSpecCatalyst", init< const std::vector<boost::filesystem::path>&
-                                                               , const std::vector<std::string>&>())
+  class_<ProcessingSpecCatalyst>("ProcessingSpecCatalyst", init<const std::vector<ProcessingSpecCatalyst::ScriptSpec>&>())
       .def("process", &ProcessingSpecCatalyst::process)
   ;
 
@@ -239,12 +248,30 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   class_<OutputSpecPipeline>("OutputSpecPipeline")
   ;
 
+  // PipelineStage
+  class_<PipelineStage>("PipelineStage", init<std::string, InputSpec, ProcessingSpec, OutputSpec>())
+      .def_readonly("name",&PipelineStage::name)
+      .def_readonly("input",&PipelineStage::input)
+      .def_readonly("process",&PipelineStage::process)
+      .def_readonly("out",&PipelineStage::out)
+  ;
+
+  // TODO: fix operator== issue for PipelineStage
+  /*
+  class_<std::vector<PipelineStage>>("VectorPipelineStage")
+      .def(init<std::vector<PipelineStage>>())
+      .def("__init__", make_constructor(&pylist_to_vector<PipelineStage>))
+      .def(vector_indexing_suite<std::vector<PipelineStage>>())
+  ;
+  */
+
   // PipelineSpec
   class_<PipelineSpec>("PipelineSpec", init<std::string, InputSpec, ProcessingSpec, OutputSpec>())
+      .def(init<PipelineStage>())
+      //.def(init<std::string, std::vector<PipelineStage>>())
+      .def("getInput",&PipelineSpec::getInput)
       .def_readonly("name",&PipelineSpec::name)
-      .def_readonly("input",&PipelineSpec::input)
-      .def_readonly("process",&PipelineSpec::process)
-      .def_readonly("out",&PipelineSpec::out)
+
   ;
 
   class_<boost::optional<PipelineSpec>>("OptionalPipelineSpec", no_init)

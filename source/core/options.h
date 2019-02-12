@@ -23,6 +23,9 @@
 #include <errno.h>
 #include <sys/types.h>
 
+// TODO: Fix reversed dependency by moving ProcessingSpecCommands into specifications
+#include "processing/pipeline.h"
+
 
 class Configuration
 {
@@ -31,30 +34,20 @@ public:
   Configuration(int argc, const char* const argv[]);
   virtual ~Configuration();
 
-  const std::vector<boost::filesystem::path> collectScripts() const;
-  const std::vector<boost::filesystem::path> collectExternalCommands() const;
+  const std::vector<PipelineSpec> collectPipelines() const;
+
+  const std::vector<ProcessingSpecCommands::Command> collectExternalCommands() const;
 
   const std::vector<boost::filesystem::path> collectInitialFiles() const;
 
-  const std::vector<std::string> collectVariables() const;
-
   typedef std::pair<int, int> NodeRange;
   const std::vector<NodeRange> collectInporterNodes() const;
-
-  bool hasWatchDirectory() const;
-  const boost::filesystem::path getWatchDirectory() const;
 
   bool hasWatchPaths() const;
   const std::vector<InputSpecPaths> getWatchPaths() const;
 
   bool hasDoneFile() const;
   const boost::filesystem::path getDoneFile() const;
-
-  bool hasFileFilter() const;
-  const boost::regex getFileFilter() const;
-
-  bool hasOutputReadySignal() const;
-  const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
 
   uint getStartupDelay() const;
 
@@ -64,7 +57,26 @@ public:
   const boost::filesystem::path& getLibPath() const;
 
 
+  // TODO: deprecate when  calculateReadyFiles is part of process pipeline (not coordinator getSignalledOutputFile)
+  bool hasOutputReadySignal() const;
+  const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
+
+  // TODO: deprecate when Pipeline manages scripts in the new pipeline processing style
+  const std::vector<boost::filesystem::path> collectScripts() const;
+
+private:
+
+  const std::vector<std::string> collectVariables() const;
+
+  bool hasWatchDirectory() const;
+  const boost::filesystem::path getWatchDirectory() const;
+
+  bool hasFileFilter() const;
+  const boost::regex getFileFilter() const;
+
+
 protected:
+
   boost::program_options::variables_map opts;
   boost::property_tree::ptree configs;
   boost::filesystem::path libPath;

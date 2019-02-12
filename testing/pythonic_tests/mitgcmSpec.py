@@ -172,7 +172,7 @@ readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()
 attributes = pplz.Attributes()
 
-if pplz.pipelineAcceptInput(pipeline.input, readyFiles, acceptedFiles, attributes):
+if pplz.pipelineAcceptInput(pipeline.getInput(), readyFiles, acceptedFiles, attributes):
   print('Pipeline "%s" accepted %s file(s)' % (pipeline.name, len(acceptedFiles)))
   task = pplz.pipelineMkPipelineTaskNoCatalyst(pipeline, acceptedFiles, attributes)
   print("Running pipeline...")

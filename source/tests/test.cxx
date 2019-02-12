@@ -197,7 +197,8 @@ int main(int argc, char* argv[])
         "cscpts.extend([pplz.FilesystemPath(i) for i in ['%2%/pipelines/gridwriter.py','%2%/pipelines/gridviewer_vti_velocity.py']]) \n"
         "cvars = pplz.VectorString() \n"
         "cvars.extend(['U,V,W,QVAPOR']) \n"
-        "pscc = pplz.ProcessingSpecCatalyst(cscpts, cvars) \n"
+        "svspecs = pplz.VectorScriptSpec([pplz.ScriptSpec(i, cvars[0]) for i in cscpts]) \n"
+        "pscc = pplz.ProcessingSpecCatalyst(svspecs) \n"
         "pspec = pplz.ProcessingSpec(psc) \n"
         "osp = pplz.OutputSpecDone() \n"
         "ospp = pplz.OutputSpecPipeline() \n"
@@ -263,6 +264,36 @@ int main(int argc, char* argv[])
       PyErr_Print();
       result = false;
     }
+
+    return (result ? 0 : 1);
+  }
+
+  if (testname == "ConfigurationConfigFile")
+  {
+    // process arguments
+    if (argc < 4)
+    {
+      std::cerr << "testname='ConfigurationConfigFile' expected testconfig argv[3]" << std::endl;
+      return 1;
+    }
+    fs::path testconfig(testpath / argv[3]);
+
+    const char* testconfigCptr(testconfig.c_str());
+
+    const int cfgArgC = 3;
+    const char* cfgArgV[cfgArgC] = {argv[0], "-c", testconfigCptr};
+
+    const Configuration configs(cfgArgC, cfgArgV);
+
+    bool result(true);
+
+    const auto pipelines(configs.collectPipelines());
+
+    for (const auto& p: pipelines)
+    {
+      std::cout << "Pipeline '" << p.name << "' with " << p.stages.size() << " stages" << std::endl;
+    }
+    std::cout << "Processed (" << pipelines.size() << ") pipelines." << std::endl;
 
     return (result ? 0 : 1);
   }

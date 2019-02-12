@@ -31,7 +31,7 @@ class Inporter
 public:
   Inporter( Processor& processor
           , const MPIInportSection& section_
-          , const std::vector<std::string>& variables_);
+          , const std::vector<PipelineSpec>& pipelines_);
   ~Inporter();
 
   void process( const std::vector<boost::filesystem::path>& newfiles
@@ -49,8 +49,6 @@ protected:
   std::vector<boost::filesystem::path> completedFiles;
 
   Processor& processor;
-
-  const std::vector<std::string> variables;
 
   // time
   uint timeStep;

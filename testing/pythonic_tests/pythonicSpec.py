@@ -35,7 +35,8 @@ psc.process(pplz.Attributes(), pplz.VectorFilesystemPath([sf]))
 
 cscpts = pplz.VectorFilesystemPath([pplz.FilesystemPath(i) for i in [os.path.join(TESTPATH, 'pipelines/gridwriter.py'), os.path.join(TESTPATH, 'pipelines/gridviewer_vti_velocity.py')]])
 cvars = pplz.VectorString(['U,V,W,QVAPOR'])
-pscc = pplz.ProcessingSpecCatalyst(cscpts, cvars)
+svspecs = pplz.VectorScriptSpec([pplz.ScriptSpec(i, cvars[0]) for i in cscpts])
+pscc = pplz.ProcessingSpecCatalyst(svspecs)
 pspec = pplz.ProcessingSpec(psc) 
 
 osp = pplz.OutputSpecDone()

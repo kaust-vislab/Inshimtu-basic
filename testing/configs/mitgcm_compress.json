@@ -1,0 +1,275 @@
+{
+  "pipelines": [
+    {
+      "name": "MITgcm-Compression",
+      "stages": [
+        {
+          "input": {
+            "type": "InputSpecPaths",
+            "watch": {
+              "directory_path": "data",
+              "files_regex": "(Convtave|ETAtave|Eta|PhHytave|S|Stave|T|Tdiftave|Ttave|U|V|W|sFluxtave|tFluxtave|uFluxtave|uVeltave|uZtave|vFluxtave|vVeltave|vZtave|wVeltave)\\.[0-9]+\\.(data|meta)"
+            },
+            "IGNORE:accept": {
+              "type": "first"
+            },
+            "IGNORE:accept": {
+              "type": "all"
+            },
+            "accept": {
+              "type": "script",
+              "script": [
+                "import re",
+                "varz = ['Convtave','ETAtave','Eta','PhHytave','S','Stave','T', 'Tdiftave', 'Ttave', 'U', 'V', 'W', 'sFluxtave', 'tFluxtave', 'uFluxtave', 'uVeltave', 'uZtave', 'vFluxtave', 'vVeltave', 'vZtave', 'wVeltave']",
+                "extz = ['data', 'meta']",
+                "r = inshimtu.Regex('(' + '|'.join(varz) + ')\\.[0-9]+\\.(' + '|'.join(extz) + ')')",
+                "ipaths = inshimtu.InputSpecPaths(ACCEPT_DIRECTORY, r)",
+                "pr = inshimtu.Regex('^.*/(' + '|'.join(varz) + ')\\.([0-9]+)\\.(' + '|'.join(extz) + ')$')",
+                "rf = inshimtu.ReplaceRegexFormat(pr, '${2}')",
+                "preplace = inshimtu.ProcessingSpecReadyFile(rf)",
+                "def collectTimestepFilepaths(timestep, zzs, filepaths):",
+                "  (varz, extz) = zzs",
+                "  r = '^.*/(' + '|'.join(varz) + ')\\.' + timestep + '\\.(' + '|'.join(extz) + ')$'",
+                "  matches = [p for p in filepaths if re.match(r, p.string())]",
+                "  return matches",
+                "def acceptFileset(timesteps, zzs, filepaths):",
+                "  (varz, extz) = zzs",
+                "  expectedCount = len(varz) * len(extz)",
+                "  assert(expectedCount > 0)",
+                "  ts = sorted(list(set(timesteps)))",
+                "  firstTPS = None",
+                "  for t in ts:",
+                "    ps = collectTimestepFilepaths(t, zzs, filepaths)",
+                "    psLen = len(ps)",
+                "    if firstTPS == None and psLen > 0:",
+                "      firstTPS = (t, ps)",
+                "    if psLen == expectedCount:",
+                "      return firstTPS",
+                "  return None",
+                "def accept(available, outAccepted, outAttributes):",
+                "  ts = [o.get().string() for o in [preplace.get(fp) for fp in available] if o.is_initialized()]",
+                "  result = acceptFileset(ts, (varz, extz), available)",
+                "  if not result:",
+                "    return False",
+                "  t, ps = result",
+                "  if len(t) > 0:",
+                "    tv = pplz.AttributeValue(t)",
+                "    outAttributes.setAttribute(pplz.ProcessingSpecCommands.TIMESTEP_CODE_ARG, tv)",
+                "  outAccepted.extend(ps)",
+                "  return True"
+              ]
+            }
+          },
+          "IGNORE:input": {
+            "type": "InputSpecAny",
+            "IGNORE:accept": {
+              "type": "first"
+            },
+            "accept": {
+              "type": "all"
+            }
+          },
+          "IGNORE:process": {
+            "type": "ProcessingSpecReadyFile",
+            "match_regex": "^(.*)/wrfoutReady_(.*)$",
+            "replace_formatstr": "${1}/wrfout_${2}"
+          },
+          "IGNORE:process": {
+            "type": "ProcessingSpecCatalyst",
+            "scripts": [
+              {
+                "script": "pipelines/gridviewer_gdm_UVWQVAPOR.py",
+                "variables": "U,V,W,QVAPOR"
+              }              
+            ]
+          },
+          "process": {
+            "type": "ProcessingSpecCommands",
+            "processingCommandType": "all",
+            "IGNORE:processingCommandType": "separate",
+            "processingFilesType": "all",
+            "IGNORE:processingFilesType": "single",
+            "commands": [
+              {
+                "IGNORE:cmd": "zip",
+                "cmd": "echo",
+                "args": [
+                  "-j",
+                  "-m",
+                  "-T",
+                  "/lustre/scratch/mitgcm-output/mitgcm.${TIMESTEP_CODE}.zip",
+                  "-i",
+                  "$FILENAMES_ARRAY"
+                ]
+              }
+            ]
+          },
+          "IGNORE:output": {
+            "type": "OutputSpecPipeline",
+            "deleteInput": "true"
+          },
+          "output": {
+            "type": "OutputSpecDone",
+            "deleteInput": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "input": {
+    "IGNORE:watch": {
+      "directory_path": "data",
+      "files_regex": "wrfout_d01_.*"
+    },
+    "initial_files": [
+        "data/wrfout_d01_2015-10-27_00:00:00"
+      , "data/wrfout_d01_2015-10-27_01:00:00"
+      , "data/wrfout_d01_2015-10-27_02:00:00"
+      , "data/wrfout_d01_2015-10-27_03:00:00"
+      , "data/wrfout_d01_2015-10-27_04:00:00"
+      , "data/wrfout_d01_2015-10-27_05:00:00"
+      , "data/wrfout_d01_2015-10-27_06:00:00"
+      , "data/wrfout_d01_2015-10-27_07:00:00"
+      , "data/wrfout_d01_2015-10-27_08:00:00"
+      , "data/wrfout_d01_2015-10-27_09:00:00"
+      , "data/wrfout_d01_2015-10-27_10:00:00"
+      , "data/wrfout_d01_2015-10-27_11:00:00"
+      , "data/wrfout_d01_2015-10-27_12:00:00"
+      , "data/wrfout_d01_2015-10-27_13:00:00"
+      , "data/wrfout_d01_2015-10-27_14:00:00"
+      , "data/wrfout_d01_2015-10-27_15:00:00"
+      , "data/wrfout_d01_2015-10-27_16:00:00"
+      , "data/wrfout_d01_2015-10-27_17:00:00"
+      , "data/wrfout_d01_2015-10-27_18:00:00"
+      , "data/wrfout_d01_2015-10-27_19:00:00"
+      , "data/wrfout_d01_2015-10-27_20:00:00"
+      , "data/wrfout_d01_2015-10-27_21:00:00"
+      , "data/wrfout_d01_2015-10-27_22:00:00"
+      , "data/wrfout_d01_2015-10-27_23:00:00"
+      , "data/wrfout_d01_2015-10-28_00:00:00"
+      , "data/wrfout_d01_2015-10-28_01:00:00"
+      , "data/wrfout_d01_2015-10-28_02:00:00"
+      , "data/wrfout_d01_2015-10-28_03:00:00"
+      , "data/wrfout_d01_2015-10-28_04:00:00"
+      , "data/wrfout_d01_2015-10-28_05:00:00"
+      , "data/wrfout_d01_2015-10-28_06:00:00"
+      , "data/wrfout_d01_2015-10-28_07:00:00"
+      , "data/wrfout_d01_2015-10-28_08:00:00"
+      , "data/wrfout_d01_2015-10-28_09:00:00"
+      , "data/wrfout_d01_2015-10-28_10:00:00"
+      , "data/wrfout_d01_2015-10-28_11:00:00"
+      , "data/wrfout_d01_2015-10-28_12:00:00"
+      , "data/wrfout_d01_2015-10-28_13:00:00"
+      , "data/wrfout_d01_2015-10-28_14:00:00"
+      , "data/wrfout_d01_2015-10-28_15:00:00"
+      , "data/wrfout_d01_2015-10-28_16:00:00"
+      , "data/wrfout_d01_2015-10-28_17:00:00"
+      , "data/wrfout_d01_2015-10-28_18:00:00"
+      , "data/wrfout_d01_2015-10-28_19:00:00"
+      , "data/wrfout_d01_2015-10-28_20:00:00"
+      , "data/wrfout_d01_2015-10-28_21:00:00"
+      , "data/wrfout_d01_2015-10-28_22:00:00"
+      , "data/wrfout_d01_2015-10-28_23:00:00"
+      , "data/wrfout_d01_2015-10-29_00:00:00"
+      , "data/wrfout_d01_2015-10-29_01:00:00"
+      , "data/wrfout_d01_2015-10-29_02:00:00"
+      , "data/wrfout_d01_2015-10-29_03:00:00"
+      , "data/wrfout_d01_2015-10-29_04:00:00"
+      , "data/wrfout_d01_2015-10-29_05:00:00"
+      , "data/wrfout_d01_2015-10-29_06:00:00"
+      , "data/wrfout_d01_2015-10-29_07:00:00"
+      , "data/wrfout_d01_2015-10-29_08:00:00"
+      , "data/wrfout_d01_2015-10-29_09:00:00"
+      , "data/wrfout_d01_2015-10-29_10:00:00"
+      , "data/wrfout_d01_2015-10-29_11:00:00"
+      , "data/wrfout_d01_2015-10-29_12:00:00"
+      , "data/wrfout_d01_2015-10-29_13:00:00"
+      , "data/wrfout_d01_2015-10-29_14:00:00"
+      , "data/wrfout_d01_2015-10-29_15:00:00"
+      , "data/wrfout_d01_2015-10-29_16:00:00"
+      , "data/wrfout_d01_2015-10-29_17:00:00"
+      , "data/wrfout_d01_2015-10-29_18:00:00"
+      , "data/wrfout_d01_2015-10-29_19:00:00"
+      , "data/wrfout_d01_2015-10-29_20:00:00"
+      , "data/wrfout_d01_2015-10-29_21:00:00"
+      , "data/wrfout_d01_2015-10-29_22:00:00"
+      , "data/wrfout_d01_2015-10-29_23:00:00"
+      , "data/wrfout_d01_2015-10-30_00:00:00"
+      , "data/wrfout_d01_2015-10-30_01:00:00"
+      , "data/wrfout_d01_2015-10-30_02:00:00"
+      , "data/wrfout_d01_2015-10-30_03:00:00"
+      , "data/wrfout_d01_2015-10-30_04:00:00"
+      , "data/wrfout_d01_2015-10-30_05:00:00"
+      , "data/wrfout_d01_2015-10-30_06:00:00"
+      , "data/wrfout_d01_2015-10-30_07:00:00"
+      , "data/wrfout_d01_2015-10-30_08:00:00"
+      , "data/wrfout_d01_2015-10-30_09:00:00"
+      , "data/wrfout_d01_2015-10-30_10:00:00"
+      , "data/wrfout_d01_2015-10-30_11:00:00"
+      , "data/wrfout_d01_2015-10-30_12:00:00"
+      , "data/wrfout_d01_2015-10-30_13:00:00"
+      , "data/wrfout_d01_2015-10-30_14:00:00"
+      , "data/wrfout_d01_2015-10-30_15:00:00"
+      , "data/wrfout_d01_2015-10-30_16:00:00"
+      , "data/wrfout_d01_2015-10-30_17:00:00"
+      , "data/wrfout_d01_2015-10-30_18:00:00"
+      , "data/wrfout_d01_2015-10-30_19:00:00"
+      , "data/wrfout_d01_2015-10-30_20:00:00"
+      , "data/wrfout_d01_2015-10-30_21:00:00"
+      , "data/wrfout_d01_2015-10-30_22:00:00"
+      , "data/wrfout_d01_2015-10-30_23:00:00"
+      , "data/wrfout_d01_2015-10-31_00:00:00"
+      , "data/wrfout_d01_2015-10-31_01:00:00"
+      , "data/wrfout_d01_2015-10-31_02:00:00"
+      , "data/wrfout_d01_2015-10-31_03:00:00"
+      , "data/wrfout_d01_2015-10-31_04:00:00"
+      , "data/wrfout_d01_2015-10-31_05:00:00"
+      , "data/wrfout_d01_2015-10-31_06:00:00"
+      , "data/wrfout_d01_2015-10-31_07:00:00"
+      , "data/wrfout_d01_2015-10-31_08:00:00"
+      , "data/wrfout_d01_2015-10-31_09:00:00"
+      , "data/wrfout_d01_2015-10-31_10:00:00"
+      , "data/wrfout_d01_2015-10-31_11:00:00"
+      , "data/wrfout_d01_2015-10-31_12:00:00"
+      , "data/wrfout_d01_2015-10-31_13:00:00"
+      , "data/wrfout_d01_2015-10-31_14:00:00"
+      , "data/wrfout_d01_2015-10-31_15:00:00"
+      , "data/wrfout_d01_2015-10-31_16:00:00"
+      , "data/wrfout_d01_2015-10-31_17:00:00"
+      , "data/wrfout_d01_2015-10-31_18:00:00"
+      , "data/wrfout_d01_2015-10-31_19:00:00"
+      , "data/wrfout_d01_2015-10-31_20:00:00"
+      , "data/wrfout_d01_2015-10-31_21:00:00"
+      , "data/wrfout_d01_2015-10-31_22:00:00"
+      , "data/wrfout_d01_2015-10-31_23:00:00"
+      , "data/wrfout_d01_2015-11-01_00:00:00"
+      , "data/wrfout_d01_2015-11-01_01:00:00"
+      , "data/wrfout_d01_2015-11-01_02:00:00"
+      , "data/wrfout_d01_2015-11-01_03:00:00"
+      , "data/wrfout_d01_2015-11-01_04:00:00"
+      , "data/wrfout_d01_2015-11-01_05:00:00"
+      , "data/wrfout_d01_2015-11-01_06:00:00"
+      , "data/wrfout_d01_2015-11-01_07:00:00"
+      , "data/wrfout_d01_2015-11-01_08:00:00"
+      , "data/wrfout_d01_2015-11-01_09:00:00"
+      , "data/wrfout_d01_2015-11-01_10:00:00"
+      , "data/wrfout_d01_2015-11-01_11:00:00"
+      , "data/wrfout_d01_2015-11-01_12:00:00"
+      , "data/wrfout_d01_2015-11-01_13:00:00"
+      , "data/wrfout_d01_2015-11-01_14:00:00"
+      , "data/wrfout_d01_2015-11-01_15:00:00"
+      , "data/wrfout_d01_2015-11-01_16:00:00"
+      , "data/wrfout_d01_2015-11-01_17:00:00"
+    ]
+  },
+  "control": {
+    "IGNORE:done_watchfile": "data.done",
+    "initial_connection_wait_secs": 0,
+    "catalyst_inporter_nodes": [ 
+        "0" 
+    ],
+    "delete_processed_input_files": true
+  }
+}
+

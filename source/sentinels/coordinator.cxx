@@ -46,9 +46,7 @@ boost::optional<boost::filesystem::path> getSignalledOutputFile( const Configura
 
   return signalledPath;
 }
-
 }
-
 
 
 namespace po = boost::program_options;

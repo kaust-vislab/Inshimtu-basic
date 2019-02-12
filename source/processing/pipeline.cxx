@@ -340,10 +340,8 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
 }
 
 
-ProcessingSpecCatalyst::ProcessingSpecCatalyst( const std::vector<fs::path>& scripts_
-                                              , const std::vector<std::string>& variables_) :
+ProcessingSpecCatalyst::ProcessingSpecCatalyst(const std::vector<ScriptSpec>& scripts_) :
   scripts(scripts_)
-, variables(variables_)
 {
 }
 
@@ -352,8 +350,14 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
 {
   std::vector<std::unique_ptr<Adaptor>> inporters;
 
-  for (const auto& vsets : variables)
+  for (const auto& scriptSpec: scripts)
   {
+    const auto& script(scriptSpec.first);
+    const auto& vsets(scriptSpec.second);
+
+    // TODO: Pick descriptor (Processor) based on script (because the script was initialized in / processed by the Processor)
+    // descriptor = descriptors(script);
+
     if (RawNetCDFDataFileInporter::canProcess(filename))
     {
       std::cout << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'" << std::endl;
@@ -392,7 +396,16 @@ OutputSpecDone::OutputSpecDone()
 
 OutputSpecPipeline::OutputSpecPipeline()
   : deleteInput(false)
-  , pipeline(nullptr)
+{
+}
+
+
+PipelineStage::PipelineStage( const std::string& name_
+                            , InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
+  name(name_)
+, input(input_)
+, process(process_)
+, out(out_)
 {
 }
 
@@ -400,10 +413,29 @@ OutputSpecPipeline::OutputSpecPipeline()
 PipelineSpec::PipelineSpec( const std::string& name_
                           , InputSpec input_, ProcessingSpec process_, OutputSpec out_) :
   name(name_)
-, input(input_)
-, process(process_)
-, out(out_)
+, stages({PipelineStage(name_, input_, process_, out_)})
 {
+}
+
+PipelineSpec::PipelineSpec( const PipelineStage& stage_) :
+  name(stage_.name)
+, stages({stage_})
+{
+}
+
+PipelineSpec::PipelineSpec( const std::string& name_
+                          , const std::vector<PipelineStage>& stages_) :
+  name(name_)
+, stages(stages_)
+{
+  assert(stages.size() > 0);
+}
+
+const InputSpec PipelineSpec::getInput() const
+{
+  assert(!stages.empty());
+
+  return stages.front().input;
 }
 
 
@@ -434,9 +466,10 @@ void Attributes::setAttribute(const AttributeKey& key, const AttributeValue& val
 }
 
 
-TaskState::TaskState()
+TaskState::TaskState(const PipelineSpec& pipeline_)
   : taskStatus(TaskState::TS_OK)
-  , stage()
+  , pipeline(pipeline_)
+  , stageItr(std::begin(pipeline.stages))
   , inputFiles()
   , outputFiles()
 {
@@ -473,6 +506,42 @@ void TaskState::setAttribute(const Attributes::AttributeKey& key, const Attribut
   attributes.setAttribute(key, value);
 }
 
+boost::optional<PipelineStage> TaskState::getStage() const
+{
+  boost::optional<PipelineStage> stage;
+
+  if (stageItr != std::end(pipeline.stages))
+  {
+    stage = *stageItr;
+  }
+
+  return stage;
+}
+
+bool TaskState::nextStage()
+{
+  if (!canContinue())
+  {
+    return false;
+  }
+
+  if (stageItr != std::end(pipeline.stages))
+  {
+    stageItr++;
+  }
+
+  if (stageItr == std::end(pipeline.stages))
+  {
+    taskStatus = TaskState::TS_Done;
+  }
+
+  return canContinue();
+}
+
+
+
+
+
 
 bool pipeline_AcceptInput( const InputSpec& inputS
                          , const std::vector<fs::path>& available
@@ -493,12 +562,9 @@ std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
                                                   , const Attributes& attributes
                                                   , std::function<std::unique_ptr<Descriptor>()> mkDescriptor)
 {
-  std::unique_ptr<TaskState> task(new TaskState());
+  std::unique_ptr<TaskState> task(new TaskState(pipeS));
 
-  task->stage = pipeS;
   task->inputFiles.insert(std::end(task->inputFiles), std::begin(working), std::end(working));
-
-  // TODO: task->appendAttributes(attributes)
   task->attributes = attributes;
 
   task->mkDescriptor = mkDescriptor;
@@ -509,7 +575,7 @@ std::unique_ptr<TaskState> pipeline_MkPipelineTask( const PipelineSpec& pipeS
 
 void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 {
-  if (!taskS->stage.is_initialized())
+  if (!taskS->getStage().is_initialized())
     return;
   if (!taskS->canContinue())
     return;
@@ -632,15 +698,7 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
           std::swap(taskS->inputFiles, taskS->outputFiles);
           taskS->inputFiles.clear();
 
-          taskS->stage.reset();
-          if (outSp.pipeline != nullptr)
-          {
-            taskS->stage = *outSp.pipeline;
-          }
-          else
-          {
-            taskS->taskStatus = TaskState::TS_Done;
-          }
+          taskS->nextStage();
 
           return taskS->canContinue();
         }
@@ -661,29 +719,28 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
           std::swap(taskS->inputFiles, taskS->outputFiles);
           taskS->inputFiles.clear();
 
-          taskS->stage.reset();
-          taskS->taskStatus = TaskState::TS_Done;
+          taskS->nextStage();
 
           return taskS->canContinue();
         });
 
   bool ok = true;
 
-  ok = boost::apply_visitor(visitorInput, taskS->stage->input);
+  ok = boost::apply_visitor(visitorInput, taskS->getStage()->input);
   if (ok)
   {
      std::swap(taskS->inputFiles, taskS->outputFiles);
      taskS->outputFiles.clear();
   }
 
-  ok = boost::apply_visitor(visitorProcessing, taskS->stage->process);
+  ok = boost::apply_visitor(visitorProcessing, taskS->getStage()->process);
   if (ok)
   {
      std::swap(taskS->inputFiles, taskS->outputFiles);
      taskS->outputFiles.clear();
   }
 
-  ok = boost::apply_visitor(visitorOutput, taskS->stage->out);
+  ok = boost::apply_visitor(visitorOutput, taskS->getStage()->out);
   if (ok)
   {
     std::swap(taskS->inputFiles, taskS->outputFiles);
@@ -693,7 +750,7 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
 
 void pipeline_ProcessTask(std::unique_ptr<TaskState>& taskS)
 {
-  if (!taskS->stage.is_initialized())
+  if (!taskS->getStage().is_initialized())
     return;
 
   while (taskS->canContinue())

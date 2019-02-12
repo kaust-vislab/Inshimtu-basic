@@ -41,10 +41,10 @@ int main(int argc, char* argv[])
   std::unique_ptr<Notify> notify;
 
   {
-    const bool watchDirectory(configs.hasWatchDirectory());
+    const bool watchPaths(configs.hasWatchPaths());
     const bool doneFile(configs.hasDoneFile());
 
-    if (!watchDirectory && !doneFile)
+    if (!watchPaths && !doneFile)
       notify.reset(new Notify());
     else
       notify.reset(new INotify( configs.getWatchPaths()
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
                                  , configs.getStartupDelay()));
     inporter.reset(new Inporter( *processor.get()
                                , app.getInporterSection()
-                               , configs.collectVariables()));
+                               , configs.collectPipelines()));
   }
 
   const bool shouldDelete = configs.getDeleteFilesFlag();
