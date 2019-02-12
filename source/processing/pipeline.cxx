@@ -292,7 +292,10 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
           const auto& value = boost::get<std::string>(otimecode.get());
           boost::replace_all(targ, TIMESTEP_CODE_ARG, value);
         }
-        // TODO: log warning about invalid TIMESTEP_CODE types
+        else
+        {
+          // TODO: log warning about invalid TIMESTEP_CODE types
+        }
       }
 
       args.push_back(targ);
@@ -642,8 +645,6 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
             taskS->taskStatus = TaskState::TS_FailedProcessing;
             return false;
           }
-
-          // TODO: Implement Catalyst Processing
 
           for (const auto& filename: taskS->inputFiles)
           {
