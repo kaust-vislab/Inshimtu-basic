@@ -836,9 +836,7 @@ const std::vector<InputSpecPaths> Configuration::getWatchPaths() const
 
   for (const auto& p: pipelines)
   {
-    const InputSpec inputSpec(p.getInput());
-
-    boost::apply_visitor(visitor, inputSpec);
+    boost::apply_visitor(visitor, p.getInput());
   }
 
   return watchPaths;

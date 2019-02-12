@@ -268,7 +268,7 @@ BOOST_PYTHON_MODULE(InshimtuLib)
   // PipelineSpec
   class_<PipelineSpec>("PipelineSpec", init<std::string, InputSpec, ProcessingSpec, OutputSpec>())
       .def(init<PipelineStage>())
-      //.def(init<std::string, std::vector<PipelineStage>>())
+      .def(init<std::string, std::vector<PipelineStage>>())
       .def("getInput",&PipelineSpec::getInput)
       .def_readonly("name",&PipelineSpec::name)
 

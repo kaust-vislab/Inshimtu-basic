@@ -138,8 +138,6 @@ struct OutputSpecPipeline
   OutputSpecPipeline();
 
   bool deleteInput;
-  //std::unique_ptr<const PipelineSpec> pipelineu;
-  //const PipelineSpec* pipeline;
 };
 
 typedef boost::variant< OutputSpecDone
@@ -226,8 +224,6 @@ struct TaskState
 
   PipelineSpec pipeline;
   std::vector<PipelineStage>::const_iterator stageItr;
-
-  //boost::optional<PipelineStage> stage;
 
   std::vector<boost::filesystem::path> inputFiles;
   std::vector<boost::filesystem::path> outputFiles;
