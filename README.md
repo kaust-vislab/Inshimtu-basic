@@ -3,6 +3,22 @@
 An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst).
 
 ##TODOs
+
+* Schedule tasks (currently all inport nodes participate; works for Catalyst, but not for external commands)
+  * Need coordination combinators
+
+* Better handle how files are sent through the pipeline (more that 'input' 'output'); need to specify files that are 'finished', but not part of the input for the next stage.
+  * Finish output specifications (what are they needed for? pipeline attribute adjustments)
+
+* Fix how delete files are processed
+
+* Fix Catalyst Pipeline singleton (need per script spec pipelines; or, at least per unique variable set)
+
+
+* Improve logging (default is too verbose presently)
+
+* Remove Exe / Lib redundancy (both are very large; likely duplicate code)
+
 ### Testing Example...
 
 ```

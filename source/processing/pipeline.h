@@ -44,6 +44,8 @@ struct InputSpecAny
   void setAcceptFirst();
   void setAcceptAll();
 
+  bool operator==(const InputSpecAny& i) const;
+
   InputSpecPaths::AcceptType acceptType;
 };
 
@@ -57,6 +59,8 @@ struct ProcessingSpecReadyFile
 {
   ProcessingSpecReadyFile(const ReplaceRegexFormat& convert);
 
+  bool operator==(const ProcessingSpecReadyFile& p) const;
+
   boost::optional<boost::filesystem::path> get(const boost::filesystem::path& filename) const;
 
   ReplaceRegexFormat conversion;
@@ -69,6 +73,8 @@ struct ProcessingSpecCatalyst
   typedef std::pair<Script, Variables> ScriptSpec;
 
   ProcessingSpecCatalyst(const std::vector<ScriptSpec>& scripts_);
+
+  bool operator==(const ProcessingSpecCatalyst& p) const;
 
   void process( const boost::filesystem::path &filename
               , Descriptor& descriptor) const;
@@ -107,6 +113,8 @@ struct ProcessingSpecCommands
 
   void setProcessingType(ProcessCommandsType pCmds, ProcessFilesType pFiles);
 
+  bool operator==(const ProcessingSpecCommands& p) const;
+
   bool process( const Attributes& attributes
               , const std::vector<boost::filesystem::path>& files) const;
 
@@ -131,11 +139,15 @@ struct OutputSpecDone
 {
   OutputSpecDone();
 
+  bool operator==(const OutputSpecDone& o) const;
+
   bool deleteInput;
 };
 struct OutputSpecPipeline
 {
   OutputSpecPipeline();
+
+  bool operator==(const OutputSpecPipeline& o) const;
 
   bool deleteInput;
 };
@@ -150,6 +162,8 @@ struct PipelineStage
 {
   PipelineStage( const std::string& name_
                , InputSpec input_, ProcessingSpec process_, OutputSpec out_);
+
+  bool operator==(const PipelineStage& stage) const;
 
   std::string name;
 

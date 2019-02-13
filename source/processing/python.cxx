@@ -256,14 +256,11 @@ BOOST_PYTHON_MODULE(InshimtuLib)
       .def_readonly("out",&PipelineStage::out)
   ;
 
-  // TODO: fix operator== issue for PipelineStage
-  /*
   class_<std::vector<PipelineStage>>("VectorPipelineStage")
       .def(init<std::vector<PipelineStage>>())
       .def("__init__", make_constructor(&pylist_to_vector<PipelineStage>))
       .def(vector_indexing_suite<std::vector<PipelineStage>>())
   ;
-  */
 
   // PipelineSpec
   class_<PipelineSpec>("PipelineSpec", init<std::string, InputSpec, ProcessingSpec, OutputSpec>())
@@ -271,7 +268,6 @@ BOOST_PYTHON_MODULE(InshimtuLib)
       .def(init<std::string, std::vector<PipelineStage>>())
       .def("getInput",&PipelineSpec::getInput)
       .def_readonly("name",&PipelineSpec::name)
-
   ;
 
   class_<boost::optional<PipelineSpec>>("OptionalPipelineSpec", no_init)

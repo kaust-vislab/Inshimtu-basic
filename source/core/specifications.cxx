@@ -60,6 +60,16 @@ void InputSpecPaths::setAcceptScript( const std::string& acceptScript_
 }
 
 
+bool InputSpecPaths::operator==(const InputSpecPaths& i) const
+{
+  return directory == i.directory
+      && filenames == i.filenames
+      && acceptType == i.acceptType
+      && acceptScript == i.acceptScript
+      && libPath == i.libPath;
+}
+
+
 bool InputSpecPaths::match(const fs::path& filename) const
 {
   const auto filepath = fs::absolute(filename);

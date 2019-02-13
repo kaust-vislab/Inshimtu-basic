@@ -132,6 +132,11 @@ void InputSpecAny::setAcceptAll()
   acceptType = InputSpecPaths::Accept_All;
 }
 
+bool InputSpecAny::operator==(const InputSpecAny& i) const
+{
+  return acceptType == i.acceptType;
+}
+
 bool InputSpecAny::accept( const std::vector<boost::filesystem::path>& available
                               , std::vector<boost::filesystem::path>& outAccepted) const
 {
@@ -154,6 +159,11 @@ bool InputSpecAny::accept( const std::vector<boost::filesystem::path>& available
 ProcessingSpecReadyFile::ProcessingSpecReadyFile(const ReplaceRegexFormat& convert)
   : conversion(convert)
 {
+}
+
+bool ProcessingSpecReadyFile::operator==(const ProcessingSpecReadyFile& p) const
+{
+  return conversion == p.conversion;
 }
 
 boost::optional<fs::path> ProcessingSpecReadyFile::get(const fs::path& filename) const
@@ -190,6 +200,13 @@ void ProcessingSpecCommands::setProcessingType(ProcessCommandsType pCmds, Proces
 {
   processCommandsBy = pCmds;
   processFilesBy = pFiles;
+}
+
+bool ProcessingSpecCommands::operator==(const ProcessingSpecCommands& p) const
+{
+  return commands == p.commands
+      && processCommandsBy == p.processCommandsBy
+      && processFilesBy == p.processFilesBy;
 }
 
 bool ProcessingSpecCommands::process( const Attributes& attributes
@@ -348,6 +365,11 @@ ProcessingSpecCatalyst::ProcessingSpecCatalyst(const std::vector<ScriptSpec>& sc
 {
 }
 
+bool ProcessingSpecCatalyst::operator==(const ProcessingSpecCatalyst& p) const
+{
+  return scripts == p.scripts;
+}
+
 void ProcessingSpecCatalyst::process( const fs::path &filename
                                     , Descriptor& descriptor) const
 {
@@ -397,9 +419,20 @@ OutputSpecDone::OutputSpecDone()
 {
 }
 
+bool OutputSpecDone::operator==(const OutputSpecDone& o) const
+{
+  return deleteInput == o.deleteInput;
+}
+
+
 OutputSpecPipeline::OutputSpecPipeline()
   : deleteInput(false)
 {
+}
+
+bool OutputSpecPipeline::operator==(const OutputSpecPipeline& o) const
+{
+  return deleteInput == o.deleteInput;
 }
 
 
@@ -410,6 +443,14 @@ PipelineStage::PipelineStage( const std::string& name_
 , process(process_)
 , out(out_)
 {
+}
+
+bool PipelineStage::operator==(const PipelineStage& stage) const
+{
+  return name == stage.name
+      && input == stage.input
+      && process == stage.process
+      && out == stage.out;
 }
 
 
