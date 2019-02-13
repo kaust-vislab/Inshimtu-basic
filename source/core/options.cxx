@@ -108,7 +108,7 @@ const boost::optional<ProcessingSpecCommands::Command> getCommand(const pt::ptre
         args.push_back(a_.second.get_value<std::string>());
       }
     }
-    ProcessingSpecCommands::Command command(ProcessingSpecCommands::Command(fs::absolute(cmd), args));
+    ProcessingSpecCommands::Command command(ProcessingSpecCommands::Command(cmd, args));
 
     command_ = command;
   }

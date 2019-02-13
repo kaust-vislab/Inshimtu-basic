@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
       newfiles = configs.collectInitialFiles();
     }
 
-    coordinator.update(newfiles, Coordinator::InitialFiles);
+    isFinished = coordinator.update(newfiles, Coordinator::InitialFiles);
     newfiles.clear();
     if (app.isInporter())
     {
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
   }
 
   // process watched files
-  do
+  while (!isFinished)
   {
     notify->processEvents(newfiles);
 
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
     {
       inporter->process(coordinator.getReadyFiles(), shouldDelete);
     }
-  } while (!isFinished);
+  }
 
   return 0;
 }

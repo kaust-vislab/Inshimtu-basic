@@ -40,7 +40,6 @@ bool Notify::isDone() const
 }
 
 
-
 INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
                 , const fs::path& done)
   : Notify()

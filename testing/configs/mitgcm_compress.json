@@ -53,8 +53,8 @@
                 "    return False",
                 "  t, ps = result",
                 "  if len(t) > 0:",
-                "    tv = pplz.AttributeValue(t)",
-                "    outAttributes.setAttribute(pplz.ProcessingSpecCommands.TIMESTEP_CODE_ARG, tv)",
+                "    tv = inshimtu.AttributeValue(t)",
+                "    outAttributes.setAttribute(inshimtu.ProcessingSpecCommands.TIMESTEP_CODE_ARG, tv)",
                 "  outAccepted.extend(ps)",
                 "  return True"
               ]
@@ -120,7 +120,7 @@
   "input": {
     "IGNORE:watch": {
       "directory_path": "data",
-      "files_regex": "wrfout_d01_.*"
+      "files_regex": "(Convtave|ETAtave|Eta|PhHytave|S|Stave|T|Tdiftave|Ttave|U|V|W|sFluxtave|tFluxtave|uFluxtave|uVeltave|uZtave|vFluxtave|vVeltave|vZtave|wVeltave)\\.[0-9]+\\.(data|meta)"
     },
     "initial_files": [
         "data/Convtave.0000000432.data"

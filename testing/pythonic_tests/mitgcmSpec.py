@@ -145,8 +145,8 @@ def accept(available, outAccepted, outAttributes):
     return False
   t, ps = result
   if len(t) > 0:
-    tv = pplz.AttributeValue(t)
-    outAttributes.setAttribute(pplz.ProcessingSpecCommands.TIMESTEP_CODE_ARG, tv)
+    tv = inshimtu.AttributeValue(t)
+    outAttributes.setAttribute(inshimtu.ProcessingSpecCommands.TIMESTEP_CODE_ARG, tv)
   outAccepted.extend(ps)
   return True
 '''
