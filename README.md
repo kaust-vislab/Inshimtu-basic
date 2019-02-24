@@ -2,6 +2,7 @@
 
 An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst).
 
+
 ##TODOs
 
 * Schedule tasks (currently all inport nodes participate; works for Catalyst, but not for external commands)
@@ -15,20 +16,33 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti
 * Fix Catalyst Pipeline singleton (need per script spec pipelines; or, at least per unique variable set)
 
 
-* Improve logging (default is too verbose presently)
+* Improve logging (remove duplications from multiple ranks)
 
 * Remove Exe / Lib redundancy (both are very large; likely duplicate code)
+
 
 ### Testing Example...
 
 ```
-module add kvl-applications paraview/5.4.1-mpich-x86_64
+module add kvl-applications pvserver/5.6.0-mpich-x86_64
+```
+
+Running test suite
+
+```
+cd build.kvl
+ctest3
+ctest3 --output-on-failure
 ```
 
 Running on local KVL desktop
 
 ```
 time testing/launchers/launch_inshimtu_kvl.sh -S GDM -n 0 -N 1
+```
+
+```
+build.kvl/Inshimtu --config testing/configs/mitgcm_compress.json
 ```
 
 

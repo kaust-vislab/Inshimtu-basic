@@ -31,27 +31,27 @@ Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
                     , const std::vector<boost::filesystem::path>& scripts
                     , uint delay)
 {
-  std::cout << "Starting Catalyst Processor..." << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "Starting Catalyst Processor...";
 
   if (processor->Initialize(communicator) != 0)
-    std::cout << "Processor initialized with communicator" << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << "Processor initialized with communicator";
   else
-    std::cerr << "FAILED: Processor initialize" << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "FAILED: Processor initialize";
 
   for (const fs::path& script : scripts)
   {
     vtkNew<vtkCPPythonScriptPipeline> pipeline;
 
     if (pipeline->Initialize(script.c_str()) != 0)
-      std::cout << "Pipeline initialized: " << script << std::endl;
+      BOOST_LOG_TRIVIAL(trace) << "Pipeline initialized: " << script;
     else
-      std::cerr << "FAILED: Pipeline initialize: " << script << std::endl;
+      BOOST_LOG_TRIVIAL(error) << "FAILED: Pipeline initialize: " << script;
 
     processor->AddPipeline(pipeline.GetPointer());
   }
 
-  std::cout << "\t\t...Done" << std::endl;
-  std::cout << "Please connect in Paraview" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "\t\t...Done";
+  BOOST_LOG_TRIVIAL(info) << "Please connect in Paraview";
   sleep(delay);
 }
 
@@ -59,7 +59,7 @@ Processor::~Processor()
 {
   processor->Finalize();
 
-  std::cout << "FINALIZED Catalyst Processor." << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "FINALIZED Catalyst Processor.";
 }
 
 

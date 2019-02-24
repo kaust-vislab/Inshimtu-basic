@@ -36,6 +36,8 @@ namespace py = boost::python;
 
 int main(int argc, char* argv[])
 {
+  MPIApplication app(&argc, &argv);
+
   // process arguments
   if (argc < 3)
   {

@@ -7,6 +7,9 @@
 #ifndef UTILS_LOGGER_HEADER
 #define UTILS_LOGGER_HEADER
 
+#define BOOST_LOG_DYN_LINK 1
+#include <boost/log/trivial.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -27,6 +30,9 @@ public:
 
   static Logger& instance();
 
+  void set_filter(boost::log::trivial::severity_level level);
+  void reset_filter();
+
   void write(const char* msg);
 
 protected:
@@ -36,8 +42,9 @@ protected:
   std::ofstream logfile;
 };
 
-template<typename T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& input)
+
+template<typename StreamT, typename T>
+StreamT& operator<<(StreamT& os, const std::vector<T>& input)
 {
   bool first = true;
   os << "[";
@@ -53,12 +60,12 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& input)
     }
     os << i;
   }
-  os << "]" << std::flush;
+  os << "]";
   return os;
 }
 
-template<typename T>
-std::ostream& operator<<(std::ostream& os, const std::set<T>& input)
+template<typename StreamT, typename T>
+StreamT& operator<<(StreamT& os, const std::set<T>& input)
 {
   bool first = true;
   os << "[";
@@ -74,8 +81,9 @@ std::ostream& operator<<(std::ostream& os, const std::set<T>& input)
     }
     os << i;
   }
-  os << "]" << std::flush;
+  os << "]";
   return os;
 }
+
 
 #endif

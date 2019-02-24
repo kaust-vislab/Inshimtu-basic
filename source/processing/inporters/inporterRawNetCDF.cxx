@@ -78,8 +78,8 @@ void RawNetCDFDataFileInporter::process(const boost::filesystem::path& file)
     }
     else
     {
-      std::cerr << "WARNING: could not process variable '" << name
-                << "' from input file '" << file << "'" << std::endl;
+      BOOST_LOG_TRIVIAL(warning) << "WARNING: could not process variable '" << name
+                                 << "' from input file '" << file << "'";
     }
   }
 }
@@ -89,10 +89,9 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   , const std::string& varname
   , int global_extent_out[6])
 {
-  std::cout << "Processing variable '" << varname
+  BOOST_LOG_TRIVIAL(info) << "Processing variable '" << varname
             << "' on inport node " << getSection().getIndex()
-            << " from NetCDF Datafile:'" << filepath << "' with netcdf library"
-            << std::endl;
+            << " from NetCDF Datafile:'" << filepath << "' with netcdf library";
 
   int ncid, varid; // netCDF ID for the file and data variable.
   int ndims;
@@ -177,10 +176,9 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   , const std::string& varname
   , int global_extent_out[6])
 {
-  std::cout << "Processing variable '" << varname
+  BOOST_LOG_TRIVIAL(info) << "Processing variable '" << varname
             << "' on inport node " << getSection().getIndex()
-            << "' from NetCDF Datafile:'" << filepath << "' with netcdf library"
-            << std::endl;
+            << "' from NetCDF Datafile:'" << filepath << "' with netcdf library";
 
   NcFile ncfile(filepath.c_str(), NcFile::ReadOnly, nullptr, 0, NcFile::Netcdf4Classic);
   assert(ncfile.is_valid());
@@ -235,14 +233,14 @@ vtkSmartPointer<vtkUnstructuredGrid> Inporter::processMPASDataFile(const fs::pat
 {
   vtkNew<vtkMPASReader> reader;
 
-  std::cout << "Processing MPAS NetCDF Datafile:'" << filepath << "'" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Processing MPAS NetCDF Datafile:'" << filepath << "'";
 
   reader->SetFileName(filepath.c_str());
   reader->Update();
 
   vtkSmartPointer<vtkUnstructuredGrid> data = reader->GetOutput();
 
-  reader->PrintSelf(std::cout, vtkIndent());
+  reader->PrintSelf(BOOST_LOG_TRIVIAL(debug), vtkIndent());
 
   return data;
 }
@@ -251,14 +249,14 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFCFDataFile(const fs::path&
 {
   vtkNew<vtkNetCDFCFReader> reader;
 
-  std::cout << "Processing NetCDF Datafile:'" << filepath << "' with vtkNetCDFCFReader" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Processing NetCDF Datafile:'" << filepath << "' with vtkNetCDFCFReader";
 
   reader->SetFileName(filepath.c_str());
   reader->Update();
 
   vtkSmartPointer<vtkDataObject> data = reader->GetOutput();
 
-  reader->PrintSelf(std::cout, vtkIndent());
+  reader->PrintSelf(BOOST_LOG_TRIVIAL(debug), vtkIndent());
 
   return data;
 }
@@ -267,14 +265,14 @@ vtkSmartPointer<vtkDataObject> Inporter::processNetCDFDataFile(const fs::path& f
 {
   vtkNew<vtkNetCDFReader> reader;
 
-  std::cout << "Processing NetCDF Datafile:'" << filepath << "' with vtkNetCDFReader" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Processing NetCDF Datafile:'" << filepath << "' with vtkNetCDFReader";
 
   reader->SetFileName(filepath.c_str());
   reader->Update();
 
   vtkSmartPointer<vtkDataObject> data = reader->GetOutput();
 
-  reader->PrintSelf(std::cout, vtkIndent());
+  reader->PrintSelf(BOOST_LOG_TRIVIAL(debug), vtkIndent());
 
   return data;
 }

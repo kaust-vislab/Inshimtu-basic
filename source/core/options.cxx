@@ -8,6 +8,7 @@
 #include "core/specifications.h"
 #include "core/lambda_visitor.hxx"
 #include "utils/help.h"
+#include "utils/logger.h"
 
 #include <iostream>
 #include <memory>
@@ -154,14 +155,15 @@ const boost::optional<AcceptSpec> getAccept( const pt::ptree& in_
   }
   else
   {
-    // TODO: log error
+    BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                             << "Failed to read 'accept.type'.  Expected 'first', 'all', or 'script'";
+    throw std::runtime_error("configuration parse error");
   }
 
   return oaccept;
 }
 
-const boost::optional<InputSpec> getInputSpec( const pt::ptree& in_
-                                             , const boost::filesystem::path& libPath)
+const boost::optional<InputSpec> getInputSpec(const pt::ptree& in_)
 {
   boost::optional<InputSpec> inputS_;
 
@@ -191,11 +193,10 @@ const boost::optional<InputSpec> getInputSpec( const pt::ptree& in_
             inSpec.setAcceptAll();
             break;
           case InputSpecPaths::Accept_Script:
-            inSpec.setAcceptScript(accept->second, libPath);
+            inSpec.setAcceptScript(accept->second);
             break;
           }
         }
-
       }
 
       inputS_ = InputSpec(inSpec);
@@ -227,7 +228,9 @@ const boost::optional<InputSpec> getInputSpec( const pt::ptree& in_
       }
       else
       {
-        // TODO: log error
+        BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                                 << "Failed to find required 'input.accept'.";
+        throw std::runtime_error("configuration parse error");
       }
 
       inputS_ = InputSpec(inSpec);
@@ -237,8 +240,7 @@ const boost::optional<InputSpec> getInputSpec( const pt::ptree& in_
   return inputS_;
 }
 
-const boost::optional<ProcessingSpec> getProcessSpec( const pt::ptree& in_
-                                                 , const boost::filesystem::path& libPath)
+const boost::optional<ProcessingSpec> getProcessSpec(const pt::ptree& in_)
 {
   boost::optional<ProcessingSpec> processS_;
 
@@ -269,7 +271,9 @@ const boost::optional<ProcessingSpec> getProcessSpec( const pt::ptree& in_
       }
       else
       {
-        // TODO: log error
+        BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                                 << "Failed to find required 'process.scripts' for ProcessingSpecCatalyst.";
+        throw std::runtime_error("configuration parse error");
       }
     }
     else if (type_ == "ProcessingSpecCommands")
@@ -311,7 +315,9 @@ const boost::optional<ProcessingSpec> getProcessSpec( const pt::ptree& in_
           }
           else
           {
-            // TODO: log warning
+            BOOST_LOG_TRIVIAL(info) << "Configuration parse issue: "
+                                     << "Failed to parse 'process.processingCommandType' value for ProcessingSpecCommands. "
+                                     << "Using default.";
           }
 
           if (filesType_->get_value<std::string>() == "all")
@@ -324,7 +330,9 @@ const boost::optional<ProcessingSpec> getProcessSpec( const pt::ptree& in_
           }
           else
           {
-            // TODO: log warning
+            BOOST_LOG_TRIVIAL(info) << "Configuration parse issue: "
+                                     << "Failed to parse 'process.processingFilesType' value for ProcessingSpecCommands. "
+                                     << "Using default.";
           }
 
           processSpec.setProcessingType(processCommandsBy, processFilesBy);
@@ -334,7 +342,10 @@ const boost::optional<ProcessingSpec> getProcessSpec( const pt::ptree& in_
       }
       else
       {
-        // TODO: log error
+        BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                                 << "Failed to find 'process.commands' for ProcessingSpecCommands. "
+                                 << "Processor would do nothing.";
+        throw std::runtime_error("configuration parse error");
       }
     }
   }
@@ -342,8 +353,7 @@ const boost::optional<ProcessingSpec> getProcessSpec( const pt::ptree& in_
   return processS_;
 }
 
-const boost::optional<OutputSpec> getOutputSpec( const pt::ptree& in_
-                                               , const boost::filesystem::path& libPath)
+const boost::optional<OutputSpec> getOutputSpec(const pt::ptree& in_)
 {
   boost::optional<OutputSpec> outputS_;
 
@@ -370,7 +380,9 @@ const boost::optional<OutputSpec> getOutputSpec( const pt::ptree& in_
     }
     else
     {
-      // TODO: log error
+      BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                               << "Failed to read valid 'output.type' value. Expected 'OutputSpecPipeline' or 'OutputSpecDone'.";
+      throw std::runtime_error("configuration parse error");
     }
   }
 
@@ -387,7 +399,8 @@ Configuration::Configuration(int argc, const char* const argv[])
   po::options_description basicDesc("basic usage options");
   basicDesc.add_options()
     ("help,h", "help message describing command line options")
-    ("version,V", "output version number")
+    ("version", "output version number")
+    ("verbosity,V", po::value<std::string>()->default_value("warning"), "logging verbosity (trace, debug, info, warning, error, fatal)")
     ("config,c", po::value<std::string>()->default_value(""), "json configuration file")
     ("watch,w", po::value<std::string>()->default_value(""), "pre-existing inporting source directory to watch")
     ("done,d", po::value<std::string>()->default_value(""), "pre-existing termination trigger; done file; file must be outside watch directory")
@@ -448,8 +461,23 @@ Configuration::Configuration(int argc, const char* const argv[])
     exit(1);
   }
 
-
   po::notify(opts);
+
+
+  // Set verbosity
+  {
+    auto v(getVerbosity());
+
+    if (v.is_initialized())
+    {
+      Logger::instance().set_filter(v.get());
+    }
+    else
+    {
+      Logger::instance().reset_filter();
+    }
+  }
+
 
   // load configuration options
   if (!opts["config"].as<std::string>().empty())
@@ -469,7 +497,8 @@ Configuration::Configuration(int argc, const char* const argv[])
       ss << "  try: cat " << cfgs << " | python -m json.tool" << std::endl;
       ss << "ptree_bad_data: " << e.what();
 
-      throw std::runtime_error(ss.str());
+      BOOST_LOG_TRIVIAL(error) << ss.str();
+      throw std::runtime_error("configuration validation error");
     }
   }
 
@@ -488,30 +517,40 @@ Configuration::Configuration(int argc, const char* const argv[])
     {
       if ((watchDirectory && !doneFile) || (!watchDirectory && doneFile))
       {
-        throw std::runtime_error("either specify both options '--watch' and '--done', or specify neither when there are '--initial' files");
+        BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                                 << "Either specify both options '--watch' and '--done', or specify neither when there are '--initial' files";
+        throw std::runtime_error("configuration validation error");
       }
 
       if (!watchDirectory && !doneFile && fileFilter)
       {
-        throw std::runtime_error("the specified option '--files' requires both options '--watch' and '--done'");
+        BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                                 << "The specified option '--files' requires both options '--watch' and '--done'";
+        throw std::runtime_error("configuration validation error");
       }
     }
     else
     {
       if (!watchDirectory)
       {
-        throw std::runtime_error("the missing option '--watch' is required when there are no '--initial' files");
+        BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                                 << "The missing option '--watch' is required when there are no '--initial' files";
+        throw std::runtime_error("configuration validation error");
       }
 
       if (!doneFile)
       {
-        throw std::runtime_error("the missing option '--done' is required when there are no '--initial' files");
+        BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                                 << "The missing option '--done' is required when there are no '--initial' files";
+        throw std::runtime_error("configuration validation error");
       }
     }
 
     if (!scriptFiles && !externalCommands && !hasPipelines)
     {
-      throw std::runtime_error("the missing option '--scripts' or '--external_commands' or '--config' with pipelines is required");
+      BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                               << "The missing option '--scripts' or '--external_commands' or '--config' with pipelines is required";
+      throw std::runtime_error("configuration validation error");
     }
   }
 }
@@ -541,9 +580,9 @@ const std::vector<PipelineSpec> Configuration::collectPipelines() const
       {
         for (const auto& s_: stages_.get())
         {
-          boost::optional<InputSpec> inputSpec(getInputSpec(s_.second.get_child("input"), getLibPath()));
-          boost::optional<ProcessingSpec> processSpec(getProcessSpec(s_.second.get_child("process"), getLibPath()));
-          boost::optional<OutputSpec> outputSpec(getOutputSpec(s_.second.get_child("output"), getLibPath()));
+          boost::optional<InputSpec> inputSpec(getInputSpec(s_.second.get_child("input")));
+          boost::optional<ProcessingSpec> processSpec(getProcessSpec(s_.second.get_child("process")));
+          boost::optional<OutputSpec> outputSpec(getOutputSpec(s_.second.get_child("output")));
 
           if (inputSpec.is_initialized() && processSpec.is_initialized() && outputSpec.is_initialized())
           {
@@ -551,7 +590,9 @@ const std::vector<PipelineSpec> Configuration::collectPipelines() const
           }
           else
           {
-            // TODO: log error
+            BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                                     << "Failed to find 'pipelines.stages'.";
+            throw std::runtime_error("configuration parse error");
           }
         }
       }
@@ -564,7 +605,9 @@ const std::vector<PipelineSpec> Configuration::collectPipelines() const
       }
       else
       {
-        // TODO: log error (pipeline requires at least one stage)
+        BOOST_LOG_TRIVIAL(error) << "Configuration parse error: "
+                                 << "Empty 'pipelines.stages'.  Pipeline requires at least one stage.";
+        throw std::runtime_error("configuration parse error");
       }
     }
   }
@@ -609,7 +652,7 @@ const std::vector<PipelineSpec> Configuration::collectPipelines() const
     }
     else
     {
-      // TODO: log error (missing scripts)
+      //BOOST_LOG_TRIVIAL(warning) << "Potential configuration issue: Legacy pipeline is missing scripts.";
     }
   }
 
@@ -792,7 +835,9 @@ const std::vector<Configuration::NodeRange> Configuration::collectInporterNodes(
     }
     else
     {
-      throw std::runtime_error("the option '--nodes' must have interval format: ((#|(#-#)),)*(#|(#-#))");
+      BOOST_LOG_TRIVIAL(error) << "Configuration error: "
+                               << "The option '--nodes' must have interval format: ((#|(#-#)),)*(#|(#-#))";
+      throw std::runtime_error("configuration error");
     }
   }
 
@@ -836,17 +881,13 @@ const std::vector<InputSpecPaths> Configuration::getWatchPaths() const
 
   for (const auto& p: pipelines)
   {
-    boost::apply_visitor(visitor, p.getInput());
+    InputSpec ispec(p.getInput());
+    boost::apply_visitor(visitor, ispec);
   }
 
   return watchPaths;
 }
 
-
-bool Configuration::hasOutputReadySignal() const
-{
-  return getOutputReadyConversion().is_initialized();
-}
 
 const boost::optional<ReplaceRegexFormat> Configuration::getOutputReadyConversion() const
 {
@@ -923,6 +964,41 @@ bool Configuration::getDeleteFilesFlag() const
   }
 
   return cleanup;
+}
+
+
+boost::optional<boost::log::trivial::severity_level> Configuration::getVerbosity() const
+{
+  boost::optional<boost::log::trivial::severity_level> v_;
+
+  std::string v(opts["verbosity"].as<std::string>());
+
+  if (v == "trace")
+  {
+    v_ = boost::log::trivial::trace;
+  }
+  else if (v == "debug")
+  {
+    v_ = boost::log::trivial::debug;
+  }
+  else if (v == "info")
+  {
+    v_ = boost::log::trivial::info;
+  }
+  else if (v == "warning")
+  {
+    v_ = boost::log::trivial::warning;
+  }
+  else if (v == "error")
+  {
+    v_ = boost::log::trivial::error;
+  }
+  else if (v == "fatal")
+  {
+    v_ = boost::log::trivial::fatal;
+  }
+
+  return v_;
 }
 
 

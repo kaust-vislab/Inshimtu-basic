@@ -44,8 +44,7 @@ struct InputSpecPaths
 
   void setAcceptFirst();
   void setAcceptAll();
-  void setAcceptScript( const std::string& acceptScript_
-                      , const boost::filesystem::path& libPath_);
+  void setAcceptScript( const std::string& acceptScript_ );
 
 
   bool operator==(const InputSpecPaths& inputS) const;
@@ -61,8 +60,6 @@ struct InputSpecPaths
 
   AcceptType acceptType;
   std::string acceptScript;
-  // TODO: move libPath to pipeline runtime
-  boost::filesystem::path libPath;
 };
 
 

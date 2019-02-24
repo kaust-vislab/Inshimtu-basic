@@ -13,7 +13,7 @@ r = pplz.Regex('(' + '|'.join(varz) + ')\.[0-9]+\.(' + '|'.join(extz) + ')')
 isp = pplz.InputSpecPaths(dp, r)
 
 ex_zip = pplz.CommandExe('echo') #('zip')
-args0 = pplz.VectorString(['zip', '-j', '-m', '-T', '/lustre/scratch/mitgcm-output/mitgcm.${TIMESTEP_CODE}.zip', '-i', pplz.ProcessingSpecCommands.FILENAMES_ARRAY_ARG]) 
+args0 = pplz.VectorString(['-j', '-m', '-T', '/lustre/scratch/mitgcm-output/mitgcm.${TIMESTEP_CODE}.zip', '-i', pplz.ProcessingSpecCommands.FILENAMES_ARRAY_ARG]) 
 cmd0 = pplz.Command(ex_zip, args0)
 cmds = pplz.CommandSequence([cmd0])
 psc = pplz.ProcessingSpecCommands(cmds)
@@ -151,7 +151,7 @@ def accept(available, outAccepted, outAttributes):
   return True
 '''
 
-isp.setAcceptScript(script, pplz.FilesystemPath(os.path.abspath(sys.path[0])))
+isp.setAcceptScript(script)
 ispec = pplz.InputSpec(isp)
 readyFiles = pplz.VectorFilesystemPath(filepaths)
 acceptedFiles = pplz.VectorFilesystemPath()

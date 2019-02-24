@@ -77,7 +77,8 @@ void XMLImageDataFileInporter::process(const boost::filesystem::path& file)
     }
     else
     {
-      std::cerr << "WARNING: could not process input file '" << file << "'" << std::endl;
+      BOOST_LOG_TRIVIAL(warning) << "WARNING: could not process input file '"
+                                 << file << "'";
     }
   }
 }
@@ -89,7 +90,7 @@ vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
 {
   vtkNew<vtkXMLImageDataReader> reader;
 
-  std::cout << "Processing XMLImage Datafile:'" << filepath << "'" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Processing XMLImage Datafile:'" << filepath << "'";
 
   reader->SetFileName(filepath.c_str());
   reader->Update();
@@ -104,7 +105,11 @@ vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
       global_extent_out[i] = local_extent[i];
   }
 
-  reader->PrintSelf(std::cout, vtkIndent());
+  {
+    std::stringstream ss;
+    reader->PrintSelf(ss, vtkIndent());
+    BOOST_LOG_TRIVIAL(debug) << ss;
+  }
 
   return data;
 }
@@ -116,7 +121,7 @@ vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
 vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const fs::path& filepath)
 {
 
-  std::cout << "Processing HDF5 Datafile:'" << filepath << "'" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Processing HDF5 Datafile:'" << filepath << "'";
 
   vtkSmartPointer<vtkImageData> image;
 
@@ -161,12 +166,12 @@ vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const fs::path& file
   sz  = H5Tget_size(datatype);
 
   if (hclass == H5T_INTEGER)
-    std::cout << "Data set has INTEGER type" << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "Data set has INTEGER type";
 
   if (order == H5T_ORDER_LE)
-    std::cout << "Little endian order" << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "Little endian order";
 
-  std::cout << "Data size: " << sz << std::endl;
+  BOOST_LOG_TRIVIAL(debug) << "Data size: " << sz;
 
   dataspace = H5Dget_space(dataset);
   assert(dataspace >= 0);
@@ -174,9 +179,9 @@ vtkSmartPointer<vtkImageData> Inporter::processHDF5DataFile(const fs::path& file
   rank = H5Sget_simple_extent_ndims(dataspace);
   status_n = H5Sget_simple_extent_dims(dataspace, dims_out, nullptr);
 
-  std::cout << "rank: " << rank << ", dimensions: "
+  BOOST_LOG_TRIVIAL(debug) << "rank: " << rank << ", dimensions: "
             << static_cast<unsigned long>(dims_out[0]) << " x,"
-            << static_cast<unsigned long>(dims_out[1]) << " y" << std::endl;
+            << static_cast<unsigned long>(dims_out[1]) << " y";
 
   // Define hyperslab in the dataset.
   offset[0] = 1;

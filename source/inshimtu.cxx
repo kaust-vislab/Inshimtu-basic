@@ -6,6 +6,7 @@
 
 #include "core/options.h"
 #include "core/application.h"
+#include "utils/logger.h"
 #include "sentinels/notification.h"
 #include "sentinels/coordinator.h"
 #include "processing/adaptor.h"
@@ -70,7 +71,7 @@ int main(int argc, char* argv[])
   const bool shouldDelete = configs.getDeleteFilesFlag();
   bool isFinished = false;
 
-  std::cout << "READY" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "READY";
 
   // TODO: Fix logic to support per-node, local files (e.g., from a RAM Disk)
   //       Make each notification node an inporter, each inporter process the file

@@ -8,6 +8,7 @@
 #define CORE_OPTIONS_HEADER
 
 #include "core/specifications.h"
+#include "utils/logger.h"
 
 #include <iostream>
 #include <vector>
@@ -53,16 +54,17 @@ public:
 
   bool getDeleteFilesFlag() const;
 
+  boost::optional<boost::log::trivial::severity_level> getVerbosity() const;
 
   const boost::filesystem::path& getLibPath() const;
 
 
-  // TODO: deprecate when  calculateReadyFiles is part of process pipeline (not coordinator getSignalledOutputFile)
-  bool hasOutputReadySignal() const;
-  const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
 
+  // TODO: deprecate when  calculateReadyFiles is part of process pipeline (not coordinator getSignalledOutputFile)
+  const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
   // TODO: deprecate when Pipeline manages scripts in the new pipeline processing style
   const std::vector<boost::filesystem::path> collectScripts() const;
+
 
 private:
 

@@ -47,16 +47,12 @@ void InputSpecPaths::setAcceptAll()
   acceptScript.clear();
 }
 
-void InputSpecPaths::setAcceptScript( const std::string& acceptScript_
-                                    , const boost::filesystem::path& libPath_)
+void InputSpecPaths::setAcceptScript( const std::string& acceptScript_ )
 {
   assert(!acceptScript_.empty());
-  assert(!libPath_.empty());
-  assert(fs::is_directory(libPath_));
 
   acceptType = Accept_Script;
   acceptScript = acceptScript_;
-  libPath = libPath_;
 }
 
 
@@ -65,8 +61,7 @@ bool InputSpecPaths::operator==(const InputSpecPaths& i) const
   return directory == i.directory
       && filenames == i.filenames
       && acceptType == i.acceptType
-      && acceptScript == i.acceptScript
-      && libPath == i.libPath;
+      && acceptScript == i.acceptScript;
 }
 
 

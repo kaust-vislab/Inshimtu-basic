@@ -22,12 +22,12 @@ namespace fs = boost::filesystem;
 
 Notify::Notify()
 {
-  std::cout << "STARTED Notification" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "STARTED Notification";
 }
 
 Notify::~Notify()
 {
-  std::cout << "FINALIZED Notification." << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "FINALIZED Notification.";
 }
 
 void Notify::processEvents(std::vector<boost::filesystem::path>&)
@@ -48,13 +48,12 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
   , done_file(done)
   , watches()
 {
-
-  std::cout << "STARTED INotify" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "STARTED INotify";
 
   if (!fs::is_regular_file(done_file))
   {
-    std::cerr << "Failed: Cannot set inotify 'done'. Expected an exisiting file. "
-              << " Ensure file '" << done_file << "' exists." << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "Failed: Cannot set inotify 'done'. Expected an exisiting file. "
+                             << " Ensure file '" << done_file << "' exists.";
     return;
   }
 
@@ -62,7 +61,7 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
 
   if (inotify_descriptor < 0)
   {
-    std::cerr << "Failed: Cannot init inotify filesystem watcher" << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "Failed: Cannot init inotify filesystem watcher";
     return;
   }
 
@@ -71,8 +70,8 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
 
   if (done_descriptor < 0)
   {
-    std::cerr << "Failed: Cannot add 'done' watch. Ensure file '"
-              << done_file << "' exists." << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "Failed: Cannot add 'done' watch. Ensure file '"
+                             << done_file << "' exists.";
     return;
   }
 
@@ -81,16 +80,16 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
 
     if (!fs::is_directory(inSp.directory))
     {
-      std::cerr << "Failed: Cannot set inotify 'watch'. Expected an exisiting directory. "
-                << " Ensure directory '" << inSp.directory << "' exists." << std::endl;
+      BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot set inotify 'watch'. Expected an exisiting directory. "
+                               << " Ensure directory '" << inSp.directory << "' exists.";
       continue;
     }
 
     if (fs::equivalent(done_file.parent_path(), inSp.directory))
     {
-      std::cerr << "Failed: Cannot set inotify 'done'. Expected file outside of 'watch' directory. "
-                << " Ensure file '" << done_file << "' is not within '"
-                << inSp.directory << "' directory." << std::endl;
+      BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot set inotify 'done'. Expected file outside of 'watch' directory. "
+                               << " Ensure file '" << done_file << "' is not within '"
+                               << inSp.directory << "' directory.";
       continue;
     }
 
@@ -106,15 +105,15 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
 
       if (ws.descriptor < 0)
       {
-        std::cerr << "Failed: Cannot add filesystem watcher."
-                  << "Ensure directory '" << ws.directory << "' exists." << std::endl;
+        BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot add filesystem watcher."
+                                 << "Ensure directory '" << ws.directory << "' exists.";
         ws.descriptor = -1;
         continue;
       }
 
       watches.push_back(ws);
 
-      std::cout << "Added filter '" << inSp.filenames << "' and watch directory '" << ws.directory << "'." << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "Added filter '" << inSp.filenames << "' and watch directory '" << ws.directory << "'.";
     }
     else
     {
@@ -122,7 +121,7 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
 
       ws.files_filters.push_back(inSp.filenames);
 
-      std::cout << "Added filter '" << inSp.filenames << "' to watch directory '" << ws.directory << "'." << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "Added filter '" << inSp.filenames << "' to watch directory '" << ws.directory << "'.";
     }
   }
 
@@ -130,7 +129,7 @@ INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
   {
     remove_watches();
 
-    std::cerr << "Failed: No valid filesystem watchers found for notification." << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "Failed: No valid filesystem watchers found for notification.";
   }
 }
 
@@ -166,7 +165,7 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
 
   if ( length < 0 )
   {
-    std::cerr << "WARNING: INotify read failed." << std::endl;
+    BOOST_LOG_TRIVIAL(warning) << "WARNING: INotify read failed.";
     return;
   }
 
@@ -187,7 +186,7 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
         for(const auto& files_filter: watch.files_filters)
         if (boost::regex_match(event->name, files_filter))
         {
-          std::cout << "Watched file '" << name << "' was closed.\n" << std::endl;
+          BOOST_LOG_TRIVIAL(debug) << "Watched file '" << name << "' was closed.\n";
 
           // add to client's newly found files
           out_newFiles.push_back(name);
@@ -197,7 +196,7 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
           if (fitr == std::end(found_files))
           {
             found_files.push_back(name);
-            std::cout << "Added newly found file '" << name << "' to found files.\n" << std::endl;
+            BOOST_LOG_TRIVIAL(debug) << "Added newly found file '" << name << "' to found files.\n";
           }
         }
       }
@@ -206,7 +205,7 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
     if (is_done_event(*event))
     {
       done = true;
-      std::cout << "DONE Event! file '" << done_file << "' was modified.\n" << std::endl;
+      BOOST_LOG_TRIVIAL(debug) << "DONE Event! file '" << done_file << "' was modified.\n";
     }
 
     i += EVENT_SIZE + event->len;

@@ -42,18 +42,18 @@ Inporter::Inporter( Processor& processor_
   , timeStep(0)
   , lengthTimeStep(1.0)
 {
-  std::cout << "STARTED Inporter" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "STARTED Inporter";
 }
 
 Inporter::~Inporter()
 {
-  std::cout << "FINISHED Inporter. Time:" << timeStep << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "FINISHED Inporter. Time:" << timeStep;
 }
 
 void Inporter::process( const std::vector<fs::path>& newfiles
                       , const bool deleteFiles)
 {
-  std::cout << "Start Inport Process (" << newfiles.size() << " new files)" << std::endl;
+  BOOST_LOG_TRIVIAL(debug) << "Start Inport Process (" << newfiles.size() << " new files)";
 
   for(const fs::path& name : newfiles)
   {
@@ -69,7 +69,7 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     availableFiles.push_back(name);
 
     // new file is new
-    std::cout << "\t\tNew available file: '" << name << "'" << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "\t\tNew available file: '" << name << "'";
   }
 
 
@@ -88,9 +88,8 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     // Process tasks
     for (auto& task : tasks)
     {
-      std::cout << "\tProcessing Task: " << (task->getStage().is_initialized() ? task->getStage()->name : "<UNKNOWN>")
-                << " -- Section index:" << section.getIndex() << " size:" << section.getSize() << " rank:" << section.getRank()
-                << std::endl;
+      BOOST_LOG_TRIVIAL(debug) << "\tProcessing Task: " << (task->getStage().is_initialized() ? task->getStage()->name : "<UNKNOWN>")
+                << " -- Section index:" << section.getIndex() << " size:" << section.getSize() << " rank:" << section.getRank();
 
       pipeline_ProcessTask(task);
 
@@ -108,7 +107,7 @@ void Inporter::process( const std::vector<fs::path>& newfiles
       {
         if (std::find(std::begin(workingFiles), std::end(workingFiles), name) != std::end(workingFiles))
         {
-          std::cout << "\tDeleting file: '" << name << "'" << std::endl;
+          BOOST_LOG_TRIVIAL(info) << "\tDeleting file: '" << name << "'";
           fs::remove(name);
         }
       }
@@ -124,9 +123,9 @@ void Inporter::process( const std::vector<fs::path>& newfiles
     workingFiles.clear();
   } while (!availableFiles.empty() && !tasks.empty());
 
-  std::cout << "\t\t...Done Inport Process ("
-            << availableFiles.size() << " available files, "
-            << workingFiles.size() << " working files)" << std::endl;
+  BOOST_LOG_TRIVIAL(debug) << "\t\t...Done Inport Process ("
+                           << availableFiles.size() << " available files, "
+                           << workingFiles.size() << " working files)";
 }
 
 void Inporter::createTasks( double time, bool forceOutput
@@ -145,7 +144,12 @@ void Inporter::createTasks( double time, bool forceOutput
     {
       auto mkDescriptor = [&,time,forceOutput](){ return std::unique_ptr<Descriptor> (new Descriptor(processor, section, timeStep, time, forceOutput)); };
 
-      std::cout << "\tPipeline accepted files: " << accepted << std::endl;
+      {
+        std::stringstream ss;
+        ss << accepted;
+
+        BOOST_LOG_TRIVIAL(debug) << "\tPipeline accepted files: " << ss;
+      }
 
       for (const auto& name : accepted)
       {

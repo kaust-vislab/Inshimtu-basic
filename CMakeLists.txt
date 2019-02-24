@@ -10,7 +10,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
 endif()
 
 
-find_package(ParaView 4.3.1 REQUIRED COMPONENTS
+find_package(ParaView 5.4.1 REQUIRED COMPONENTS
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
@@ -25,19 +25,17 @@ include(vtkModuleMacros)
 include(vtkMPI)
 
 
-find_package(Boost 1.53 REQUIRED COMPONENTS
+find_package(Boost 1.64 REQUIRED COMPONENTS
   program_options
-  ## Boost >= 1.54
-  #log
-  #log_setup
-  ## Boost >= 1.64
-  #process
+  log
+  log_setup
   thread
   date_time
   filesystem
   system
   regex
-  python
+  #python # TODO: require python36
+  python27
 )
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -100,7 +98,7 @@ target_link_libraries(InshimtuLib LINK_PRIVATE
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
-  vtkNetCDF
+  vtkNetCDF-pv${PARAVIEW_VERSION}
   ${Boost_LIBRARIES}
 )
 vtk_mpi_link(InshimtuLib)
@@ -115,7 +113,7 @@ target_link_libraries(Inshimtu LINK_PRIVATE
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
-  vtkNetCDF
+  vtkNetCDF-pv${PARAVIEW_VERSION}
   ${Boost_LIBRARIES}
 # TODO: Fix configuration error (found library, but not CPP version):
 #    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
@@ -128,7 +126,7 @@ target_link_libraries(Inshimtu LINK_PRIVATE
 vtk_mpi_link(Inshimtu)
 
 
-option(BUILD_TESTING "Build Testing" OFF)
+option(BUILD_TESTING "Build Testing" ON)
 # Setup testing.
 if (BUILD_TESTING)
 
@@ -145,7 +143,7 @@ if (BUILD_TESTING)
     vtkPVPythonCatalyst
     vtkIOXML
     vtkIONetCDF
-    vtkNetCDF
+    vtkNetCDF-pv${PARAVIEW_VERSION}
     ${Boost_LIBRARIES}
     ${InshimtuLib}
   )

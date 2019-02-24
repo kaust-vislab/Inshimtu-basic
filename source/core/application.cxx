@@ -45,9 +45,12 @@ MPIInportSection::MPIInportSection( NodeRank rank
 
 MPIApplication::MPIApplication(int* argc, char** argv[])
 {
-  std::cout << "STARTED MPIApplication" << std::endl;
-
   MPI_Init(argc, argv);
+
+  // create Logger and set default verbosity
+  Logger::instance().set_filter(boost::log::trivial::warning);
+
+  BOOST_LOG_TRIVIAL(trace) << "STARTED MPIApplication";
 
   int rank;
   int size;
@@ -62,9 +65,6 @@ MPIApplication::MPIApplication(int* argc, char** argv[])
 
   // TODO: determine node masters; node master watches filesystem
   // (for now verify we are at most 1 MPI process per node?)
-
-  // create Logger
-  Logger::instance();
 }
 
 MPIApplication::~MPIApplication()
@@ -73,7 +73,7 @@ MPIApplication::~MPIApplication()
 
   Logger::destroy();
 
-  std::cout << "FINALIZED MPIApplication" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "FINALIZED MPIApplication";
 }
 
 
@@ -85,6 +85,8 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
   vtkNew<vtkProcessGroup> pgroupInport;
   vtkNew<vtkProcessGroup> pgroupCoord;
   std::set<MPISection::NodeRank> inporters;
+
+  BOOST_LOG_TRIVIAL(trace) << "STARTED MPICatalystApplication";
 
   int totalSize = static_cast<int>(getSize());
 

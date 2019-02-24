@@ -25,6 +25,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/format.hpp>
 #include <boost/python.hpp>
+#include <boost/process.hpp>
+#include <boost/dll.hpp>
 
 #include <unistd.h>
 #include <assert.h>
@@ -34,11 +36,7 @@
 
 namespace fs = boost::filesystem;
 namespace py = boost::python;
-
-
-// TODO: use boost.process and bp.system bp.child to process commands
-//#include <boost/process.hpp>
-//namespace bp = boost::process;
+namespace bp = boost::process;
 
 
 namespace
@@ -71,11 +69,12 @@ bool accept_InputSpecPaths( const InputSpecPaths& ispec
       Py_Initialize();
     }
 
+    fs::path libPath(boost::dll::program_location().parent_path());
     std::string init_script((boost::format(
         "import os, sys \n"
         "sys.path.insert(0, '%1%') \n"
         "import InshimtuLib as inshimtu \n"
-      ) % ispec.libPath.string()
+      ) % libPath.string()
       ).str()
     );
 
@@ -273,7 +272,15 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
 {
   bool result = true;
 
-  std::string exe = cmd.first.string();
+  fs::path exePath(cmd.first);
+
+  // bp::system exe mode requires absolute exe path - find from basename and system path
+  if (fs::basename(exePath) == exePath.string())
+  {
+    exePath = bp::search_path(exePath);
+  }
+
+  std::string exe = exePath.string();
   std::vector<std::string> args;
 
   for (const auto& arg: cmd.second)
@@ -282,8 +289,14 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
     {
       assert(!files.empty());
 
-      // TODO: log warning (user based error handling policy)
-      // assert(files.size() == 1);
+      if (files.size() != 1)
+      {
+        BOOST_LOG_TRIVIAL(warning) << "Argument '" << FILENAME_ARG << "' expects single file (use '"
+                                   << FILENAMES_ARRAY_ARG << "' instead). "
+                                   << "Found " << files.size() << " files. "
+                                   << "Only passing first file to command: " << exe;
+      }
+
 
       args.push_back(files[0].string());
     }
@@ -311,7 +324,8 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
         }
         else
         {
-          // TODO: log warning about invalid TIMESTEP_CODE types
+          BOOST_LOG_TRIVIAL(warning) << "Attribute '" << TIMESTEP_CODE_ARG << "' has invalid type. "
+                                     << "Using attribute name as value for command: "  << exe;
         }
       }
 
@@ -319,42 +333,9 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
     }
   }
 
-  // TODO: use boost.process
-  //bp.system(exe, args);
+  int ret = bp::system(exe, args);
 
-  // legacy
-  {
-    int ret;
-    std::stringstream ss;
-
-    ss << cmd.first;
-
-    for (auto& arg: args)
-    {
-      // TODO: encode args (replace spaces with "\ ")
-      ss << " " << arg;
-    }
-
-    ret = system(ss.str().c_str());
-
-    // TODO: enable error handling policy: aggressive (early out), passive (best attempts)
-    if (ret < 0)
-    {
-      // strerror(errno)
-      result = false;
-    }
-    else if (WIFEXITED(ret))
-    {
-      if (WEXITSTATUS(ret) != 0)
-      {
-        result = false;
-      }
-    }
-    else
-    {
-      result = false;
-    }
-  }
+  result = ret == 0;
 
   return result;
 }
@@ -385,7 +366,7 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
 
     if (RawNetCDFDataFileInporter::canProcess(filename))
     {
-      std::cout << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "Creating RawNetCDFDataFileInporter for: '" << vsets << "'";
 
       std::vector<std::string> vars;
       boost::split(vars, vsets, boost::is_any_of(","), boost::token_compress_on);
@@ -399,7 +380,7 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
     }
     else if (XMLImageDataFileInporter::canProcess(filename))
     {
-      std::cout << "Creating XMLImageDataFileInporter for: '" << vsets << "'" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "Creating XMLImageDataFileInporter for: '" << vsets << "'";
 
       inporters.push_back(
           std::unique_ptr<Adaptor>(
@@ -801,25 +782,3 @@ void pipeline_ProcessTask(std::unique_ptr<TaskState>& taskS)
   }
 }
 
-
-// TODO: remove
-/*
-// Example: traditional
-class  input_handler : public boost::static_visitor<void>
-{
-public:
-  void operator()(const InputSpecPaths& inSp) const { std::cout << "InputSpecFile"; }
-  void operator()(const InputSpecAny& inSp) const { std::cout << "InputSpecAny"; }
-};
-
-void doPipeline(TaskState& pipeSt)
-{
-  if (pipeSt.stage.is_initialized())
-  {
-    PipelineSpec& stage = pipeSt.stage.get();
-    const InputSpec& inputSp = stage.input;
-
-    boost::apply_visitor(input_handler(), inputSp);
-  }
-}
-*/
