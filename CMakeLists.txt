@@ -105,7 +105,6 @@ set(Library_SRCS
 
 set(Executable_SRCS
   source/inshimtu.cxx
-  #${Library_SRCS}
   $<TARGET_OBJECTS:InshimtuObj>
 )
 
@@ -121,7 +120,6 @@ set_target_properties(InshimtuObj PROPERTIES
 
 
 add_library(InshimtuLib
-  #${Library_SRCS}
   $<TARGET_OBJECTS:InshimtuObj>
   )
 set_target_properties(InshimtuLib PROPERTIES
@@ -129,7 +127,7 @@ set_target_properties(InshimtuLib PROPERTIES
     CXX_STANDARD_REQUIRED YES
   PREFIX ""
 )
-target_link_libraries(InshimtuLib LINK_PUBLIC #LINK_PRIVATE
+target_link_libraries(InshimtuLib LINK_PRIVATE
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
@@ -167,7 +165,6 @@ if (BUILD_TESTING)
 
   set(Test_SRCS
     source/tests/test.cxx
-    #${Library_SRCS}
     $<TARGET_OBJECTS:InshimtuObj>
   )
   add_executable(testComponents ${Test_SRCS})
