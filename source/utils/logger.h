@@ -7,7 +7,6 @@
 #ifndef UTILS_LOGGER_HEADER
 #define UTILS_LOGGER_HEADER
 
-#define BOOST_LOG_DYN_LINK 1
 #include <boost/log/trivial.hpp>
 
 #include <iostream>

@@ -148,7 +148,7 @@ void Inporter::createTasks( double time, bool forceOutput
         std::stringstream ss;
         ss << accepted;
 
-        BOOST_LOG_TRIVIAL(debug) << "\tPipeline accepted files: " << ss;
+        BOOST_LOG_TRIVIAL(debug) << "\tPipeline accepted files: " << ss.str();
       }
 
       for (const auto& name : accepted)

@@ -108,7 +108,7 @@ vtkSmartPointer<vtkImageData> XMLImageDataFileInporter::processXMLImageDataFile(
   {
     std::stringstream ss;
     reader->PrintSelf(ss, vtkIndent());
-    BOOST_LOG_TRIVIAL(debug) << ss;
+    BOOST_LOG_TRIVIAL(debug) << ss.str();
   }
 
   return data;

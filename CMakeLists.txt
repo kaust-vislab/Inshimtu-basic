@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # NOTE: These settings fix link errors on Cray environment
-if (${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
   set(CMAKE_EXE_LINKER_FLAGS "-dynamic -Wl,--no-as-needed -ldl")
 endif()
 
@@ -24,8 +24,20 @@ include("${PARAVIEW_USE_FILE}")
 include(vtkModuleMacros)
 include(vtkMPI)
 
+if(PARAVIEW_VERSION GREATER_EQUAL 5.6)
+  set(PV_LIB_SUFFIX "-pv${PARAVIEW_VERSION}")
+else()
+  set(PV_LIB_SUFFIX "")
+endif()
 
-find_package(Boost 1.64 REQUIRED COMPONENTS
+
+option(BUILD_BOOST_LOG_DYN_LINK "Boost Log Dynamic Link" ON)
+if(BUILD_BOOST_LOG_DYN_LINK)
+  add_compile_definitions(BOOST_LOG_DYN_LINK=1)
+endif()
+
+# TODO: Make Boost 1.67 REQUIRED
+find_package(Boost 1.67 COMPONENTS
   program_options
   log
   log_setup
@@ -34,9 +46,23 @@ find_package(Boost 1.64 REQUIRED COMPONENTS
   filesystem
   system
   regex
-  #python # TODO: require python36
   python27
 )
+# TODO: remove work-around for older Boost versions (python component change)
+if(NOT Boost_FOUND)
+  find_package(Boost 1.64 REQUIRED COMPONENTS
+    program_options
+    log
+    log_setup
+    thread
+    date_time
+    filesystem
+    system
+    regex
+    python
+  )
+endif()
+
 include_directories(${Boost_INCLUDE_DIRS})
 
 
@@ -76,29 +102,38 @@ set(Library_SRCS
   source/utils/help.cxx
   source/utils/logger.cxx
 )
-set(PythonLib_SRCS
-  source/processing/python.cxx
-)
 
 set(Executable_SRCS
   source/inshimtu.cxx
-  ${Library_SRCS}
+  #${Library_SRCS}
+  $<TARGET_OBJECTS:InshimtuObj>
 )
 
 
-add_library(InshimtuLib SHARED
+add_library(InshimtuObj OBJECT
   ${Library_SRCS}
+  )
+set_target_properties(InshimtuObj PROPERTIES
+    CXX_STANDARD 14
+    CXX_STANDARD_REQUIRED YES
+    POSITION_INDEPENDENT_CODE 1
+)
+
+
+add_library(InshimtuLib
+  #${Library_SRCS}
+  $<TARGET_OBJECTS:InshimtuObj>
   )
 set_target_properties(InshimtuLib PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED YES
   PREFIX ""
 )
-target_link_libraries(InshimtuLib LINK_PRIVATE
+target_link_libraries(InshimtuLib LINK_PUBLIC #LINK_PRIVATE
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
-  vtkNetCDF-pv${PARAVIEW_VERSION}
+  vtkNetCDF${PV_LIB_SUFFIX}
   ${Boost_LIBRARIES}
 )
 vtk_mpi_link(InshimtuLib)
@@ -113,14 +148,14 @@ target_link_libraries(Inshimtu LINK_PRIVATE
   vtkPVPythonCatalyst
   vtkIOXML
   vtkIONetCDF
-  vtkNetCDF-pv${PARAVIEW_VERSION}
+  vtkNetCDF${PV_LIB_SUFFIX}
   ${Boost_LIBRARIES}
 # TODO: Fix configuration error (found library, but not CPP version):
 #    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
 #  ${HDF5_LIBRARIES}
 # TODO: What is the best way to enable Python?
 #       https://vsamy.github.io/en/blog/boost-python-cmake-build
-#  ${InshimtuLib}
+  ${InshimtuLib}
   ${Allinea_LIBRARIES}
 )
 vtk_mpi_link(Inshimtu)
@@ -132,7 +167,8 @@ if (BUILD_TESTING)
 
   set(Test_SRCS
     source/tests/test.cxx
-    ${Library_SRCS}
+    #${Library_SRCS}
+    $<TARGET_OBJECTS:InshimtuObj>
   )
   add_executable(testComponents ${Test_SRCS})
   set_target_properties(testComponents PROPERTIES
@@ -143,7 +179,7 @@ if (BUILD_TESTING)
     vtkPVPythonCatalyst
     vtkIOXML
     vtkIONetCDF
-    vtkNetCDF-pv${PARAVIEW_VERSION}
+    vtkNetCDF${PV_LIB_SUFFIX}
     ${Boost_LIBRARIES}
     ${InshimtuLib}
   )
@@ -161,7 +197,4 @@ if (BUILD_TESTING)
   add_test(TestPythonicSpecFile2 testComponents "PythonicFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing pythonic_tests/mitgcmSpec.py)
   add_test(ConfigurationConfigFile testComponents "ConfigurationConfigFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing configs/mitgcm_compress.json)
 
-  #add_test(VTKDataTest Inshimtu ${CMAKE_CURRENT_SOURCE_DIR}/testing/vtkdataTest.py)
-  #add_test(NetCDFTest Inshimtu ${CMAKE_CURRENT_SOURCE_DIR}/testing/netcdfTest.py)
-  #add_test(HDF5Test Inshimtu ${CMAKE_CURRENT_SOURCE_DIR}/testing/hdf5Test.py)
 endif()

@@ -32,11 +32,12 @@ function buildShaheen {
   module swap PrgEnv-cray PrgEnv-gnu
   module add cdt/17.12
 
-  module add cmake/3.10.2
+  module add cmake/3.13.3
 
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module use /sw/vis/xc40.modules
+  # TODO: intel/18.0.1.163 gets loaded indirectly here:
   module add ParaView/5.4.1-CrayGNU-2017.12.KSL-server-mesa
   module add boost/1.66-gcc-7.2.0
   #module add cray-netcdf-hdf5parallel/4.4.1.1.6
@@ -65,9 +66,9 @@ EOF
     make-profiler-libraries
   fi
 
-
   cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
         -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" \
+        -DBUILD_BOOST_LOG_DYN_LINK="OFF" \
         ..
 
   make -j 12
@@ -78,28 +79,6 @@ EOF
     echo "pat_build Inshimtu -- for advanced perftools"
     pat_build Inshimtu
   fi
-}
-
-function buildIbex {
-  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.ibex"
-  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
-  mkdir "${INSHIMTU_BUILD_DIR}"
-  cd "${INSHIMTU_BUILD_DIR}"
-
-  BUILD_TYPE="Release"
-
-  echo "Creating Module File"
-cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
-  module add cmake/3.9.4/gnu-6.4.0
-  module add boost/1.65.1/openmpi-2.1.1-gcc-6.4.0
-  module use /sw/vis/ibex-gpu.modules
-  module add ParaView/5.6.0-openmpi-x86_64
-EOF
-  source "${INSHIMTU_BUILD_DIR}/module.init"
-
-  cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DBOOST_ROOT="${BOOST_DIR}" ..
-
-  make -j 8
 }
 
 function buildNeser {
@@ -116,9 +95,29 @@ cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module use /sw/csg/modulefiles/compilers
   module use /sw/csg/modulefiles/libs
 
-  module add cmake/3.9.4/gnu-6.4.0
-  module add boost/1.65.1/openmpi-2.1.1-gcc-6.4.0
   module use /sw/vis/ibex-gpu.modules
+  module add CMake/3.12.1
+  module add ParaView/5.6.0-openmpi-x86_64
+EOF
+  source "${INSHIMTU_BUILD_DIR}/module.init"
+
+  cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DBOOST_ROOT="${BOOST_DIR}" ..
+
+  make -j 8
+}
+
+function buildIbex {
+  INSHIMTU_BUILD_DIR="${INSHIMTU_DIR}/build.ibex"
+  echo "Setting Inshimtu build directory: ${INSHIMTU_BUILD_DIR}"
+  mkdir "${INSHIMTU_BUILD_DIR}"
+  cd "${INSHIMTU_BUILD_DIR}"
+
+  BUILD_TYPE="Release"
+
+  echo "Creating Module File"
+cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
+  module use /sw/vis/ibex-gpu.modules
+  module add CMake/3.12.1
   module add ParaView/5.6.0-openmpi-x86_64
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
