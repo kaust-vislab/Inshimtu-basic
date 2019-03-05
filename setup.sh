@@ -47,6 +47,7 @@ cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   #   Fix for issue loading correct version of cray mpi
   #   export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH":$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH="${CRAY_MPICH2_DIR}/lib":$LD_LIBRARY_PATH
+  export CRAYPE_LINK_TYPE=dynamic
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
 
@@ -68,7 +69,6 @@ EOF
 
   cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
         -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" \
-        -DBUILD_BOOST_LOG_DYN_LINK="OFF" \
         ..
 
   make -j 12

@@ -4,9 +4,15 @@ project(Inshimtu)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# NOTE: These settings fix link errors on Cray environment
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
-  set(CMAKE_EXE_LINKER_FLAGS "-dynamic -Wl,--no-as-needed -ldl")
+  if(NOT "$ENV{CRAYPE_LINK_TYPE}" STREQUAL "dynamic")
+    # InshimtuLib python bindings require dynamic lib to import
+    message(FATAL_ERROR "Require 'CRAYPE_LINK_TYPE=dynamic' for CrayLinuxEnvironment")
+    # NOTE: These settings fix link errors on Cray environment
+    #       if we accepted static link type, set linker flags to support dynamic-only dependencies
+    set(CMAKE_EXE_LINKER_FLAGS "-dynamic -Wl,--no-as-needed -ldl")
+  endif()
 endif()
 
 
@@ -31,11 +37,7 @@ else()
 endif()
 
 
-option(BUILD_BOOST_LOG_DYN_LINK "Boost Log Dynamic Link" ON)
-if(BUILD_BOOST_LOG_DYN_LINK)
-  add_compile_definitions(BOOST_LOG_DYN_LINK=1)
-endif()
-
+add_compile_definitions(BOOST_LOG_DYN_LINK=1)
 # TODO: Make Boost 1.67 REQUIRED
 find_package(Boost 1.67 COMPONENTS
   program_options
@@ -119,7 +121,7 @@ set_target_properties(InshimtuObj PROPERTIES
 )
 
 
-add_library(InshimtuLib
+add_library(InshimtuLib SHARED
   $<TARGET_OBJECTS:InshimtuObj>
   )
 set_target_properties(InshimtuLib PROPERTIES
@@ -127,12 +129,13 @@ set_target_properties(InshimtuLib PROPERTIES
     CXX_STANDARD_REQUIRED YES
   PREFIX ""
 )
-target_link_libraries(InshimtuLib LINK_PRIVATE
-  vtkPVPythonCatalyst
-  vtkIOXML
-  vtkIONetCDF
-  vtkNetCDF${PV_LIB_SUFFIX}
-  ${Boost_LIBRARIES}
+target_link_libraries(InshimtuLib 
+  PRIVATE
+    vtkPVPythonCatalyst
+    vtkIOXML
+    vtkIONetCDF
+    vtkNetCDF${PV_LIB_SUFFIX}
+    ${Boost_LIBRARIES}
 )
 vtk_mpi_link(InshimtuLib)
 
@@ -142,19 +145,22 @@ set_target_properties(Inshimtu PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED YES
 )
-target_link_libraries(Inshimtu LINK_PRIVATE
-  vtkPVPythonCatalyst
-  vtkIOXML
-  vtkIONetCDF
-  vtkNetCDF${PV_LIB_SUFFIX}
-  ${Boost_LIBRARIES}
+target_link_libraries(Inshimtu
+  PRIVATE
+    vtkPVPythonCatalyst
+    vtkIOXML
+    vtkIONetCDF
+    vtkNetCDF${PV_LIB_SUFFIX}
+    ${Boost_LIBRARIES}
 # TODO: Fix configuration error (found library, but not CPP version):
 #    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
 #  ${HDF5_LIBRARIES}
 # TODO: What is the best way to enable Python?
 #       https://vsamy.github.io/en/blog/boost-python-cmake-build
-  ${InshimtuLib}
-  ${Allinea_LIBRARIES}
+#       https://stackoverflow.com/questions/35367469/force-cmake-visualstudio-to-use-static-libs-of-boost-python/35440164#35440164
+#       https://www.boost.org/doc/libs/1_60_0/libs/python/doc/html/tutorial/tutorial/embedding.html
+#    ${InshimtuLib}
+    ${Allinea_LIBRARIES}
 )
 vtk_mpi_link(Inshimtu)
 
@@ -172,13 +178,14 @@ if (BUILD_TESTING)
       CXX_STANDARD 14
       CXX_STANDARD_REQUIRED YES
   )
-  target_link_libraries(testComponents LINK_PRIVATE
-    vtkPVPythonCatalyst
-    vtkIOXML
-    vtkIONetCDF
-    vtkNetCDF${PV_LIB_SUFFIX}
-    ${Boost_LIBRARIES}
-    ${InshimtuLib}
+  target_link_libraries(testComponents
+    PRIVATE
+      vtkPVPythonCatalyst
+      vtkIOXML
+      vtkIONetCDF
+      vtkNetCDF${PV_LIB_SUFFIX}
+      ${Boost_LIBRARIES}
+    #  ${InshimtuLib}
   )
   vtk_mpi_link(testComponents)
 
