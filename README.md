@@ -1,9 +1,9 @@
-#Inshimtu
+# Inshimtu
 
 An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst).
 
 
-##TODOs
+## TODOs
 
 * Schedule tasks (currently all inport nodes participate; works for Catalyst, but not for external commands)
   * Need coordination combinators
@@ -52,6 +52,7 @@ Running on KVL cluster with 7 nodes total, and 3 nodes as inporters (extent impo
 time testing/launchers/launch_inshimtu_kvl.sh -S GDM -n 0-2 -N 1-7
 ```
 
+```
 build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti -v input
 
 build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/WSM3/WSM3_wrfout_d01_2015-*.nc -v U,V,W,QVAPOR
@@ -69,7 +70,9 @@ srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" \
      -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py" \
      -v U,V,W,QVAPOR
   &
+```
 
+```
 # single node
 module add mpi/mpich-x86_64
 cd /home/holstgr/Development/Inshimtu/examples
@@ -108,7 +111,7 @@ mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-
     -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
     -i "$PWD/testing/GDM/"wrfout_d01_2015-{10-28,10-29,10-30,10-31,11-01}* \
     -s "$PWD/pipelines/viewer_P_QICE_nodec.py" -v P,QICE
-
+```
 
 ### Notes
 
