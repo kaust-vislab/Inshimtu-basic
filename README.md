@@ -27,13 +27,33 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti
 module add kvl-applications pvserver/5.6.0-mpich-x86_64
 ```
 
-Running test suite
+Running test suite: KVL
 
 ```
 cd build.kvl
 ctest3
 ctest3 --output-on-failure
 ```
+
+Running test suite: Shaheen
+
+```
+# run on compute node
+
+salloc --partition=debug
+srun -u --pty bash -i
+
+# from Inshimtu directory: build dependencies + python dependencies
+
+source build.shaheen/module.init
+export LD_LIBRARY_PATH=/opt/python/2.7.15.7/lib:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=/opt/python/3.7.3.2/lib:$LD_LIBRARY_PATH
+
+cd build.shaheen
+ctest
+ctest --output-on-failure
+```
+
 
 Running on local KVL desktop
 

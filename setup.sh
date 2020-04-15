@@ -18,7 +18,7 @@ function buildShaheen {
     LIB_EXT="so"
     BUILD_TYPE="RelWithDebInfo"
   else
-    LIB_EXT="a"
+    LIB_EXT="so"
     BUILD_TYPE="Release"
   fi
 
@@ -29,25 +29,27 @@ function buildShaheen {
   cd "${INSHIMTU_BUILD_DIR}"
 
 
-  module swap PrgEnv-cray PrgEnv-gnu
-  module add cdt/17.12
+  module add cmake/3.13.4
 
-  module add cmake/3.13.3
-
+  ## NOTE: `module add ParaView/5.8.0-CrayGNU-2019.12.KSL-server-mesa`: 
+  #        uses Python 3.7, but old Boost built against Python 2.7; there is a linker issue as a result
+  ## NOTE: `module add ParaView/5.8.0-CrayGNU-2019.12.KSL-server-mesa-py27`: 
+  #        builds; testing... 
+  ## NOTE: `module add ParaView/5.6.3-CrayGNU-2019.12.KSL-server-mesa`: 
+  #        fails to find a "ParaView*config.cmake" file for Catalyst 
+  ## NOTE: `module add ParaView/5.4.1-CrayGNU-2019.12.KSL-server-mesa`:
+  #        needs older cmake code path
   echo "Creating Module File"
 cat <<'EOF' > "${INSHIMTU_BUILD_DIR}/module.init"
   module use /sw/vis/xc40.modules
-  # TODO: intel/18.0.1.163 gets loaded indirectly here:
-  module add ParaView/5.4.1-CrayGNU-2017.12.KSL-server-mesa
-  module add boost/1.66-gcc-7.2.0
-  #module add cray-netcdf-hdf5parallel/4.4.1.1.6
-  module add cray-parallel-netcdf/1.8.1.3
-  module add cray-hdf5-parallel/1.10.1.1
-  # TODO: Put fix in ParaView module
-  #   Fix for issue loading correct version of cray mpi
-  #   export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH":$LD_LIBRARY_PATH
-  export LD_LIBRARY_PATH="${CRAY_MPICH2_DIR}/lib":$LD_LIBRARY_PATH
+  module add ParaView/5.8.0-CrayGNU-2019.12.KSL-server-mesa-py27
+  #module add cray-netcdf-hdf5parallel/4.6.3.2
+  module add cray-parallel-netcdf/1.11.1.1
+  module add cray-hdf5-parallel/1.10.5.2
+  # TODO: required?
   export CRAYPE_LINK_TYPE=dynamic
+  # TODO: Put fix in FFmpeg module
+  export FFMPEG_ROOT="$(realpath "$(dirname "$(which ffmpeg)")"/..)"
 EOF
   source "${INSHIMTU_BUILD_DIR}/module.init"
 
@@ -62,16 +64,23 @@ EOF
     module load perftools
 
     # ARM Allinea support
-    module load arm-reports/18.0.2 arm-forge/18.0.2
+    module load arm-reports/19.1.4 arm-forge/19.1.4
     # ARM Allinea support
     make-profiler-libraries
   fi
 
+  export ParaView_DIR="$(dirname "$(which pvserver)")"/../easybuild_obj
+
   cmake -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
         -DCMAKE_C_COMPILER="$(which cc)" -DCMAKE_CXX_COMPILER="$(which CC)" \
+        -DCMAKE_C_FLAGS="-fopenmp" -DCMAKE_CXX_FLAGS="-fopenmp" \
         ..
 
   make -j 12
+# TODO: enable VERBOSE in debug mode
+#  VERBOSE=1 make -j 12
+#  VERBOSE=1 make -j 12 Inshimtu
+#  VERBOSE=1 make -j 12 InshimtuLib
 
 
   if [ "$INSHIMTU_PROFILING" = true ] ; then

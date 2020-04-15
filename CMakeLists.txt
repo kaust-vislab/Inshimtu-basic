@@ -16,22 +16,53 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
 endif()
 
 
-find_package(ParaView 5.4.1 REQUIRED COMPONENTS
-  vtkPVPythonCatalyst
-  vtkIOXML
-  vtkIONetCDF
-  vtkhdf5
+find_package(ParaView 5.8 COMPONENTS
+  PythonCatalyst
 )
-if(NOT PARAVIEW_USE_MPI)
-  message(SEND_ERROR "ParaView must be built with MPI enabled")
+if(ParaView_FOUND)
+  find_package(VTK 8.0 REQUIRED COMPONENTS
+    IOXML
+    IONetCDF
+    hdf5
+    ParallelMPI
+  #  NO_MODULE
+  )
+else()
+  find_package(ParaView 5.4.1 REQUIRED COMPONENTS
+    vtkPVPythonCatalyst
+    vtkIOXML
+    vtkIONetCDF
+    vtkhdf5
+  )
 endif()
 
-include("${PARAVIEW_USE_FILE}")
-include(vtkModuleMacros)
-include(vtkMPI)
+if(NOT PARAVIEW_USE_MPI) # VTK_ParallelMPI_FOUND
+  message(FATAL_ERROR "ParaView must be built with MPI enabled")
+endif()
 
-if(PARAVIEW_VERSION GREATER_EQUAL 5.6)
-  set(PV_LIB_SUFFIX "-pv${PARAVIEW_VERSION}")
+# TODO: Debugging Info:
+#message("VTK_AVAILABLE_COMPONENTS: ${VTK_AVAILABLE_COMPONENTS}")
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
+
+include(${VTK_USE_FILE})
+include_directories(SYSTEM "${ParaView_PREFIX_PATH}/include/paraview-${ParaView_VERSION_MAJOR}.${ParaView_VERSION_MINOR}")
+
+if(DEFINED Python3_INCLUDE_DIRS)
+  include_directories(SYSTEM "${Python3_INCLUDE_DIRS}")
+elseif(DEFINED Python2_INCLUDE_DIRS)
+  include_directories(SYSTEM "${Python2_INCLUDE_DIRS}")
+endif()
+
+#include(vtkModuleMacros)
+#include(MPI)
+
+if(ParaView_VERSION GREATER_EQUAL 5.6)
+  set(PV_LIB_SUFFIX "-pv${ParaView_VERSION_MAJOR}.${ParaView_VERSION_MINOR}")
 else()
   set(PV_LIB_SUFFIX "")
 endif()
@@ -48,7 +79,8 @@ find_package(Boost 1.67 COMPONENTS
   filesystem
   system
   regex
-  python27
+#  python27
+  python37
 )
 # TODO: remove work-around for older Boost versions (python component change)
 if(NOT Boost_FOUND)
@@ -105,11 +137,6 @@ set(Library_SRCS
   source/utils/logger.cxx
 )
 
-set(Executable_SRCS
-  source/inshimtu.cxx
-  $<TARGET_OBJECTS:InshimtuObj>
-)
-
 
 add_library(InshimtuObj OBJECT
   ${Library_SRCS}
@@ -131,14 +158,28 @@ set_target_properties(InshimtuLib PROPERTIES
 )
 target_link_libraries(InshimtuLib 
   PRIVATE
-    vtkPVPythonCatalyst
-    vtkIOXML
-    vtkIONetCDF
-    vtkNetCDF${PV_LIB_SUFFIX}
+    vtkPVPythonCatalyst${PV_LIB_SUFFIX}
+    vtkIOXML${PV_LIB_SUFFIX}
+    vtkIONetCDF${PV_LIB_SUFFIX}
+#    vtkNetCDF${PV_LIB_SUFFIX}
     ${Boost_LIBRARIES}
+    ${VTK_LIBRARIES}
+    ${ParaView_LIBRARIES}
 )
-vtk_mpi_link(InshimtuLib)
+if(VTK_VERSION VERSION_GREATER_EQUAL "8.90.0")
+  vtk_module_autoinit(
+    TARGETS InshimtuLib
+    MODULES ${VTK_LIBRARIES}
+  )
+else()
+  vtk_mpi_link(InshimtuLib)
+endif()
 
+
+set(Executable_SRCS
+  source/inshimtu.cxx
+  $<TARGET_OBJECTS:InshimtuObj>
+)
 
 add_executable(Inshimtu ${Executable_SRCS})
 set_target_properties(Inshimtu PROPERTIES
@@ -147,27 +188,34 @@ set_target_properties(Inshimtu PROPERTIES
 )
 target_link_libraries(Inshimtu
   PRIVATE
-    vtkPVPythonCatalyst
-    vtkIOXML
-    vtkIONetCDF
-    vtkNetCDF${PV_LIB_SUFFIX}
+    # TODO: Fix linker errors:
+    dl # ${SYSTEM_LIBS}
     ${Boost_LIBRARIES}
-# TODO: Fix configuration error (found library, but not CPP version):
-#    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
-#  ${HDF5_LIBRARIES}
-# TODO: What is the best way to enable Python?
-#       https://vsamy.github.io/en/blog/boost-python-cmake-build
-#       https://stackoverflow.com/questions/35367469/force-cmake-visualstudio-to-use-static-libs-of-boost-python/35440164#35440164
-#       https://www.boost.org/doc/libs/1_60_0/libs/python/doc/html/tutorial/tutorial/embedding.html
-#    ${InshimtuLib}
+    ${VTK_LIBRARIES}
+    ${ParaView_LIBRARIES}
+    # TODO: Fix configuration error (found library, but not CPP version):
+    #    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
+    #  ${HDF5_LIBRARIES}
+    # TODO: What is the best way to enable Python?
+    #       https://vsamy.github.io/en/blog/boost-python-cmake-build
+    #       https://stackoverflow.com/questions/35367469/force-cmake-visualstudio-to-use-static-libs-of-boost-python/35440164#35440164
+    #       https://www.boost.org/doc/libs/1_60_0/libs/python/doc/html/tutorial/tutorial/embedding.html
+    #    ${InshimtuLib}
     ${Allinea_LIBRARIES}
 )
-vtk_mpi_link(Inshimtu)
+if(VTK_VERSION VERSION_GREATER_EQUAL "8.90.0")
+  vtk_module_autoinit(
+    TARGETS Inshimtu
+    MODULES ${VTK_LIBRARIES}
+  )
+else()
+  vtk_mpi_link(Inshimtu)
+endif()
 
 
 option(BUILD_TESTING "Build Testing" ON)
 # Setup testing.
-if (BUILD_TESTING)
+if(BUILD_TESTING)
 
   set(Test_SRCS
     source/tests/test.cxx
@@ -180,14 +228,23 @@ if (BUILD_TESTING)
   )
   target_link_libraries(testComponents
     PRIVATE
-      vtkPVPythonCatalyst
-      vtkIOXML
-      vtkIONetCDF
-      vtkNetCDF${PV_LIB_SUFFIX}
+      vtkPVPythonCatalyst${PV_LIB_SUFFIX}
+      vtkIOXML${PV_LIB_SUFFIX}
+      vtkIONetCDF${PV_LIB_SUFFIX}
+#      vtkNetCDF${PV_LIB_SUFFIX}
       ${Boost_LIBRARIES}
+      ${VTK_LIBRARIES}
+      ${ParaView_LIBRARIES}
     #  ${InshimtuLib}
   )
-  vtk_mpi_link(testComponents)
+  if(VTK_VERSION VERSION_GREATER_EQUAL "8.90.0")
+    vtk_module_autoinit(
+      TARGETS testComponents
+      MODULES ${VTK_LIBRARIES}
+    )
+  else()
+    vtk_mpi_link(testComponents)
+  endif()
 
 
   #include(CTest) # TODO: Only for Dashboard support
