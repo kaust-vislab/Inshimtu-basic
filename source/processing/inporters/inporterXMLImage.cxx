@@ -28,7 +28,6 @@
 #include <vtkInformation.h>
 #include <vtkIndent.h>
 
-#include <vtk_netcdfcpp.h>
 #include <vtk_netcdf.h>
 
 // TODO: Restore when HDF5 functionality is working
