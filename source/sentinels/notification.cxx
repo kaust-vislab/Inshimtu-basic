@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #include "sentinels/notification.h"
 #include "utils/logger.h"
 
@@ -182,23 +179,34 @@ void INotify::processEvents(std::vector<fs::path>& out_newFiles)
 
       if (is_closed_file(*event))
       {
+        BOOST_LOG_TRIVIAL(debug) << "Event IS a closed file: '" << event->name << " :: " << event->mask << "\n";
         const fs::path name(watch.directory / event->name);
         for(const auto& files_filter: watch.files_filters)
-        if (boost::regex_match(event->name, files_filter))
         {
-          BOOST_LOG_TRIVIAL(debug) << "Watched file '" << name << "' was closed.\n";
+            if (boost::regex_match(event->name, files_filter))
+            {
+              BOOST_LOG_TRIVIAL(debug) << "Watched file '" << name << "' matched regex.\n";
 
-          // add to client's newly found files
-          out_newFiles.push_back(name);
+              // add to client's newly found files
+              out_newFiles.push_back(name);
 
-          // add to our bookkeeping list
-          auto fitr = std::find(std::begin(found_files), std::end(found_files), name);
-          if (fitr == std::end(found_files))
-          {
-            found_files.push_back(name);
-            BOOST_LOG_TRIVIAL(debug) << "Added newly found file '" << name << "' to found files.\n";
-          }
+              // add to our bookkeeping list
+              auto fitr = std::find(std::begin(found_files), std::end(found_files), name);
+              if (fitr == std::end(found_files))
+              {
+                found_files.push_back(name);
+                BOOST_LOG_TRIVIAL(debug) << "Added newly found file '" << name << "' to found files.\n";
+              }
+            }
+            else
+            {
+              BOOST_LOG_TRIVIAL(debug) << "Event name does not match the files_filter. Event name/mask/filter (" << event->name << " :: " << event->mask << " :: " << files_filter << ")\n";
+            }
         }
+      }
+      else
+      {
+        BOOST_LOG_TRIVIAL(debug) << "Event is NOT a closed file: '" << event->name << " :: " << event->mask << "\n";
       }
     }
 

@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #include "processing/inporters/inporterXMLImage.h"
 #include "processing/adaptor.h"
 #include "utils/logger.h"
@@ -54,6 +51,7 @@ XMLImageDataFileInporter::XMLImageDataFileInporter(
   , const std::string& name)
   : Adaptor(descriptor, name)
 {
+    BOOST_LOG_TRIVIAL(trace) << "XMLImageDataFileInporter created";
 }
 
 bool XMLImageDataFileInporter::canProcess(const boost::filesystem::path& file)

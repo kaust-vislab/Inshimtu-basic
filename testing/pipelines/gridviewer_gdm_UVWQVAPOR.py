@@ -1,7 +1,5 @@
 from paraview.simple import *
-
 from paraview import coprocessing
-
 import os
 
 #--------------------------------------------------------------

@@ -1,0 +1,42 @@
+{
+  "input": {
+    "IGNORE:watch": {
+      "directory_path": "testing",
+      "files_regex": "\\w*(.pvti)"
+    },
+    "initial_files": [
+        "testing/dataoutfile_QVAPOR_00.pvti",
+        "testing/dataoutfile_QVAPOR_01.pvti",
+        "testing/dataoutfile_QVAPOR_02.pvti",
+        "testing/dataoutfile_QVAPOR_03.pvti",
+        "testing/dataoutfile_QVAPOR_04.pvti",
+        "testing/dataoutfile_QVAPOR_05.pvti",
+        "testing/dataoutfile_QVAPOR_06.pvti",
+        "testing/dataoutfile_QVAPOR_07.pvti",
+        "testing/dataoutfile_QVAPOR_08.pvti",
+        "testing/dataoutfile_QVAPOR_09.pvti",
+        "testing/dataoutfile_QVAPOR_10.pvti",
+        "testing/dataoutfile_QVAPOR_11.pvti",
+        "testing/dataoutfile_QVAPOR_12.pvti",
+        "testing/dataoutfile_QVAPOR_13.pvti",
+        "testing/dataoutfile_QVAPOR_14.pvti"
+        ]
+  },
+  "pipeline": {
+    "scripts": [
+        "../testing/pipelines/pngQVAPOR.py"
+      ],
+    "variables": [
+        "QVAPOR"
+      ]
+    },
+  "control": {
+    "IGNORE:done_watchfile": "testing.done",
+    "initial_connection_wait_secs": 10,
+    "catalyst_inporter_nodes": [ 
+        "0"
+      ],
+    "delete_processed_input_files": false
+    }
+}
+

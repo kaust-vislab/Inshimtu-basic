@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #include "processing/adaptor.h"
 #include "utils/logger.h"
 
@@ -43,7 +40,7 @@ Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
     vtkNew<vtkCPPythonScriptPipeline> pipeline;
 
     if (pipeline->Initialize(script.c_str()) != 0)
-      BOOST_LOG_TRIVIAL(trace) << "Pipeline initialized: " << script;
+      BOOST_LOG_TRIVIAL(trace) << "Pipeline initialized: " << script.c_str();
     else
       BOOST_LOG_TRIVIAL(error) << "FAILED: Pipeline initialize: " << script;
 
@@ -58,7 +55,6 @@ Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
 Processor::~Processor()
 {
   processor->Finalize();
-
   BOOST_LOG_TRIVIAL(trace) << "FINALIZED Catalyst Processor.";
 }
 
@@ -77,6 +73,8 @@ Descriptor::Descriptor( Processor& processor_
     description->ForceOutputOn();
   }
 
+  //description->PrintSelf(std::cerr, vtkIndent(2));
+  //std::cerr << "Number of input descriptions " << description->GetNumberOfInputDescriptions() << std::endl;
   requireProcessing = (processor.processor->RequestDataDescription(description.GetPointer()) != 0);
 }
 
@@ -84,6 +82,8 @@ Descriptor::~Descriptor()
 {
   if (requireProcessing)
   {
+    //description->PrintSelf(std::cerr, vtkIndent(2));
+    //std::cerr << "Number of input descriptions " << description->GetNumberOfInputDescriptions() << std::endl;
     processor.processor->CoProcess(description.GetPointer());
   }
 }

@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #include "core/options.h"
 #include "core/specifications.h"
 #include "core/lambda_visitor.hxx"
@@ -417,7 +414,6 @@ Configuration::Configuration(int argc, const char* const argv[])
   po::options_description helpDesc("help options");
   helpDesc.add_options()
     ("help-verbose", "explanatory help message")
-    ("help-example", "example usage")
    ;
 
   po::options_description optionsDesc("command line options");
@@ -439,12 +435,6 @@ Configuration::Configuration(int argc, const char* const argv[])
   if (opts.find("help-verbose") != opts.end())
   {
     inshimtu::help::printHelpVerbose();
-    foundHelp = true;
-  }
-
-  if (opts.find("help-example") != opts.end())
-  {
-    inshimtu::help::printHelpExample();
     foundHelp = true;
   }
 
@@ -512,6 +502,7 @@ Configuration::Configuration(int argc, const char* const argv[])
     const bool scriptFiles(!collectScripts().empty());
     const bool externalCommands(!collectExternalCommands().empty());
     const bool hasPipelines(!collectPipelines().empty());
+    const bool specifiedVariables(hasVariables());
 
     if (initialFiles)
     {
@@ -526,6 +517,13 @@ Configuration::Configuration(int argc, const char* const argv[])
       {
         BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
                                  << "The specified option '--files' requires both options '--watch' and '--done'";
+        throw std::runtime_error("configuration validation error");
+      }
+      
+      if (!specifiedVariables)
+      {
+        BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                                 << "When specifying initial files the '--variable' option is required";
         throw std::runtime_error("configuration validation error");
       }
     }
@@ -849,6 +847,11 @@ bool Configuration::hasWatchDirectory() const
 {
   return !configs.get<std::string>("input.watch.directory_path", "").empty()
       || !opts["watch"].as<std::string>().empty();
+}
+
+bool Configuration::hasVariables() const
+{
+  return !collectVariables().empty();
 }
 
 const fs::path Configuration::getWatchDirectory() const

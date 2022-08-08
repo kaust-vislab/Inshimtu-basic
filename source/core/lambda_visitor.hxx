@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #ifndef PROCESSING_PIPELINE_HXXDER
 #define PROCESSING_PIPELINE_HXXDER
 

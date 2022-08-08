@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #include "core/lambda_visitor.hxx"
 #include "processing/pipeline.h"
 #include "processing/adaptor.h"
@@ -11,6 +8,7 @@
 
 #include "processing/inporters/inporterRawNetCDF.h"
 #include "processing/inporters/inporterXMLImage.h"
+#include "processing/inporters/inporterXMLPImage.h"
 
 #include <iostream>
 #include <vector>
@@ -354,13 +352,13 @@ bool ProcessingSpecCatalyst::operator==(const ProcessingSpecCatalyst& p) const
 void ProcessingSpecCatalyst::process( const fs::path &filename
                                     , Descriptor& descriptor) const
 {
-  std::vector<std::unique_ptr<Adaptor>> inporters;
+  BOOST_LOG_TRIVIAL(info) << "Processing catalyst spec";
 
+  std::vector<std::unique_ptr<Adaptor>> inporters;
   for (const auto& scriptSpec: scripts)
   {
     const auto& script(scriptSpec.first);
     const auto& vsets(scriptSpec.second);
-
     // TODO: Pick descriptor (Processor) based on script (because the script was initialized in / processed by the Processor)
     // descriptor = descriptors(script);
 
@@ -385,6 +383,18 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
       inporters.push_back(
           std::unique_ptr<Adaptor>(
               new XMLImageDataFileInporter(descriptor, vsets)));
+    }
+    else if (XMLPImageDataFileInporter::canProcess(filename))
+    {
+      BOOST_LOG_TRIVIAL(info) << "Creating XMLPImageDataFileInporter for: '" << vsets << "'";
+
+      inporters.push_back(
+          std::unique_ptr<Adaptor>(
+              new XMLPImageDataFileInporter(descriptor, vsets)));
+    }
+    else
+    {
+         BOOST_LOG_TRIVIAL(error) << "Unable to process the given file, do not have an importer that works.";
     }
   }
 
@@ -605,7 +615,6 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
   if (!taskS->canContinue())
     return;
 
-
   auto visitorInput = make_lambda_visitor<bool>(
       [&](const InputSpecPaths& inSp)
       {
@@ -651,32 +660,25 @@ void pipeline_ProcessNext(std::unique_ptr<TaskState>& taskS)
               correspondingFiles.push_back(oPath.get());
           }
           taskS->outputFiles.swap(correspondingFiles);
-
           if (taskS->outputFiles.empty())
             taskS->taskStatus = TaskState::TS_FailedInput;
-
           return taskS->canContinue();
         }
     , [&](const ProcessingSpecCatalyst& proSp)
         {
           if (!taskS->canContinue())
             return false;
-
           if (!taskS->mkDescriptor.is_initialized())
           {
             taskS->taskStatus = TaskState::TS_FailedProcessing;
             return false;
           }
-
           for (const auto& filename: taskS->inputFiles)
           {
             std::unique_ptr<Descriptor> descriptor(taskS->mkDescriptor.get()());
-
             proSp.process(filename, *descriptor.get());
-
             // TODO: what are the file products / output? Make inporter->process return created files?
           }
-
           return taskS->canContinue();
         }
     , [&](const ProcessingSpecCommands& proSp)

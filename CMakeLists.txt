@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(Inshimtu)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
@@ -15,24 +15,25 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "CrayLinuxEnvironment")
   endif()
 endif()
 
+#find_package (Python COMPONENTS Interpreter Development REQUIRED)
+#set(PYTHONLIBS_VERSION_STRING ${Python_VERSION})
+#set(PYTHON_INCLUDE_DIR ${Python_INCLUDE_DIRS})
+#set(PYTHON_LIBRARIES ${Python_LIBRARIES})
+#include_directories(${Python_INCLUDE_DIRS})
+#message(STATUS "Python3 include dirs: ${Python_INCLUDE_DIRS}")
 
-find_package(ParaView 5.8 COMPONENTS
+find_package(ParaView 5.9.1 COMPONENTS
   PythonCatalyst
 )
+
 if(ParaView_FOUND)
-  find_package(VTK 8.0 REQUIRED COMPONENTS
+  find_package(VTK REQUIRED COMPONENTS
     IOXML
     IONetCDF
     hdf5
+    netcdf
     ParallelMPI
   #  NO_MODULE
-  )
-else()
-  find_package(ParaView 5.4.1 REQUIRED COMPONENTS
-    vtkPVPythonCatalyst
-    vtkIOXML
-    vtkIONetCDF
-    vtkhdf5
   )
 endif()
 
@@ -40,37 +41,26 @@ if(NOT PARAVIEW_USE_MPI) # VTK_ParallelMPI_FOUND
   message(FATAL_ERROR "ParaView must be built with MPI enabled")
 endif()
 
-# TODO: Debugging Info:
-#message("VTK_AVAILABLE_COMPONENTS: ${VTK_AVAILABLE_COMPONENTS}")
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-#foreach (_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
+#include(${VTK_USE_FILE})
 
-
-include(${VTK_USE_FILE})
+include_directories(SYSTEM "${ParaView_PREFIX_PATH}/include")
 include_directories(SYSTEM "${ParaView_PREFIX_PATH}/include/paraview-${ParaView_VERSION_MAJOR}.${ParaView_VERSION_MINOR}")
-
-if(DEFINED Python3_INCLUDE_DIRS)
-  include_directories(SYSTEM "${Python3_INCLUDE_DIRS}")
-elseif(DEFINED Python2_INCLUDE_DIRS)
-  include_directories(SYSTEM "${Python2_INCLUDE_DIRS}")
-endif()
 
 #include(vtkModuleMacros)
 #include(MPI)
 
-if(ParaView_VERSION GREATER_EQUAL 5.6)
+if(ParaView_VERSION_MINOR GREATER_EQUAL 6)
   set(PV_LIB_SUFFIX "-pv${ParaView_VERSION_MAJOR}.${ParaView_VERSION_MINOR}")
 else()
   set(PV_LIB_SUFFIX "")
 endif()
+message(STATUS "Paraview lib suffix: ${PV_LIB_SUFFIX}")
+message(STATUS "Paraview version: ${ParaView_VERSION}")
+message(STATUS "Paraview version minor: ${ParaView_VERSION_MINOR}")
 
 
 add_compile_definitions(BOOST_LOG_DYN_LINK=1)
-# TODO: Make Boost 1.67 REQUIRED
-find_package(Boost 1.67 COMPONENTS
+find_package(Boost 1.67 REQUIRED COMPONENTS
   program_options
   log
   log_setup
@@ -79,26 +69,12 @@ find_package(Boost 1.67 COMPONENTS
   filesystem
   system
   regex
-#  python27
-  python37
+  container
+  python38
 )
-# TODO: remove work-around for older Boost versions (python component change)
-if(NOT Boost_FOUND)
-  find_package(Boost 1.64 REQUIRED COMPONENTS
-    program_options
-    log
-    log_setup
-    thread
-    date_time
-    filesystem
-    system
-    regex
-    python
-  )
-endif()
 
 include_directories(${Boost_INCLUDE_DIRS})
-
+include_directories(${Python3_INCLUDE_DIRS})
 
 find_package(HDF5 1.8 REQUIRED)
 include_directories(${HDF5_INCLUDE_DIRS})
@@ -120,6 +96,15 @@ if (Allinea_map_sampler_LIBRARY AND Allinea_map_sampler_pmpi_LIBRARY)
 endif()
 
 
+# TODO: Debugging Info:
+#message("VTK_AVAILABLE_COMPONENTS: ${VTK_AVAILABLE_COMPONENTS}")
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#  message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
+
 include_directories("source")
 set(Library_SRCS
   source/core/application.cxx
@@ -133,6 +118,7 @@ set(Library_SRCS
   source/processing/inporter.cxx
   source/processing/inporters/inporterRawNetCDF.cxx
   source/processing/inporters/inporterXMLImage.cxx
+  source/processing/inporters/inporterXMLPImage.cxx
   source/utils/help.cxx
   source/utils/logger.cxx
 )
@@ -142,7 +128,7 @@ add_library(InshimtuObj OBJECT
   ${Library_SRCS}
   )
 set_target_properties(InshimtuObj PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     POSITION_INDEPENDENT_CODE 1
 )
@@ -152,19 +138,16 @@ add_library(InshimtuLib SHARED
   $<TARGET_OBJECTS:InshimtuObj>
   )
 set_target_properties(InshimtuLib PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
   PREFIX ""
 )
 target_link_libraries(InshimtuLib 
   PRIVATE
-    vtkPVPythonCatalyst${PV_LIB_SUFFIX}
-    vtkIOXML${PV_LIB_SUFFIX}
-    vtkIONetCDF${PV_LIB_SUFFIX}
-#    vtkNetCDF${PV_LIB_SUFFIX}
     ${Boost_LIBRARIES}
     ${VTK_LIBRARIES}
     ${ParaView_LIBRARIES}
+    ${PYTHON_LIBRARIES}
 )
 if(VTK_VERSION VERSION_GREATER_EQUAL "8.90.0")
   vtk_module_autoinit(
@@ -183,7 +166,7 @@ set(Executable_SRCS
 
 add_executable(Inshimtu ${Executable_SRCS})
 set_target_properties(Inshimtu PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
 )
 target_link_libraries(Inshimtu
@@ -193,6 +176,7 @@ target_link_libraries(Inshimtu
     ${Boost_LIBRARIES}
     ${VTK_LIBRARIES}
     ${ParaView_LIBRARIES}
+    ${PYTHON_LIBRARIES}
     # TODO: Fix configuration error (found library, but not CPP version):
     #    Found HDF5: HDF5_hdf5_cpp_LIBRARY-NOTFOUND; (found suitable version "1.8.16")
     #  ${HDF5_LIBRARIES}
@@ -223,18 +207,15 @@ if(BUILD_TESTING)
   )
   add_executable(testComponents ${Test_SRCS})
   set_target_properties(testComponents PROPERTIES
-      CXX_STANDARD 14
+      CXX_STANDARD 17
       CXX_STANDARD_REQUIRED YES
   )
   target_link_libraries(testComponents
     PRIVATE
-      vtkPVPythonCatalyst${PV_LIB_SUFFIX}
-      vtkIOXML${PV_LIB_SUFFIX}
-      vtkIONetCDF${PV_LIB_SUFFIX}
-#      vtkNetCDF${PV_LIB_SUFFIX}
       ${Boost_LIBRARIES}
       ${VTK_LIBRARIES}
       ${ParaView_LIBRARIES}
+      ${PYTHON_LIBRARIES}
     #  ${InshimtuLib}
   )
   if(VTK_VERSION VERSION_GREATER_EQUAL "8.90.0")
@@ -245,7 +226,6 @@ if(BUILD_TESTING)
   else()
     vtk_mpi_link(testComponents)
   endif()
-
 
   #include(CTest) # TODO: Only for Dashboard support
   enable_testing()

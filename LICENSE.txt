@@ -1,6 +1,6 @@
 GPL LICENSE, v3
 
-Copyright (c) 2015 KAUST Visualization Core Lab (KVL): Glendon Holst, et. al.
+Copyright (c) 2015 KAUST Visualization Core Lab (KVL)
 
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007

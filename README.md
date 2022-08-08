@@ -1,7 +1,8 @@
-# Inshimtu
+# Inshimtu Basic
 
-An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst).
-
+An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst). This is the basic version of inshimtu that works based on files, so is great for testing in situ visualization with a simulation code requiring minimal/no changes to the simulation. This then allows simulation users to see what in situ can do so that they can decide if a full in situ integration should be done in their code or not.
+Note: Inshimtu is an experimental tool developed to prototype specific use cases in a general way.  Expect that additional customization will be required to work with new (or even slightly modified) use cases.  Even with similar usecases (e.g., WRF + netCDF files), there can be hard-coded constraints (like data type and dimensionality) that might require code modification.
+Pull requests that improve the generalizability of Inshimtu, or add new functionality while preserving generality, are welcome.
 
 ## TODOs
 
@@ -16,142 +17,33 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti
 * Fix Catalyst Pipeline singleton (need per script spec pipelines; or, at least per unique variable set)
 
 
-* Improve logging (remove duplications from multiple ranks)
-
-* Remove Exe / Lib redundancy (both are very large; likely duplicate code)
-
-
-### Testing Example...
-
-```
-module add kvl-applications pvserver/5.6.0-mpich-x86_64
-```
-
-Running test suite: KVL
-
-```
-cd build.kvl
-ctest3
-ctest3 --output-on-failure
-```
-
-Running test suite: Shaheen
-
-```
-# run on compute node
-
-salloc --partition=debug
-srun -u --pty bash -i
-
-# from Inshimtu directory: build dependencies + python dependencies
-
-source build.shaheen/module.init
-export LD_LIBRARY_PATH=/opt/python/2.7.15.7/lib:$LD_LIBRARY_PATH
-#export LD_LIBRARY_PATH=/opt/python/3.7.3.2/lib:$LD_LIBRARY_PATH
-
-cd build.shaheen
-ctest
-ctest --output-on-failure
-```
-
-
-Running on local KVL desktop
-
-```
-time testing/launchers/launch_inshimtu_kvl.sh -S GDM -n 0 -N 1
-```
-
-```
-build.kvl/Inshimtu --config testing/configs/mitgcm_compress.json
-```
-
-
-Running on KVL cluster with 7 nodes total, and 3 nodes as inporters (extent import + Catalyst)
-
-```
-time testing/launchers/launch_inshimtu_kvl.sh -S GDM -n 0-2 -N 1-7
-```
-
-```
-build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti -v input
-
-build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/WSM3/WSM3_wrfout_d01_2015-*.nc -v U,V,W,QVAPOR
-
-build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i /lustre/project/k1033/Projects/hari/makkah2_wrfout_d02_2015.qsnow_qrain_qvapor.nc
-
-build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_1_0.vti
-
-build/Inshimtu -w build/testing -d build/testing.done -s testing/pipelines/gridviewer.py -i build/testing/filename_*.vti
-
-
-srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" \
-     -w "$OUTPUT_ROOT/wrfrun-output" -d "$OUTPUT_ROOT/wrfrun-output.done" \
-     -i "${OUTPUT_ROOT}/wrfrun-output/"wrfout_d*.nc \
-     -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer.py" \
-     -v U,V,W,QVAPOR
-  &
-```
-
-```
-# single node
-module add mpi/mpich-x86_64
-cd /home/holstgr/Development/Inshimtu/examples
-../build.kvl/Inshimtu -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
-                      -i "$PWD/testing/GDM/"wrfout_d01_* \
-                      -s "$PWD/pipelines/viewer_P_QICE_QVAPOR.py" \
-                      -v QVAPOR,P,QICE
-
-../build.kvl/Inshimtu \
-    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
-    -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_QVAPOR.py" -v QVAPOR
-
-# note: much slower with decimate
-"$PWD/../build.kvl/Inshimtu" \
-    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
-    -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_P_QICE.py" -v P,QICE
-
-"$PWD/../build.kvl/Inshimtu" \
-    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
-    -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_P_QICE_nodec.py" -v P,QICE
-
-
-# MPI multi node
-module add kvl-applications paraview/5.3.0-mpich-x86_64
-cd /home/holstgr/Development/Inshimtu/examples
-mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08 \
-  "$PWD/../build.kvl/Inshimtu" \
-    -w "$PWD/testing/GDM" -d "$PWD/testing.done" -i "$PWD/testing/GDM/"wrfout_d01_* \
-    -s "$PWD/pipelines/viewer_P_QICE_QVAPOR.py" -v QVAPOR,P,QICE
-
-mpirun -np 8 -hosts gpgpu-01,gpgpu-02,gpgpu-03,gpgpu-04,gpgpu-05,gpgpu-06,gpgpu-07,gpgpu-08 \
-  "$PWD/../build.kvl/Inshimtu" \
-    -w "$PWD/testing/GDM" -d "$PWD/testing.done" \
-    -i "$PWD/testing/GDM/"wrfout_d01_2015-{10-28,10-29,10-30,10-31,11-01}* \
-    -s "$PWD/pipelines/viewer_P_QICE_nodec.py" -v P,QICE
-```
-
-### Notes
-
-For WRF: see README.namelist
-  &time_control
-  ;; Works
-  output_ready_flag = .true.,  ; asks the model to write-out an empty file with the name 'wrfoutReady_d<domain>_<date>.
-
-  ;; Works
-  history_outname = 'wrfout_d<domain>_<date>.nc' ; you may change the output file name
-
 ## Building
 
-```
-./setup.sh
-## Peforms:
-# module add kvl-applications paraview
-# cd build
-# cmake ..
-```
+### Install boost 1.67.0
+wget https://boostorg.jfrog.io/artifactory/main/release/1.67.0/source/boost_1_67_0.tar.gz
+tar -xvf boost_1_67_0.tar.gz
+cd boost_1_67_0/
+./bootstrap.sh --prefix=/home/kressjm/packages/inshimtu-udj/boost_1_67_0/install
+./b2
+
+### Paraview (Maximum version is 5.9.1)
+mkdir paraview
+cd paraview
+git clone --recursive https://gitlab.kitware.com/paraview/paraview-superbuild.git
+cd paraview-superbuild
+git fetch origin 
+git checkout v5.9.1
+git submodule update
+cd ..
+mkdir build
+cd build
+cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE-catalyst=ON -DENABLE_mpi=ON -DENABLE_python3=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+### Install inshimtu
+git https://gitlab.kaust.edu.sa/kvl/Inshimtu.git
+cd inshimtu
+bash setup.sh
+
 
 ## Testing
 
@@ -162,21 +54,14 @@ ctest
 
 ## Running
 
-Prepare the input data directory and completion notification file:
+Prepare the input data directory and completion notification file in the build directory:
 
 ```
-mkdir build/testing
-touch build/testing.done
+mkdir testing
+touch testing.done
 ```
 
-Run the application with the appropriate Catalyst viewer:
-
-```
-module add kvl-applications paraview/4.4.0-mpich-x86_64
-paraview &
-```
-
-Enable Catalyst connection in ParaView:
+Run the application with the appropriate Catalyst viewer and enable Catalyst connection in ParaView:
 
 * Select Catalyst / Connect... from menu.
 * Click OK in Catalyst Server Port dialog to accept connections from Inshimtu.
@@ -187,63 +72,48 @@ Enable Catalyst connection in ParaView:
 Note: Failure to pause the simulation will prevent the first file from displaying.
 
  
-The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.  PYTHONPATH is set in the paraview module.
-
-```
-module add dev-inshimtu
-```
-
-Basic Inshimtu:
-* Processes any newly created file in build/testing;
-* Stops when build/testing.done file is touched;
-* Uses the Catalyst script in gridviewer.py to transfer data to ParaView
-
-```
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py
-```
+The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.
 
 Filtered Inshimtu:
-* Processes only newly created files matching regex 'filename.*.vti' in build/testing;
+* Processes only newly created files matching regex '\w*(.vti)' in build/testing;
 * Stops when build/testing.done file is touched;
-* Uses the Catalyst script in gridviewer.py to transfer data to ParaView.
+* Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
+
 ```
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -f 'filename.*.vti'
+./Inshimtu -w testing -d testing.done -s ../testing/pipelines/pngQVAPOR.py -f '\w*(.pvti)' -v QVAPOR
+```
+or
+```
+./Inshimtu -c ../testing/configs/png_watchDir_QVAPOR.json -V trace
 ```
 
-Pre-existing files + Basic Inshimtu:
-* Processes all existing files in build/testing matching the 'filename*.vti' shell glob;
-* Processes any newly created files in build/testing;
-* Stops when build/testing.done file is touched;
-* Uses the Catalyst script in gridviewer.py to transfer data to ParaView.
-```
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -i build/testing/filename*.vti
-```
+Pre-existing files processed with Inshimtu:
+* Processes all existing files specified in the script;
+* Stops when all prexisting files are processed
+* Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
 
-Variable Support: 
-* Processes only specified variables via variable sets;
-* Stops when build/testing.done file is touched;
-* Uses the Catalyst script in gridviewer.py to transfer data to ParaView.
-``` 
-build/Inshimtu -w build/testing -d build/testing.done -s testing/scripts/gridviewer.py -f 'wrfout*.nc' -v U,V,W,QVAPOR
-``` 
+```
+./Inshimtu -c ../testing/configs/png_enumerated_QVAPOR.json -V trace
+```
 
 To demonstrate, copy the data files into the input directory (to simulate their creation via simulation):
 
 ```
-# \cp is equivalent to unaliased cp
-\cp -v build/original/*.vti build/testing/
+cp -v testing/data/wrf/* build/testing/
 touch build/testing.done
 ```
 
-Post-Connection: While the file creation (copying) is being performed, do the following in ParaView:
-
-* Toggle Disclosure rectangle on catalyst/PVTrivialProducer1 source in Pipeline Browser to view data.
-* Click Apply button for Extract:PVTrivialProducer1 filter.
-* Make Extract:PVTrivialProducer1 filter visible.
-* Set Variable and Representation
-* Select Catalyst / Continue from menu.
-
-Note: Alternatively, specify the files to process via the --initial files option, shown above.
+Note: Alternatively, specify the files to process via the --initial files option, shown above in the json script.
 
 
+
+### Notes
+
+For WRF: see README.namelist
+  &time_control
+  ;; Works
+  output_ready_flag = .true.,  ; asks the model to write-out an empty file with the name 'wrfoutReady_d<domain>_<date>.
+
+  ;; Works
+  history_outname = 'wrfout_d<domain>_<date>.nc' ; you may change the output file name
 

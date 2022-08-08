@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #include "processing/inporters/inporterRawNetCDF.h"
 #include "processing/adaptor.h"
 #include "utils/logger.h"
@@ -54,6 +51,7 @@ RawNetCDFDataFileInporter::RawNetCDFDataFileInporter(
   , const std::string& name)
   : Adaptor(descriptor, name)
 {
+    BOOST_LOG_TRIVIAL(trace) << "RawNetCDFDataFileImporter created";
 }
 
 bool RawNetCDFDataFileInporter::canProcess(const boost::filesystem::path& file)

@@ -1,9 +1,6 @@
 /* Inshimtu - An In-situ visualization co-processing shim
- *
- * Copyright 2015-2019, KAUST
  * Licensed under GPL3 -- see LICENSE.txt
  */
-
 #ifndef CORE_OPTIONS_HEADER
 #define CORE_OPTIONS_HEADER
 
@@ -24,7 +21,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-// TODO: Fix reversed dependency by moving ProcessingSpecCommands into specifications
 #include "processing/pipeline.h"
 
 
@@ -59,10 +55,7 @@ public:
   const boost::filesystem::path& getLibPath() const;
 
 
-
-  // TODO: deprecate when  calculateReadyFiles is part of process pipeline (not coordinator getSignalledOutputFile)
   const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
-  // TODO: deprecate when Pipeline manages scripts in the new pipeline processing style
   const std::vector<boost::filesystem::path> collectScripts() const;
 
 
@@ -76,7 +69,8 @@ private:
   bool hasFileFilter() const;
   const boost::regex getFileFilter() const;
 
-
+  bool hasVariables() const;
+  
 protected:
 
   boost::program_options::variables_map opts;
