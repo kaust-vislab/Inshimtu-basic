@@ -1,6 +1,6 @@
 # Inshimtu Basic
 
-An In-Situ-Coprocessing-Shim between simulation output files (netCDF, HDF5, vkti, etc) and visualization pipelines (Catalyst). This is the basic version of inshimtu that works based on files, so is great for testing in situ visualization with a simulation code requiring minimal/no changes to the simulation. This then allows simulation users to see what in situ can do so that they can decide if a full in situ integration should be done in their code or not.
+An In-Situ-Coprocessing-Shim between simulation output files (netCDF, vti, pvti, etc) and visualization pipelines (Catalyst). This is the basic version of inshimtu that works based on files, so is great for testing in situ visualization with a simulation code requiring minimal/no changes to the simulation. This then allows simulation users to see what in situ can do so that they can decide if a full in situ integration should be done in their code or not.
 Note: Inshimtu is an experimental tool developed to prototype specific use cases in a general way.  Expect that additional customization will be required to work with new (or even slightly modified) use cases.  Even with similar usecases (e.g., WRF + netCDF files), there can be hard-coded constraints (like data type and dimensionality) that might require code modification.
 Pull requests that improve the generalizability of Inshimtu, or add new functionality while preserving generality, are welcome.
 
@@ -20,6 +20,7 @@ Pull requests that improve the generalizability of Inshimtu, or add new function
 ## Building
 
 ### Install boost 1.67.0
+
 ```
 wget https://boostorg.jfrog.io/artifactory/main/release/1.67.0/source/boost_1_67_0.tar.gz
 tar -xvf boost_1_67_0.tar.gz
@@ -29,6 +30,7 @@ cd boost_1_67_0/
 ```
 
 ### Paraview (Maximum version is 5.9.1)
+
 ```
 mkdir paraview
 cd paraview
@@ -44,11 +46,14 @@ cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE-catalyst=ON -DENABLE_mpi=
 ```
 
 ### Install inshimtu
+
 ```
 git https://gitlab.kaust.edu.sa/kvl/Inshimtu.git
 cd inshimtu
-bash setup.sh
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_INCLUDE_DIR="path/to/boost_1_67_0" -DParaView_DIR="path/to/paraview-build/install" ..
+
 ```
+
 
 
 ## Testing
@@ -110,6 +115,9 @@ touch build/testing.done
 ```
 
 Note: Alternatively, specify the files to process via the --initial files option, shown above in the json script.
+
+
+### Multiple Inshimtu nodes
 
 
 
