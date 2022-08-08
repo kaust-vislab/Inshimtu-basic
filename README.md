@@ -20,13 +20,16 @@ Pull requests that improve the generalizability of Inshimtu, or add new function
 ## Building
 
 ### Install boost 1.67.0
+```
 wget https://boostorg.jfrog.io/artifactory/main/release/1.67.0/source/boost_1_67_0.tar.gz
 tar -xvf boost_1_67_0.tar.gz
 cd boost_1_67_0/
 ./bootstrap.sh --prefix=/home/kressjm/packages/inshimtu-udj/boost_1_67_0/install
 ./b2
+```
 
 ### Paraview (Maximum version is 5.9.1)
+```
 mkdir paraview
 cd paraview
 git clone --recursive https://gitlab.kitware.com/paraview/paraview-superbuild.git
@@ -38,11 +41,14 @@ cd ..
 mkdir build
 cd build
 cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE-catalyst=ON -DENABLE_mpi=ON -DENABLE_python3=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+```
 
 ### Install inshimtu
+```
 git https://gitlab.kaust.edu.sa/kvl/Inshimtu.git
 cd inshimtu
 bash setup.sh
+```
 
 
 ## Testing
@@ -107,7 +113,7 @@ Note: Alternatively, specify the files to process via the --initial files option
 
 
 
-### Notes
+## Notes
 
 For WRF: see README.namelist
   &time_control
