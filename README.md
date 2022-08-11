@@ -4,18 +4,6 @@ An In-Situ-Coprocessing-Shim between simulation output files (netCDF, vti, pvti,
 Note: Inshimtu is an experimental tool developed to prototype specific use cases in a general way.  Expect that additional customization will be required to work with new (or even slightly modified) use cases.  Even with similar usecases (e.g., WRF + netCDF files), there can be hard-coded constraints (like data type and dimensionality) that might require code modification.
 Pull requests that improve the generalizability of Inshimtu, or add new functionality while preserving generality, are welcome.
 
-## TODOs
-
-* Schedule tasks (currently all inport nodes participate; works for Catalyst, but not for external commands)
-  * Need coordination combinators
-
-* Better handle how files are sent through the pipeline (more that 'input' 'output'); need to specify files that are 'finished', but not part of the input for the next stage.
-  * Finish output specifications (what are they needed for? pipeline attribute adjustments)
-
-* Fix how delete files are processed
-
-* Fix Catalyst Pipeline singleton (need per script spec pipelines; or, at least per unique variable set)
-
 
 ## Building
 
@@ -29,7 +17,7 @@ cd boost_1_67_0/
 ./b2
 ```
 
-### Paraview (Maximum version is 5.9.1)
+### Paraview (Version 5.9.1)
 
 ```
 mkdir paraview
@@ -62,6 +50,7 @@ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_INCLUDE_DIR="path/to/boost_1_67_
 cd build.*
 ctest
 ```
+
 
 ## Running
 
@@ -113,6 +102,7 @@ Note: Alternatively, specify the files to process via the --initial files option
 * Stops when all prexisting files are processed
 * Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
 * First copy wall wrf/pvti/* data to testing dir
+
 ```
 ./Inshimtu -c ../testing/configs/png_enumerated_QVAPOR.json -V trace
 ```
@@ -124,21 +114,41 @@ Note: Alternatively, specify the files to process via the --initial files option
 * Uses the Catalyst scripts pngUVWQVAPOR.py and gridwriter.py to transfer data to ParaView.
 
 #### View the selected variable in ParaView and write png
+
 ```
 ./Inshimtu -w testing -d testing.done -s ../testing/pipelines/pngUVWQVAPOR.py -f '\w*(.vtr)' -V trace -v U V W QVAPOR
 ```
 
+
 #### Output the selected variables to disk:
+Two different examples of how to do this.
+
 
 #### Output variables as a single file
+
 ```
 ./Inshimtu -w testing -d testing.done -s ../testing/pipelines/gridwriter.py -f '\w*(.vtr)' -V trace -v U,V,W,QVAPOR
 ```
 
+
 #### Output variables as seperate files
+
 ```
 ./Inshimtu -w testing -d testing.done -s ../testing/pipelines/gridwriter.py -f '\w*(.vtr)' -V trace -v U V W QVAPOR
 ```
+
+
+## TODOs
+
+* Schedule tasks (currently all inport nodes participate; works for Catalyst, but not for external commands)
+  * Need coordination combinators
+
+* Better handle how files are sent through the pipeline (more that 'input' 'output'); need to specify files that are 'finished', but not part of the input for the next stage.
+  * Finish output specifications (what are they needed for? pipeline attribute adjustments)
+
+* Fix how delete files are processed
+
+* Fix Catalyst Pipeline singleton (need per script spec pipelines; or, at least per unique variable set)
 
 
 ## Notes
