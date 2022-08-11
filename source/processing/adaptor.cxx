@@ -73,8 +73,8 @@ Descriptor::Descriptor( Processor& processor_
     description->ForceOutputOn();
   }
 
-  //description->PrintSelf(std::cerr, vtkIndent(2));
-  //std::cerr << "Number of input descriptions " << description->GetNumberOfInputDescriptions() << std::endl;
+  description->PrintSelf(std::cerr, vtkIndent(2));
+  std::cerr << "Number of input descriptions " << description->GetNumberOfInputDescriptions() << std::endl;
   requireProcessing = (processor.processor->RequestDataDescription(description.GetPointer()) != 0);
 }
 

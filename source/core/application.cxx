@@ -93,6 +93,7 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
   {
     for (const auto& inval : configs.collectInporterNodes())
     {
+      BOOST_LOG_TRIVIAL(trace) << "Adding inporter node id's from configs";
       for (int i = inval.first; i < std::min(inval.second+1, totalSize); ++i)
       {
         inporters.insert(i);
@@ -101,6 +102,7 @@ MPICatalystApplication::MPICatalystApplication(int* argc, char** argv[])
 
     if (inporters.empty())
     {
+      BOOST_LOG_TRIVIAL(trace) << "Inporters were empty, configs didn't specify them?";
       for (MPISection::NodeRank i = ROOT_RANK; i < totalSize; ++i)
       {
         inporters.insert(i);

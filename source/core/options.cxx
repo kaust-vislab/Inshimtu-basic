@@ -519,13 +519,6 @@ Configuration::Configuration(int argc, const char* const argv[])
                                  << "The specified option '--files' requires both options '--watch' and '--done'";
         throw std::runtime_error("configuration validation error");
       }
-      
-      if (!specifiedVariables)
-      {
-        BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
-                                 << "When specifying initial files the '--variable' option is required";
-        throw std::runtime_error("configuration validation error");
-      }
     }
     else
     {

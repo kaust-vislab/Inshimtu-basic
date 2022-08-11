@@ -1,0 +1,59 @@
+#!/bin/bash -x
+
+#SBATCH --exclusive
+#SBATCH --job-name=wrf-workflow
+#SBATCH --time=01:00:00
+#SBATCH --output=log.wrf-workflow.%j.out
+#SBATCH --error=log.wrf-workflow.%j.err
+#SBATCH --nodes=13
+#SBATCH --cpus-per-task=1
+#SBATCH --ntasks-per-node=32
+#SBATCH --hint=nomultithread
+#SBATCH --threads-per-core=1
+#SBATCH -A k1033
+
+######################################################################
+
+## FUNCTIONS
+
+function checkFile () {
+  local name="$1"
+  local value="${!name}"
+  if [ -z "$name" ] ; then  
+    echo "Invalid var name argument to checkFile"
+    exit 1
+  fi
+  if [ -z "$value" ] || [ ! -f "$value" ] ; then  
+    echo "Missing file ${name}: ${value}"
+    exit 1
+  fi
+}
+
+function checkExecutable () {
+  local name="$1"
+  local value="${!name}"
+  if [ -z "$name" ] ; then  
+    echo "Invalid var name argument to checkExecutable"
+    exit 1
+  fi
+  if [ -z "$value" ] || [ ! -x "$value" ] ; then  
+    echo "Missing executable file ${name}: ${value}"
+    exit 1
+  fi
+}
+
+
+## INPUTS
+
+WORKFLOW_SCRIPT="$1"
+checkExecutable WORKFLOW_SCRIPT
+
+WORKFLOW_CONFIG="$2"
+checkFile WORKFLOW_CONFIG
+
+
+## EXECUTE
+
+"$WORKFLOW_SCRIPT" "$WORKFLOW_CONFIG" $3 $4 $5 $6 $7 $8 $9
+
+

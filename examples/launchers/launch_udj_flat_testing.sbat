@@ -1,0 +1,149 @@
+#!/bin/bash
+#SBATCH --partition=workq
+#SBATCH --job-name=udj-test
+#SBATCH --time=00:25:00
+#SBATCH --output=udj-test.%j.out
+#SBATCH --error=udj-test.%j.err
+#SBATCH --nodes=1
+#SBATCH --ntasks=2
+
+# Configuration
+
+UDJ_ROOT="/project/k1033/Development/UDJ/UDJ_TOOLS"
+PRODUCER_EXE="${UDJ_ROOT}/bin/producer_udj_flat.exe"
+CONSUMER_EXE="${UDJ_ROOT}/bin/consumer_udj_flat.exe"
+
+WRF_ROOT=$(which "wrf.exe")
+
+INSHIMTU_ROOT="/project/k1033/Development/Inshimtu"
+INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+
+OUTPUT_ROOT="/scratch/$USER/tmp/udj-testing/basic-producer-consumer"
+
+SIM_OUTPUT_DIR="${OUTPUT_ROOT}"
+DPM_COORDINATION_ROOT="${OUTPUT_ROOT}/_dpm"
+
+export UDJ_CONSENSUS_DIR="${OUTPUT_ROOT}/_udj"
+export UDJ_TRANSPORT_ORDER=MPI
+export UDJ_WORKFLOW_ID=udj_test
+#export UDJ_TRACE_ARGS=detail
+#export UDJ_LOG_LEVEL=1
+export UDJT_MPI_USE_DPM="no"
+export UDJT_MPI_INIT_WAIT_CONNECTED=1
+
+WRFRUN_OUTPUT_DIR="$OUTPUT_ROOT/wrfrun-output"
+WRFRUN_DONE_FILE="$OUTPUT_ROOT/wrfrun-output.done"
+
+
+PRODUCER_TOTAL_TASKS=$(( SLURM_NTASKS / 2 ))
+PRODUCER_RANKS="0-$((PRODUCER_TOTAL_TASKS-1))"
+
+CONSUMER_TOTAL_TASKS=$(( SLURM_NTASKS - PRODUCER_TOTAL_TASKS ))
+CONSUMER_TASKS_START=$(( PRODUCER_TOTAL_TASKS ))
+CONSUMER_TASKS_END=$(( PRODUCER_TOTAL_TASKS + CONSUMER_TOTAL_TASKS - 1 ))
+CONSUMER_RANKS="${CONSUMER_TASKS_START}-${CONSUMER_TASKS_END}"
+
+
+# Communicaton mode.
+#export COMM_UDJ_MODE=DPM
+export COMM_UDJ_MODE=MPMD
+export ATP_ENABLED=0
+
+
+# MPI IO Directives
+
+# https://www.hpc.kaust.edu.sa/tips/multi-threaded-mpi
+export MPICH_MAX_THREAD_SAFETY=multiple
+
+# Displays all settings used by the MPI during execution
+#export MPICH_ENV_DISPLAY=1
+# Displays MPI version
+#export MPICH_VERSION_DISPLAY=1
+# Display ranks performing IO aggregation when using collective buffering
+#export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
+# Display read/write operations statistics after collective buffering
+#export MPICH_MPIIO_STATS=1
+#Displays all the available I/O hints and their values
+#export MPICH_MPIIO_HINTS_DISPLAY=1
+# Set per-file striping (lustre / burst buffer)
+#export MPICH_MPIIO_HINTS="wrfrst*:cb_nodes=40:,\
+#wrfout*:cb_nodes=40:striping_unit=2097152,\
+#wrfi*:cb_nodes=40:striping_unit=1048576"
+#export MPICH_MPIIO_TIMERS=1
+
+
+# Output Configuration
+echo "Launching Basic UDJ Test - Producer / Consumer Flat"
+echo "  SIM_OUTPUT_DIR=$SIM_OUTPUT_DIR"
+echo "  UDJ_CONSENSUS_DIR=$UDJ_CONSENSUS_DIR"
+echo "  DPM_COORDINATION_ROOT=$DPM_COORDINATION_ROOT"
+echo "  SLURM_NNODES=$SLURM_NNODES"
+echo "  SLURM_NTASKS=$SLURM_NTASKS"
+echo "  COMM_UDJ_MODE=$COMM_UDJ_MODE"
+echo "  PRODUCER_TOTAL_TASKS=$PRODUCER_TOTAL_TASKS"
+echo "  PRODUCER_RANKS=$PRODUCER_RANKS"
+echo "  CONSUMER_TOTAL_TASKS=$CONSUMER_TOTAL_TASKS"
+echo "  CONSUMER_RANKS=$CONSUMER_RANKS"
+echo "  UDJ_ROOT=$UDJ_ROOT"
+echo "  PRODUCER_EXE=$PRODUCER_EXE"
+echo "  CONSUMER_EXE=$CONSUMER_EXE"
+echo "  SSH_CLIENT IP: ${SSH_CLIENT%% *}"
+
+
+# Load Modules
+module use /sw/vis/xc40.modules
+module add ParaView/5.8.0-CrayGNU-2019.12.KSL-server-mesa-py27
+
+UDJ_LIB_DIR="/project/k1033/Development/UDJ/udj-build-nodpm-gcc/lib"
+PROTOBUFC_LIB_DIR="/project/k1033/Development/UDJ/protobuf-c-build/lib"
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${UDJ_LIB_DIR}:${PROTOBUFC_LIB_DIR}
+
+
+# Prepare Common Paths
+
+mkdir -p "${SIM_OUTPUT_DIR}"
+mkdir -p "${UDJ_CONSENSUS_DIR}"
+mkdir -p "${DPM_COORDINATION_ROOT}"
+rm -rf "${UDJ_CONSENSUS_DIR}/"* "${DPM_COORDINATION_ROOT}/.mpidpm/"*
+
+
+# Launch
+
+case $COMM_UDJ_MODE in
+  DPM)
+    export PMI_USE_DRC=1
+    export PRODUCER_UDJ_RANKS="${PRODUCER_RANKS}"
+    export MPICH_DPM_DIR="$DPM_COORDINATION_ROOT"
+
+    echo PRODUCER_UDJ_RANKS="$PRODUCER_UDJ_RANKS"
+
+    time srun --chdir="$SIM_OUTPUT_DIR" \
+              --ntasks ${PRODUCER_TOTAL_TASKS} --nodes ${SLURM_NNODES} \
+              --label --unbuffered \
+              env PRODUCER=1 ${PRODUCER_EXE}
+
+    # TODO: where is the consumer executed?
+    ;;
+  MPMD)
+    export MPICH_DPM_DIR="$DPM_COORDINATION_ROOT"
+
+    export PRODUCER_UDJ_RANKS=${PRODUCER_RANKS}
+    export CONSUMER_UDJ_RANKS=${CONSUMER_RANKS}
+    echo "PRODUCER_UDJ_RANKS=$PRODUCER_UDJ_RANKS"
+    echo "CONSUMER_UDJ_RANKS=$CONSUMER_UDJ_RANKS"
+
+    LAUNCH_CONFIG="${OUTPUT_ROOT}/launch.conf"
+    echo "${PRODUCER_RANKS} env PRODUCER=1 ${PRODUCER_EXE} " > "$LAUNCH_CONFIG"
+    echo "${CONSUMER_RANKS} env CONSUMER=1 ${CONSUMER_EXE} " >> "$LAUNCH_CONFIG"
+
+    srun --chdir="$SIM_OUTPUT_DIR" \
+         --ntasks $((PRODUCER_TOTAL_TASKS + CONSUMER_TOTAL_TASKS)) \
+         --label --unbuffered --multi-prog "$LAUNCH_CONFIG"
+
+    ;;
+  ?)
+    echo "You have to specify COMM_UDJ_MODE"
+    exit 1
+    ;;
+esac
+

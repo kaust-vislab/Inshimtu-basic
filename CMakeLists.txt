@@ -119,6 +119,7 @@ set(Library_SRCS
   source/processing/inporters/inporterRawNetCDF.cxx
   source/processing/inporters/inporterXMLImage.cxx
   source/processing/inporters/inporterXMLPImage.cxx
+  source/processing/inporters/inporterXMLRectilinear.cxx
   source/utils/help.cxx
   source/utils/logger.cxx
 )

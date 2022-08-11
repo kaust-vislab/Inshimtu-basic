@@ -1,36 +1,51 @@
 from paraview.simple import *
-
 from paraview import coprocessing
+import os
 
-
-#--------------------------------------------------------------
-# Code generated from cpstate.py to create the CoProcessor.
-
+# the frequency to output everything
+outputfrequency = 1
 
 # ----------------------- CoProcessor definition -----------------------
 
 def CreateCoProcessor():
   def _CreatePipeline(coprocessor, datadescription):
     class Pipeline:
-      adaptorinput = coprocessor.CreateProducer( datadescription, "input" )
+      for i in range(datadescription.GetNumberOfInputDescriptions()):
+        inputdescription = datadescription.GetInputDescription(i)
+        name = datadescription.GetInputDescriptionName(i)
+        adaptorinput = coprocessor.CreateProducer( datadescription, name )
+        grid = adaptorinput.GetClientSideObject().GetOutputDataObject(0)
+        extension = None
+        if  grid.IsA('vtkImageData') or grid.IsA('vtkUniformGrid'):
+          writer = servermanager.writers.XMLPImageDataWriter(Input=adaptorinput)
+          extension = '.pvti'
+        elif  grid.IsA('vtkRectilinearGrid'):
+          writer = servermanager.writers.XMLPRectilinearGridWriter(Input=adaptorinput)
+          extension = '.pvtr'
+        elif  grid.IsA('vtkStructuredGrid'):
+          writer = servermanager.writers.XMLPStructuredGridWriter(Input=adaptorinput)
+          extension = '.pvts'
+        elif  grid.IsA('vtkPolyData'):
+          writer = servermanager.writers.XMLPPolyDataWriter(Input=adaptorinput)
+          extension = '.pvtp'
+        elif  grid.IsA('vtkUnstructuredGrid'):
+          writer = servermanager.writers.XMLPUnstructuredGridWriter(Input=adaptorinput)
+          extension = '.pvtu'
+        elif  grid.IsA('vtkUniformGridAMR'):
+          writer = servermanager.writers.XMLHierarchicalBoxDataWriter(Input=adaptorinput)
+          extension = '.vthb'
+        elif  grid.IsA('vtkMultiBlockDataSet'):
+          writer = servermanager.writers.XMLMultiBlockDataWriter(Input=adaptorinput)
+          extension = '.vtm'
+        elif  grid.IsA('vtkHyperTreeGrid'):
+          writer = servermanager.writers.HyperTreeGridWriter(Input=adaptorinput)
+          extension = '.htg'
+        else:
+          print("Don't know how to create a writer for a ", grid.GetClassName())
 
-      grid = adaptorinput.GetClientSideObject().GetOutputDataObject(0)
-      if  grid.IsA('vtkImageData') or grid.IsA('vtkUniformGrid'):
-        writer = coprocessor.CreateWriter( XMLPImageDataWriter, "dataoutfile_%t.pvti", 1 )
-      elif  grid.IsA('vtkRectilinearGrid'):
-        writer = coprocessor.CreateWriter( XMLPRectilinearGridWriter, "dataoutfile_%t.pvtr", 1 )
-      elif  grid.IsA('vtkStructuredGrid'):
-        writer = coprocessor.CreateWriter( XMLPStructuredGridWriter, "dataoutfile_%t.pvts", 1 )
-      elif  grid.IsA('vtkPolyData'):
-        writer = coprocessor.CreateWriter( XMLPPolyDataWriter, "dataoutfile_%t.pvtp", 1 )
-      elif  grid.IsA('vtkUnstructuredGrid'):
-        writer = coprocessor.CreateWriter( XMLPUnstructuredGridWriter, "dataoutfile_%t.pvtu", 1 )
-      elif  grid.IsA('vtkUniformGridAMR'):
-        writer = coprocessor.CreateWriter( XMLHierarchicalBoxDataWriter, "dataoutfile_%t.vthb", 1 )
-      elif  grid.IsA('vtkMultiBlockDataSet'):
-        writer = coprocessor.CreateWriter( XMLMultiBlockDataWriter, "dataoutfile_%t.vtm", 1 )
-      else:
-        print "Don't know how to create a writer for a ", grid.GetClassName()
+        if extension:
+          name = name.translate(str.maketrans('','','/')) # Get rid of any slashes in the channel name
+          coprocessor.RegisterWriter(writer, filename=name+'_%t'+extension, freq=outputfrequency)
 
     return Pipeline()
 
@@ -38,10 +53,7 @@ def CreateCoProcessor():
     def CreatePipeline(self, datadescription):
       self.Pipeline = _CreatePipeline(self, datadescription)
 
-  coprocessor = CoProcessor()
-  freqs = {'input': [1]}
-  coprocessor.SetUpdateFrequencies(freqs)
-  return coprocessor
+  return CoProcessor()
 
 #--------------------------------------------------------------
 # Global variables that will hold the pipeline for each timestep
@@ -52,15 +64,28 @@ coprocessor = CreateCoProcessor()
 
 #--------------------------------------------------------------
 # Enable Live-Visualizaton with ParaView
-coprocessor.EnableLiveVisualization(True, 1)
+coprocessor.EnableLiveVisualization(False, 1)
 
+
+#--------------------------------------------------------------
+# Dynamically determine client
+clientport = 22222
+clienthost = 'localhost'
+if 'SSH_CLIENT' in os.environ:
+  clienthost = os.environ['SSH_CLIENT'].split()[0]
+if 'INSHIMTU_CLIENT' in os.environ:
+  clienthost = os.environ['INSHIMTU_CLIENT']
+  
 
 # ---------------------- Data Selection method ----------------------
 
 def RequestDataDescription(datadescription):
     "Callback to populate the request for current timestep"
     global coprocessor
-    if datadescription.GetForceOutput() == True:
+    
+    datadescription.SetForceOutput(True)
+    
+    if datadescription.GetForceOutput() == True or datadescription.GetTimeStep() % outputfrequency == 0:
         # We are just going to request all fields and meshes from the simulation
         # code/adaptor.
         for i in range(datadescription.GetNumberOfInputDescriptions()):
@@ -68,7 +93,8 @@ def RequestDataDescription(datadescription):
             datadescription.GetInputDescription(i).GenerateMeshOn()
         return
 
-    # setup requests for all inputs based on the requirements of the pipeline.
+    # setup requests for all inputs based on the requirements of the
+    # pipeline.
     coprocessor.LoadRequestedData(datadescription)
 
 # ------------------------ Processing method ------------------------
@@ -88,5 +114,6 @@ def DoCoProcessing(datadescription):
     coprocessor.WriteImages(datadescription, rescale_lookuptable=False)
 
     # Live Visualization, if enabled.
-    coprocessor.DoLiveVisualization(datadescription, "localhost", 22222)
+    coprocessor.DoLiveVisualization(datadescription, clienthost, clientport)
+
 

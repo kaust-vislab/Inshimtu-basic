@@ -1,0 +1,71 @@
+#!/bin/bash
+#SBATCH --account=k01
+#SBATCH --partition=debug
+#SBATCH --job-name=wrf-testing
+#SBATCH --time=00:10:00
+#SBATCH --output=wrf-testing.%j.out
+#SBATCH --error=wrf-testing.%j.err                                     
+#SBATCH --nodes=2
+
+#INSHIMTU_ROOT="/lustre/project/k1033/Development/Inshimtu"
+#INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+
+#OUTPUT_ROOT="/project/k1033/Projects/wrf2pv-testing/test-example"
+
+# Load Modules
+#module use /lustre/project/k1033/software/easybuild/modules/all
+#module add Boost
+#module add ParaView/5.1.2-CrayGNU-2016.07.KSL-server-mesa
+#module add cray-hdf5-parallel
+
+#srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" --help-example
+#srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" \
+#     -w "$OUTPUT_ROOT/wrfrun-output" -d "$OUTPUT_ROOT/wrfrun-output.done" \
+#     -i "${OUTPUT_ROOT}/wrfrun-output/"wrfout_d*.nc \
+#     -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" \
+#     -v U,V,W,QVAPOR
+
+#srun --ntasks-per-node=1 "$INSHIMTU_DIR/Inshimtu" \
+#     -w "$OUTPUT_ROOT/wrfrun-output" -d "$OUTPUT_ROOT/wrfrun-output.done" \
+#     -i "${OUTPUT_ROOT}/wrfrun-output/"wrfout_d*.nc \
+#     -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" \
+#     -v U,V,W,QVAPOR
+
+#srun --ntasks-per-node=1 \
+#     "$INSHIMTU_DIR/Inshimtu" -w "$OUTPUT_ROOT/wrfrun-output" \
+#                              -d "$OUTPUT_ROOT/wrfrun-output.done" \
+#                              -f 'wrfout_d.*.nc' \
+#                              -s "$INSHIMTU_ROOT/testing/pipelines/gridviewer_glendon_22222.py" \
+#                              -v U,V,W,QVAPOR \
+   #  &
+
+#time srun --ntasks=1024 --ntasks-per-socket=2 --ntasks-per-node=4 --cpus-per-task=8 --threads-per-core=1 --hint=nomultithread ./wrf.exe
+
+export MPICH_ENV_DISPLAY=1
+export MPICH_VERSION_DISPLAY=1
+export MPICH_MPIIO_HINTS_DISPLAY=1
+export MPICH_MPIIO_STATS=1
+export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
+
+#export MPICH_MPIIO_TIMERS=1
+export OMP_NUM_THREADS=1
+#export MPICH_MPIIO_HINTS="wrfrst*:striping_factor=16:striping_unit=524288,wrfout*:striping_factor=16:striping_unit=524288,wrfi*:striping_factor=16:striping_unit=524288"
+export MPICH_MPIIO_HINTS="wrfrst*:cb_nodes=16,wrfout*:cb_nodes=16,wrfi*:cb_nodes=16"
+
+#mkdir run_$SLURM_JOBID
+#mv * run_$SLURM_JOBID
+#cd run_$SLURM_JOBID
+#chmod +x wrf.exe
+#time srun --ntasks=60 --ntasks-per-node=30 --cpus-per-task=1 --threads-per-core=1 --hint=nomultithread ./wrf.exe
+#time srun --ntasks=62 --ntasks-per-node=31 --cpus-per-task=1 --threads-per-core=1 --hint=nomultithread ./wrf.exe
+time srun --ntasks=8 --ntasks-per-node=4 --cpus-per-task=7 --threads-per-core=1 --hint=nomultithread ./wrf.exe
+
+#touch "$OUTPUT_ROOT/wrfrun-output.done"
+
+# NOTE: to list queues and states:
+# sinfo
+# NOTE: debug queue is max 2 nodes, 30 minutes
+# NOTE: workq queue is primary queue
+
+
+

@@ -85,26 +85,17 @@ Note: Failure to pause the simulation will prevent the first file from displayin
  
 The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.
 
-Filtered Inshimtu:
+### Filtered Inshimtu
 * Processes only newly created files matching regex '\w*(.vti)' in build/testing;
 * Stops when build/testing.done file is touched;
 * Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
 
 ```
-./Inshimtu -w testing -d testing.done -s ../testing/pipelines/pngQVAPOR.py -f '\w*(.pvti)' -v QVAPOR
+./Inshimtu -w testing -d testing.done -s ../testing/pipelines/pngQVAPOR.py -f '\w*(.pvti)' -v QVAPOR -V trace
 ```
 or
 ```
 ./Inshimtu -c ../testing/configs/png_watchDir_QVAPOR.json -V trace
-```
-
-Pre-existing files processed with Inshimtu:
-* Processes all existing files specified in the script;
-* Stops when all prexisting files are processed
-* Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
-
-```
-./Inshimtu -c ../testing/configs/png_enumerated_QVAPOR.json -V trace
 ```
 
 To demonstrate, copy the data files into the input directory (to simulate their creation via simulation):
@@ -114,11 +105,40 @@ cp -v testing/data/wrf/* build/testing/
 touch build/testing.done
 ```
 
-Note: Alternatively, specify the files to process via the --initial files option, shown above in the json script.
+Note: Alternatively, specify the files to process via the --initial files option, shown below in the json script.
 
 
-### Multiple Inshimtu nodes
+### Pre-existing files processed with Inshimtu
+* Processes all existing files specified in the script;
+* Stops when all prexisting files are processed
+* Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
+* First copy wall wrf/pvti/* data to testing dir
+```
+./Inshimtu -c ../testing/configs/png_enumerated_QVAPOR.json -V trace
+```
 
+
+### Processing multiple variables with Inshimtu
+* Processes only newly created files matching regex '\w*(.vtr)' in build/testing;
+* Stops when build/testing.done file is touched;
+* Uses the Catalyst scripts pngUVWQVAPOR.py and gridwriter.py to transfer data to ParaView.
+
+#### View the selected variable in ParaView and write png
+```
+./Inshimtu -w testing -d testing.done -s ../testing/pipelines/pngUVWQVAPOR.py -f '\w*(.vtr)' -V trace -v U V W QVAPOR
+```
+
+#### Output the selected variables to disk:
+
+#### Output variables as a single file
+```
+./Inshimtu -w testing -d testing.done -s ../testing/pipelines/gridwriter.py -f '\w*(.vtr)' -V trace -v U,V,W,QVAPOR
+```
+
+#### Output variables as seperate files
+```
+./Inshimtu -w testing -d testing.done -s ../testing/pipelines/gridwriter.py -f '\w*(.vtr)' -V trace -v U V W QVAPOR
+```
 
 
 ## Notes

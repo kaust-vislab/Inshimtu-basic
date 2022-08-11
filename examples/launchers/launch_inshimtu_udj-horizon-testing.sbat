@@ -1,0 +1,185 @@
+#!/bin/bash
+#SBATCH -C CL48
+##SBATCH --mem=60G
+#SBATCH --job-name=inshimtu-udj-test
+#SBATCH --time=00:10:00
+#SBATCH --output=inshimtu-udj-test.%j.out
+#SBATCH --error=inshimtu-udj-test.%j.err
+#SBATCH --nodes=1
+#SBATCH --exclusive
+
+
+## SETUP
+
+# Configuration
+
+module load cray-python/3.8.5.1
+
+UDJ_INTERFACE_ROOT="/cray/css/users/esposito/KAUST/CoE/kvl_udj/"
+PRODUCER_EXE="${UDJ_INTERFACE_ROOT}/bin/wrf_imitator.exe"
+#PRODUCER_EXE="${UDJ_INTERFACE_ROOT}/bin/producer_udj.exe"
+
+INSHIMTU_ROOT="/cray/css/users/esposito/KAUST/CoE/kvl_udj/inshimtu" #"/lus/scratch/esposito/KVL/inshimtu"
+INSHIMTU_BUILD_DIR="$INSHIMTU_ROOT/build.dc"
+INSHIMTU_EXE="${INSHIMTU_BUILD_DIR}/Inshimtu"
+INSHIMTU_MODULES="${INSHIMTU_BUILD_DIR}/module.init"
+INSHIMTU_TESTING="${INSHIMTU_ROOT}/testing"
+INSHIMTU_CONFIG_FILE="${INSHIMTU_TESTING}/configs/udj_consumer-gridwriter.json"
+#INSHIMTU_CONFIG_FILE="${INSHIMTU_TESTING}/configs/udj_consumer-gridwriter.json"
+INSHIMTU_PIPELINES="/cray/css/users/esposito/KAUST/CoE/kvl_udj/inshimtu/examples/pipelines" #"${INSHIMTU_TESTING}/pipelines"
+
+WORK_ROOT="/lus/scratch/$USER/tmp/udj-testing/flat-producer-inshimtu"
+
+SIM_OUTPUT_DIR="${WORK_ROOT}/sim-output"
+LOG_OUTPUT_DIR="${WORK_ROOT}/_log"
+
+export UDJ_TRANSPORT_ORDER=MPI
+export UDJ_WORKFLOW_ID=udj_inshimtu_test
+#export UDJ_TRACE_ARGS=detail
+export UDJ_LOG_LEVEL=0
+export UDJT_MPI_USE_DPM="no"
+export UDJT_MPI_INIT_WAIT_CONNECTED=1
+
+PRODUCER_TOTAL_TASKS=16
+PRODUCER_RANKS="0-$((PRODUCER_TOTAL_TASKS-1))"
+
+CONSUMER_TOTAL_TASKS=4
+CONSUMER_TASKS_START=$(( PRODUCER_TOTAL_TASKS ))
+CONSUMER_TASKS_END=$(( PRODUCER_TOTAL_TASKS + CONSUMER_TOTAL_TASKS - 1 ))
+CONSUMER_RANKS="${CONSUMER_TASKS_START}-${CONSUMER_TASKS_END}"
+
+export THREEDIM_UDJ_SEND_PROC_DIMS="4,4,1"
+export THREEDIM_UDJ_RECV_PROC_DIMS="2,2,1"
+
+export REQ_NTRANSFERS=$((15))
+export TIMER_SUMMARY_INTERVAL=15
+export FILTER_VARNAME="QVAPOR"
+#export FILTER_VARNAME="VarName"
+#export COMPUTE_COORD=1
+
+#export REQ_NTRANSFERS=15
+#export TIMER_SUMMARY_INTERVAL=15
+
+#export WRITE_FIELD=1
+
+# Communicaton mode.
+#export COMM_UDJ_MODE=DPM
+export ATP_ENABLED=0
+
+
+# MPI IO Directives
+
+# https://www.hpc.kaust.edu.sa/tips/multi-threaded-mpi
+export MPICH_MAX_THREAD_SAFETY=multiple
+
+# Displays all settings used by the MPI during execution
+#export MPICH_ENV_DISPLAY=1
+# Displays MPI version
+#export MPICH_VERSION_DISPLAY=1
+# Display ranks performing IO aggregation when using collective buffering
+#export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
+# Display read/write operations statistics after collective buffering
+#export MPICH_MPIIO_STATS=1
+#Displays all the available I/O hints and their values
+#export MPICH_MPIIO_HINTS_DISPLAY=1
+# Set per-file striping (lustre / burst buffer)
+#export MPICH_MPIIO_HINTS="wrfrst*:cb_nodes=40:,\
+#wrfout*:cb_nodes=40:striping_unit=2097152,\
+#wrfi*:cb_nodes=40:striping_unit=1048576"
+#export MPICH_MPIIO_TIMERS=1
+
+# https://wiki.mpich.org/mpich/index.php/Debug_Event_Logging
+# NOTE: These env vars don't appear in MPICH_ENV_DISPLAY listing:
+export MPICH_DBG=FILE
+export MPICH_DBG_FILENAME="${LOG_OUTPUT_DIR}/_mpich_dbg-%w-%d-%p.log"
+export MPICH_DBG_LEVEL=VERBOSE
+export MPICH_DBG_CLASS=ALL  #=ROUTINE,COMM,NEM_SOCK_DET,CH3_CONNECT,CH3_DISCONNECT
+
+# TODO: testing if useful...
+#export MPICH_OPT_THREAD_SYNC=0
+#export MPICH_MSG_QUEUE_DBG=1
+#export MPICH_SMP_OFF=1
+
+
+# Output Configuration
+echo "Launching Basic UDJ Test - Producer / Consumer Flat"
+echo "  WORK_ROOT=$WORK_ROOT"
+echo "  SIM_OUTPUT_DIR=$SIM_OUTPUT_DIR"
+echo "  LOG_OUTPUT_DIR=$LOG_OUTPUT_DIR"
+echo "  SLURM_NNODES=$SLURM_NNODES"
+echo "  SLURM_NTASKS=$SLURM_NTASKS"
+echo "  COMM_UDJ_MODE=$COMM_UDJ_MODE"
+echo "  PRODUCER_TOTAL_TASKS=$PRODUCER_TOTAL_TASKS"
+echo "  PRODUCER_RANKS=$PRODUCER_RANKS"
+echo "  CONSUMER_TOTAL_TASKS=$CONSUMER_TOTAL_TASKS"
+echo "  CONSUMER_RANKS=$CONSUMER_RANKS"
+echo "  UDJ_SEND_PROC_DIMS=$UDJ_SEND_PROC_DIMS"
+echo "  UDJ_RECV_PROC_DIMS=$UDJ_RECV_PROC_DIMS"
+echo "  TWODIM_UDJ_SEND_PROC_DIMS=$THREEDIM_UDJ_SEND_PROC_DIMS"
+echo "  TWODIM_UDJ_RECV_PROC_DIMS=$THREEDIM_UDJ_RECV_PROC_DIMS"
+echo "  THREEDIM_UDJ_SEND_PROC_DIMS=$THREEDIM_UDJ_SEND_PROC_DIMS"
+echo "  THREEDIM_UDJ_RECV_PROC_DIMS=$THREEDIM_UDJ_RECV_PROC_DIMS"
+echo "  INSHIMTU_CONFIG_FILE=$INSHIMTU_CONFIG_FILE"
+echo "  UDJ_INTERFACE_ROOT=$UDJ_INTERFACE_ROOT"
+echo "  PRODUCER_EXE=$PRODUCER_EXE"
+echo "  INSHIMTU_EXE=$INSHIMTU_EXE"
+echo "  SSH_CLIENT IP: ${SSH_CLIENT%% *}"
+
+
+# Work Space Preparation
+
+mkdir -p "${SIM_OUTPUT_DIR}"
+mkdir -p "${LOG_OUTPUT_DIR}"
+
+ln -fs "${INSHIMTU_PIPELINES}" "${WORK_ROOT}"
+
+
+## MODULES
+
+# Load Modules
+
+if [ ! -e "${INSHIMTU_MODULES}" ]; then
+  echo "Expecting modules: ${INSHIMTU_MODULES}"
+  exit 1
+fi
+source "${INSHIMTU_MODULES}"
+# TODO: Possibly remove Darshan (related) modules, if crashes encountered with producers
+
+UDJ_LIB_DIR="/cray/css/users/esposito/CERL/OCTOPUS/udj_master_nodpm-gcc-build/lib"
+PROTOBUF_LIB_DIR="/lus/scratch/esposito/KVL/protobuf-3.13.0-install/lib64/"
+PROTOBUF_C_LIB_DIR="/lus/scratch/esposito/KVL/protobuf-c-build/lib"
+PARAVIEW_LIB_DIR="/cray/css/users/esposito/ParaView-v5.9.1-install/lib64/"
+BOOST_LIB_DIR="/lus/scratch/esposito/KVL/boost_1_67_0/lib/"
+PY_LIB_DIR="/opt/python/3.8.5.1/lib/"
+LLVM_LIB_DIR="/cray/css/users/esposito/llvm-7.0.1.install/lib"
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${LLVM_LIB_DIR}:${UDJ_LIB_DIR}:${PROTOBUF_LIB_DIR}:${PROTOBUF_C_LIB_DIR}:${PARAVIEW_LIB_DIR}:${BOOST_LIB_DIR}:${PY_LIB_DIR}
+
+# TODO: Fix hack to force Inshimtu to use craympich-dpm
+#    echo "${CONSUMER_RANKS} env LD_PRELOAD=/opt/cray/pe/lib64/libmpich_gnu_82.so.3 ${INSHIMTU_EXE} ... " >> "$LAUNCH_CONFIG"
+
+
+## RUN
+
+if [ ! -x "${INSHIMTU_EXE}" ]; then
+  echo "Expecting executable: ${INSHIMTU_EXE}"
+  exit 1
+fi
+
+# Launch
+    export COMM_UDJ_MODE=MPMD
+
+    export PRODUCER_UDJ_RANKS=${PRODUCER_RANKS}
+    export CONSUMER_UDJ_RANKS=${CONSUMER_RANKS}
+    echo "PRODUCER_UDJ_RANKS=$PRODUCER_UDJ_RANKS"
+    echo "CONSUMER_UDJ_RANKS=$CONSUMER_UDJ_RANKS"
+
+    LAUNCH_CONFIG="${WORK_ROOT}/launch.conf"
+    echo "${PRODUCER_RANKS} env PRODUCER=1 ${PRODUCER_EXE} " > "$LAUNCH_CONFIG"
+    echo "${CONSUMER_RANKS} env CONSUMER=1 ${INSHIMTU_EXE} -n ${CONSUMER_RANKS} -N ${CONSUMER_RANKS} -P ${PRODUCER_RANKS} -V trace -c ${INSHIMTU_CONFIG_FILE} " >> "$LAUNCH_CONFIG"
+
+    srun -u --chdir="$WORK_ROOT" \
+         --ntasks $((PRODUCER_TOTAL_TASKS + CONSUMER_TOTAL_TASKS)) \
+         --label --unbuffered --multi-prog "$LAUNCH_CONFIG"
+
+

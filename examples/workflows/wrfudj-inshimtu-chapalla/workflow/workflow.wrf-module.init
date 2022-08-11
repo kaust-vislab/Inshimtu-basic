@@ -1,0 +1,5 @@
+# NOTE: wrf-cray segfaults; using wrf-intel
+module swap PrgEnv-cray PrgEnv-intel
+#module load wrf/4.1.2
+export WRF_DIR=/project/k1033/Development/WRF-4.0.3.intel_udj/
+

@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# workflow_configs.shinclude
+# source from run_workflow.sh
+
+if [[ "$0" == "$BASH_SOURCE" ]] ; then
+  echo "Do not exec configs: source workflow.configs" >&2
+  exit 1
+fi
+
+checkFunction checkDirectory
+
+
+# INPUTS
+
+checkDirectory WKFLOW_LAUNCH_DIR
+
+
+# PATHS
+
+JOB_LUSTRE_OUTPUT_DIR="/scratch/$USER/wrfudj-inshimtu-testing/chapalla-output"
+
+# Determine Working Directory
+if [ -n "$DW_JOB_STRIPED" ] && [ -d "$DW_JOB_STRIPED" ] ; then
+  echo "BURST BUFFER JOB: DW_JOB_STRIPED:$DW_JOB_STRIPED"
+  #Note: $DW_JOB_STRIPED may have trailing slash
+  JOB_WORK_DIR="${DW_JOB_STRIPED%/}"
+  export WKFLOW_WORKDIR_INITIALIZE_REQ=none
+elif [ -n "$DW_PERSISTENT_STRIPED_wrf" ] && [ -d "$DW_PERSISTENT_STRIPED_wrf" ] ; then
+  echo "BURST BUFFER JOB: DW_PERSISTENT_STRIPED_wrf:$DW_PERSISTENT_STRIPED_wrf"
+  #Note: $DW_PERSISTENT_STRIPED may have trailing slash
+  JOB_WORK_DIR="${DW_PERSISTENT_STRIPED_wrf%/}"
+  export WKFLOW_WORKDIR_INITIALIZE_REQ=none
+else
+  JOB_WORK_DIR="${JOB_LUSTRE_OUTPUT_DIR}"
+  export WKFLOW_WORKDIR_INITIALIZE_REQ=link
+  mkdir -p "$JOB_WORK_DIR"
+  lfs setstripe -c 32 "$JOB_WORK_DIR"
+fi
+
+
+export WKFLOW_WORK_DIR="${JOB_WORK_DIR}"
+checkDirectory WKFLOW_WORK_DIR
+
+export WKFLOW_PROJECT_DIR="$(dirname "$(realpath -s "$BASH_SOURCE")")"
+checkDirectory WKFLOW_PROJECT_DIR
+
+
+# GENERIC SIMULATION VARS
+
+export SIM_OUTPUT_DIR="${WKFLOW_WORK_DIR}/wrfrun-output"
+
+
+# SIM WRF SPECIFIC VARS
+
+export WRFRUN_MODULES="${WKFLOW_PROJECT_DIR}/workflow/workflow.wrf-module.init"
+
+
+# RUN WORKFLOW VARS
+# Note: do not need to export, these are for parent sourcing script only
+
+INIT_SCRIPT="${WKFLOW_PROJECT_DIR}/workflow/workflow.initialize.sh"
+SIM_SCRIPT="${WKFLOW_LAUNCH_DIR}/srun_sim.wrf.sh"
+FINISH_SCRIPT="${WKFLOW_PROJECT_DIR}/workflow/workflow.finalize.sh"
+
+
+

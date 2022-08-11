@@ -9,6 +9,7 @@
 #include "processing/inporters/inporterRawNetCDF.h"
 #include "processing/inporters/inporterXMLImage.h"
 #include "processing/inporters/inporterXMLPImage.h"
+#include "processing/inporters/inporterXMLRectilinear.h"
 
 #include <iostream>
 #include <vector>
@@ -392,14 +393,25 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
           std::unique_ptr<Adaptor>(
               new XMLPImageDataFileInporter(descriptor, vsets)));
     }
+    else if (XMLRectilinearGridFileInporter::canProcess(filename))
+    {
+      BOOST_LOG_TRIVIAL(info) << "Creating XMLRectilinearGridFileInporter for: '" << vsets << "'";
+
+      inporters.push_back(
+          std::unique_ptr<Adaptor>(
+              new XMLRectilinearGridFileInporter(descriptor, vsets)));
+    }
     else
     {
          BOOST_LOG_TRIVIAL(error) << "Unable to process the given file, do not have an importer that works.";
     }
   }
+  
+  std::cerr << __LINE__ << std::endl;
 
   for (auto& inporter : inporters)
   {
+    std::cerr << __LINE__ << std::endl;
     inporter->process(filename);
   }
 }

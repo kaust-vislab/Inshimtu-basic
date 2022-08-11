@@ -1,0 +1,98 @@
+#!/bin/bash
+#SBATCH --partition=workq
+#SBATCH --job-name=wrf-inshimtu
+#SBATCH --time=00:25:00
+#SBATCH --output=wrf-inshimtu.%j.out
+#SBATCH --error=wrf-inshimtu.%j.err
+#SBATCH --nodes=3
+#DW jobdw access_mode=striped capacity=150GiB type=scratch
+#DW stage_in source=/scratch/tmp/wrf-3.7.1/run_big/forburst destination=$DW_JOB_STRIPED/wrfrun-output type=directory
+#DW stage_in source=/scratch/tmp/wrf-3.7.1/run_big/burst_buffer_output/wrfrun-output.done destination=$DW_JOB_STRIPED/wrfrun-output.done  type=file
+
+
+# Note: WRF must reside inside wrfrun-output (with name.input)
+# Note: launching WRF from DW; force executable
+WRF_ROOT="${DW_JOB_STRIPED}wrfrun-output"
+chmod +x "$WRF_ROOT/wrf.exe"
+
+INSHIMTU_ROOT="/lustre/sw/vis/development/Inshimtu"
+INSHIMTU_DIR="$INSHIMTU_ROOT/build.shaheen"
+
+WRFRUN_OUTPUT_DIR="${DW_JOB_STRIPED}wrfrun-output"
+WRFRUN_DONE_FILE="${DW_JOB_STRIPED}wrfrun-output.done"
+
+INSHIMTU_INPORT_NODES_COUNT=1
+
+WRFRUN_TOTAL_NODES=$(( SLURM_NNODES - INSHIMTU_INPORT_NODES_COUNT ))
+WRFRUN_TASKS_PER_NODE=4
+WRFRUN_TOTAL_TASKS=$(( WRFRUN_TOTAL_NODES * WRFRUN_TASKS_PER_NODE ))
+
+INSHIMTU_INPORT_NODES_START=$(( WRFRUN_TOTAL_NODES ))
+INSHIMTU_INPORT_NODES_END=$(( INSHIMTU_INPORT_NODES_START + INSHIMTU_INPORT_NODES_COUNT - 1 ))
+INSHIMTU_INPORT_NODES="${INSHIMTU_INPORT_NODES_START}-${INSHIMTU_INPORT_NODES_END}"
+
+
+cd "$WRFRUN_OUTPUT_DIR"
+
+
+# MPI IO Directives
+
+# Displays all settings used by the MPI during execution
+#export MPICH_ENV_DISPLAY=1
+# Displays MPI version
+export MPICH_VERSION_DISPLAY=1
+# Display ranks performing IO aggregation when using collective buffering
+#export MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY=1
+# Display read/write operations statistics after collective buffering
+export MPICH_MPIIO_STATS=1
+#Displays all the available I/O hints and their values
+export MPICH_MPIIO_HINTS_DISPLAY=1
+# Set per-file striping (lustre / burst buffer)
+export MPICH_MPIIO_HINTS="wrfrst*:cb_nodes=40:,\
+wrfout*:cb_nodes=40:striping_unit=2097152,\
+wrfi*:cb_nodes=40:striping_unit=1048576"
+export MPICH_MPIIO_TIMERS=1
+
+
+# Output Configuration
+echo "Launching WRF+Inshimtu"
+echo "  WRFRUN_OUTPUT_DIR=$WRFRUN_OUTPUT_DIR"
+echo "  WRFRUN_DONE_FILE=$WRFRUN_DONE_FILE"
+echo "  SLURM_NNODES=$SLURM_NNODES"
+echo "  INSHIMTU_INPORT_NODES=$INSHIMTU_INPORT_NODES"
+echo "  WRFRUN_TOTAL_NODES=$WRFRUN_TOTAL_NODES"
+echo "  WRFRUN_TOTAL_TASKS=$WRFRUN_TOTAL_TASKS"
+echo "  WRFRUN_TASKS_PER_NODE=$WRFRUN_TASKS_PER_NODE"
+echo "  Catalyst script: examples/catalyst_extract_viewer_shaheen.py"
+
+
+# Load Modules
+module use /lustre/sw/vis/modulefiles
+module add Boost/1.61.0-CrayGNU-2016.07.KSL
+module add ParaView/5.3.0-CrayGNU-2016.07.KSL-server-mesa
+module add cray-hdf5-parallel/1.10.0.1
+
+
+# Launch Inshimtu (background)
+srun --ntasks-per-node=1 \
+     "$INSHIMTU_DIR/Inshimtu" -w "$WRFRUN_OUTPUT_DIR" \
+                              -d "$WRFRUN_DONE_FILE" \
+                              -f 'wrfout_d01.*.nc' \
+                              -s "$INSHIMTU_ROOT/examples/catalyst_extract_viewer_shaheen.py" \
+                              -n "$INSHIMTU_INPORT_NODES" \
+                              -v "P,U,V,W,QICE" \
+                              --delete \
+  &
+
+# Launch WRF
+export OMP_NUM_THREADS=7
+time srun --nodes=$WRFRUN_TOTAL_NODES \
+          --ntasks=$WRFRUN_TOTAL_TASKS --ntasks-per-node=$WRFRUN_TASKS_PER_NODE \
+          --cpus-per-task=7 --threads-per-core=1 --hint=nomultithread \
+          "$WRF_ROOT/wrf.exe"
+
+# Notify Inshimtu of completion
+sleep 60 && touch "$WRFRUN_DONE_FILE"
+
+wait
+

@@ -1,11 +1,11 @@
-from paraview.simple import *
 
+from paraview.simple import *
 from paraview import coprocessing
 
-import os
 
 #--------------------------------------------------------------
 # Code generated from cpstate.py to create the CoProcessor.
+# ParaView 5.1.2 64 bits
 
 
 # ----------------------- CoProcessor definition -----------------------
@@ -13,9 +13,31 @@ import os
 def CreateCoProcessor():
   def _CreatePipeline(coprocessor, datadescription):
     class Pipeline:
-      # NOTE: only include producers for variables that belong to a single description on the simulation side
+      # state file generated using paraview version 5.1.2
 
-      adaptor_input = coprocessor.CreateProducer( datadescription, "velocity" )
+      # ----------------------------------------------------------------
+      # setup the data processing pipelines
+      # ----------------------------------------------------------------
+
+      #### disable automatic camera reset on 'Show'
+      paraview.simple._DisableFirstRenderCameraReset()
+
+      # create a new 'XML Partitioned Image Data Reader'
+      # create a producer from a simulation input
+      datafile_QVAPOR = coprocessor.CreateProducer(datadescription, 'QVAPOR')
+
+      # create a new 'Histogram'
+      histogram_QVAPOR = Histogram(Input=datafile_QVAPOR)
+      histogram_QVAPOR.SelectInputArray = ['POINTS', 'QVAPOR']
+      histogram_QVAPOR.BinCount = 256
+      histogram_QVAPOR.CalculateAverages = 1
+      histogram_QVAPOR.CustomBinRanges = [9.99999997475243e-07, 0.0240903962403536]
+
+
+      # ----------------------------------------------------------------
+      # finally, restore active source
+      SetActiveSource(histogram_QVAPOR)
+      # ----------------------------------------------------------------
 
     return Pipeline()
 
@@ -24,8 +46,8 @@ def CreateCoProcessor():
       self.Pipeline = _CreatePipeline(self, datadescription)
 
   coprocessor = CoProcessor()
-  freqs = { 'velocity': [1]
-          }
+  # these are the frequencies at which the coprocessor updates.
+  freqs = {'QVAPOR' : []}
   coprocessor.SetUpdateFrequencies(freqs)
   return coprocessor
 
@@ -38,17 +60,7 @@ coprocessor = CreateCoProcessor()
 
 #--------------------------------------------------------------
 # Enable Live-Visualizaton with ParaView
-coprocessor.EnableLiveVisualization(True, frequency = 1)
-
-
-#--------------------------------------------------------------
-# Dynamically determine client
-clientport = 22222
-clienthost = 'localhost'
-if 'SSH_CLIENT' in os.environ:
-  clienthost = os.environ['SSH_CLIENT'].split()[0]
-if 'INSHIMTU_CLIENT' in os.environ:
-  clienthost = os.environ['INSHIMTU_CLIENT']
+coprocessor.EnableLiveVisualization(True, 1)
 
 
 # ---------------------- Data Selection method ----------------------
@@ -56,13 +68,7 @@ if 'INSHIMTU_CLIENT' in os.environ:
 def RequestDataDescription(datadescription):
     "Callback to populate the request for current timestep"
     global coprocessor
-
-    # TODO: Fix update issue 
-    #   If output is not forced, Catalyst fails to request processing, even
-    #   if ParaView client is connected.
-    datadescription.SetForceOutput(True)
-
-    if datadescription.GetForceOutput():
+    if datadescription.GetForceOutput() == True:
         # We are just going to request all fields and meshes from the simulation
         # code/adaptor.
         for i in range(datadescription.GetNumberOfInputDescriptions()):
@@ -70,7 +76,8 @@ def RequestDataDescription(datadescription):
             datadescription.GetInputDescription(i).GenerateMeshOn()
         return
 
-    # setup requests for all inputs based on the requirements of the pipeline.
+    # setup requests for all inputs based on the requirements of the
+    # pipeline.
     coprocessor.LoadRequestedData(datadescription)
 
 # ------------------------ Processing method ------------------------
@@ -78,13 +85,16 @@ def RequestDataDescription(datadescription):
 def DoCoProcessing(datadescription):
     "Callback to do co-processing for current timestep"
     global coprocessor
-    global clienthost
-    global clientport
 
     # Update the coprocessor by providing it the newly generated simulation data.
     # If the pipeline hasn't been setup yet, this will setup the pipeline.
     coprocessor.UpdateProducers(datadescription)
 
-    # Live Visualization, if enabled.
-    coprocessor.DoLiveVisualization(datadescription, clienthost, clientport)
+    # Write output data, if appropriate.
+    coprocessor.WriteData(datadescription);
 
+    # Write image capture (Last arg: rescale lookup table), if appropriate.
+    coprocessor.WriteImages(datadescription, rescale_lookuptable=False)
+
+    # Live Visualization, if enabled.
+    coprocessor.DoLiveVisualization(datadescription, "z2-fe.z2.vis.kaust.edu.sa", 22222)

@@ -1,7 +1,6 @@
-
 from paraview.simple import *
 from paraview import coprocessing
-
+import os
 
 #--------------------------------------------------------------
 # Code generated from cpstate.py to create the CoProcessor.
@@ -111,6 +110,15 @@ coprocessor = CreateCoProcessor()
 # Enable Live-Visualizaton with ParaView
 coprocessor.EnableLiveVisualization(True, 1)
 
+#--------------------------------------------------------------
+# Dynamically determine client
+clientport = 22222
+clienthost = 'localhost'
+if 'SSH_CLIENT' in os.environ:
+  clienthost = os.environ['SSH_CLIENT'].split()[0]
+if 'INSHIMTU_CLIENT' in os.environ:
+  clienthost = os.environ['INSHIMTU_CLIENT']
+  
 
 # ---------------------- Data Selection method ----------------------
 
@@ -152,4 +160,4 @@ def DoCoProcessing(datadescription):
     coprocessor.WriteImages(datadescription, rescale_lookuptable=False)
 
     # Live Visualization, if enabled.
-    coprocessor.DoLiveVisualization(datadescription, "KW60540", 22222)
+    coprocessor.DoLiveVisualization(datadescription, clienthost, clientport)
