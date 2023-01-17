@@ -13,11 +13,13 @@ Pull requests that improve the generalizability of Inshimtu, or add new function
 wget https://boostorg.jfrog.io/artifactory/main/release/1.67.0/source/boost_1_67_0.tar.gz
 tar -xvf boost_1_67_0.tar.gz
 cd boost_1_67_0/
-./bootstrap.sh --prefix=/home/kressjm/packages/inshimtu-udj/boost_1_67_0/install
-./b2
+./bootstrap.sh --with-python=python3
+./b2 -j <num_procs>
 ```
 
 ### Paraview (Version 5.9.1)
+
+note: I had to do a 'sudo apt install libgl1-mesa-dev' on a clean Ubuntu 20 for this to work
 
 ```
 mkdir paraview
@@ -31,14 +33,18 @@ cd ..
 mkdir build
 cd build
 cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE-catalyst=ON -DENABLE_mpi=ON -DENABLE_python3=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+make -j <num_procs>
 ```
 
 ### Install inshimtu
 
 ```
-git https://gitlab.kaust.edu.sa/kvl/Inshimtu.git
-cd inshimtu
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_INCLUDE_DIR="path/to/boost_1_67_0" -DParaView_DIR="path/to/paraview-build/install" ..
+git clone https://gitlab.kaust.edu.sa/kvl/Inshimtu.git
+cd Inshimtu
+mkdir build && cd build
+export ParaView_DIR="path/to/paraview-build/install"
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_INCLUDE_DIR="path/to/boost_1_67_0"  ..
+make -j <num_procs>
 
 ```
 
@@ -47,7 +53,6 @@ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_INCLUDE_DIR="path/to/boost_1_67_
 ## Testing
 
 ```
-cd build.*
 ctest
 ```
 
