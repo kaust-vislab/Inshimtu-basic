@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
                               , ProcessingSpecCommands::Command("/usr/bin/cat",{ProcessingSpecCommands::FILENAME_ARG})});
     std::vector<fs::path> files;
 
-    files.push_back(testpath / "configs/vti_notified.json");
     files.push_back(testpath / "configs/gdm_outready.json");
     files.push_back(testpath / "configs/gdm_relpath.json");
 

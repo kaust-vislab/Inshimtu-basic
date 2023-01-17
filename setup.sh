@@ -213,7 +213,6 @@ case "$HOSTDOMAIN" in
     buildShaheen
     ;;
   "Ubuntu"*)
-    # host domain not available on Cray compute nodes
     buildLocal
     ;;
   *)
