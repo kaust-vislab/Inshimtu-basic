@@ -141,28 +141,3 @@ Two different examples of how to do this.
 ```
 ./Inshimtu -w testing -d testing.done -s ../testing/pipelines/gridwriter.py -f '\w*(.vtr)' -V trace -v U V W QVAPOR
 ```
-
-
-## TODOs
-
-* Schedule tasks (currently all inport nodes participate; works for Catalyst, but not for external commands)
-  * Need coordination combinators
-
-* Better handle how files are sent through the pipeline (more that 'input' 'output'); need to specify files that are 'finished', but not part of the input for the next stage.
-  * Finish output specifications (what are they needed for? pipeline attribute adjustments)
-
-* Fix how delete files are processed
-
-* Fix Catalyst Pipeline singleton (need per script spec pipelines; or, at least per unique variable set)
-
-
-## Notes
-
-For WRF: see README.namelist
-  &time_control
-  ;; Works
-  output_ready_flag = .true.,  ; asks the model to write-out an empty file with the name 'wrfoutReady_d<domain>_<date>.
-
-  ;; Works
-  history_outname = 'wrfout_d<domain>_<date>.nc' ; you may change the output file name
-
