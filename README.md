@@ -53,6 +53,7 @@ make -j <num_procs>
 ## Testing
 
 ```
+cd build
 ctest
 ```
 
@@ -80,7 +81,7 @@ Note: Failure to pause the simulation will prevent the first file from displayin
 The environment that runs Inshimtu requires the same ParaView environment it was built with, plus the ParaView Python libraries.
 
 ### Filtered Inshimtu
-* Processes only newly created files matching regex '\w*(.vti)' in build/testing;
+* Processes only newly created files matching regex '\w*(.pvti)' in build/testing;
 * Stops when build/testing.done file is touched;
 * Uses the Catalyst script in pngQVAPOR.py to transfer data to ParaView.
 
@@ -95,7 +96,7 @@ or
 To demonstrate, copy the data files into the input directory (to simulate their creation via simulation):
 
 ```
-cp -v testing/data/wrf/* build/testing/
+cp -rv ../testing/data/wrf/pvti/* testing/
 touch build/testing.done
 ```
 
