@@ -17,7 +17,7 @@ cd boost_1_67_0/
 ./b2 -j <num_procs>
 ```
 
-### Paraview (Version 5.9.1)
+### Paraview (Version 5.11.0)
 
 note: I had to do a 'sudo apt install libgl1-mesa-dev' on a clean Ubuntu 20 for this to work
 
@@ -27,12 +27,12 @@ cd paraview
 git clone --recursive https://gitlab.kitware.com/paraview/paraview-superbuild.git
 cd paraview-superbuild
 git fetch origin 
-git checkout v5.9.1
+git checkout v5.11.0
 git submodule update
 cd ..
 mkdir build
 cd build
-cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE-catalyst=ON -DENABLE_mpi=ON -DENABLE_python3=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE_catalyst=ON -DENABLE_mpi=ON -DENABLE_python3=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j <num_procs>
 ```
 
