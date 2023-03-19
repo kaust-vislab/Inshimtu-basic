@@ -61,19 +61,15 @@ bool RawNetCDFDataFileInporter::canProcess(const boost::filesystem::path& file)
 
 void RawNetCDFDataFileInporter::process(const boost::filesystem::path& file)
 {
-std::cerr << __LINE__ << std::endl;
   if (doesRequireProcessing() && canProcess(file))
   {
-std::cerr << __LINE__ << std::endl;
     int global_extent[6];
 
     vtkSmartPointer<vtkDataObject> data;
-std::cerr << __LINE__ << std::endl;
     data = processRawNetCDFDataFile(file, name, global_extent);
-std::cerr << __LINE__ << std::endl;
+
     if (data)
     {
-std::cerr << __LINE__ << std::endl;
       coprocess(data, global_extent);
     }
     else
@@ -82,7 +78,6 @@ std::cerr << __LINE__ << std::endl;
                                  << "' from input file '" << file << "'";
     }
   }
-std::cerr << __LINE__ << std::endl;
 }
 
 vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFile(
@@ -112,8 +107,6 @@ vtkSmartPointer<vtkImageData> RawNetCDFDataFileInporter::processRawNetCDFDataFil
   retval = nc_inq_vartype(ncid, varid, &vartype); assert(retval == NC_NOERR);
 
   // TODO: Generalize dimension and time support
-
-std::cerr << __LINE__ << std::endl;
   
   assert(vartype == NC_FLOAT);
   assert(ndims == 4);
@@ -132,8 +125,6 @@ std::cerr << __LINE__ << std::endl;
     for (int i=0; i<6; ++i)
       global_extent_out[i] = global_extent[i];
   }
-
-std::cerr << __LINE__ << std::endl;
 
   const Adaptor::Extent extentZ = getExtent(lenZ);
 
@@ -162,8 +153,6 @@ std::cerr << __LINE__ << std::endl;
                            , static_cast<size_t>(local_size[0])
                            };
 
-std::cerr << __LINE__ << std::endl;
-
   // Read the data.
   retval = nc_get_vars_float( ncid, varid, vstart, vcount, nullptr
                             , static_cast<float*>(data->GetScalarPointer()));
@@ -172,8 +161,6 @@ std::cerr << __LINE__ << std::endl;
   // Close the file, freeing all resources.
   retval = nc_close(ncid);
   assert(retval == NC_NOERR);
-
-std::cerr << __LINE__ << std::endl;
 
   return data;
 }
