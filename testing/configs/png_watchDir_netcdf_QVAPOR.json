@@ -1,0 +1,25 @@
+{
+  "input": {
+    "watch": {
+      "directory_path": "testing",
+      "files_regex": ".*(.nc)"
+    }
+  },
+  "pipeline": {
+    "scripts": [
+        "../testing/pipelines/pngQVAPOR.py"
+      ],
+    "variables": [
+        "QVAPOR,P,U,V,W,QICE,QGRAUP,QRAIN"
+      ]
+    },
+  "control": {
+    "done_watchfile": "testing.done",
+    "initial_connection_wait_secs": 0,
+    "catalyst_inporter_nodes": [ 
+        "0"
+      ],
+    "delete_processed_input_files": false
+    }
+}
+
