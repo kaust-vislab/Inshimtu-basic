@@ -46,6 +46,8 @@ public:
   bool hasDoneFile() const;
   const boost::filesystem::path getDoneFile() const;
 
+  const boost::filesystem::path getCatalystLib() const;
+ 
   uint getStartupDelay() const;
 
   bool getDeleteFilesFlag() const;

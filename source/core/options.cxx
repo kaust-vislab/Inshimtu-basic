@@ -409,6 +409,7 @@ Configuration::Configuration(int argc, const char* const argv[])
     ("nodes,n", po::value<std::string>()->default_value(""), "comma-separated list of node-id intervals specifying inporter Catalyst nodes")
     ("pause,p", po::value<uint>()->default_value(0), "initial delay in seconds to wait for ParaView to connect before processing commences")
     ("delete", po::bool_switch()->default_value(false), "delete watched files after processing")
+    ("catalyst_lib", po::value<std::string>()->default_value(""), "path to the catalyst library")
    ;
 
   po::options_description helpDesc("help options");
@@ -949,6 +950,20 @@ uint Configuration::getStartupDelay() const
 
   return delay;
 }
+
+const fs::path Configuration::getCatalystLib() const
+{
+  std::string catalystLibStr(configs.get<std::string>("control.catalyst_lib", ""));
+std::cerr << __LINE__ << " " << catalystLibStr << std::endl;
+  std::string optsfile(opts["done"].as<std::string>());
+  if (!optsfile.empty())
+  {
+    catalystLibStr = optsfile;
+  }
+
+  return fs::absolute(fs::path(catalystLibStr));
+}
+
 
 bool Configuration::getDeleteFilesFlag() const
 {

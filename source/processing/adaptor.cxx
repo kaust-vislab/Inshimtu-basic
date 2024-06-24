@@ -1,5 +1,7 @@
 /* Inshimtu - An In-situ visualization co-processing shim
  * Licensed under GPL3 -- see LICENSE.txt
+ *
+ * Historical file. Implementation of the Catalyst1 standard.
  */
 #include "processing/adaptor.h"
 #include "utils/logger.h"

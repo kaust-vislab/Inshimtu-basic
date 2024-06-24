@@ -7,17 +7,29 @@ Pull requests that improve the generalizability of Inshimtu, or add new function
 
 ## Building
 
-### Install boost 1.67.0
+
+### Install boost 1.84.0
 
 ```
-wget https://boostorg.jfrog.io/artifactory/main/release/1.67.0/source/boost_1_67_0.tar.gz
-tar -xvf boost_1_67_0.tar.gz
-cd boost_1_67_0/
+wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz
+tar -xvf boost_1_84_0.tar.gz
+cd boost_1_84_0/
 ./bootstrap.sh --with-python=python3
 ./b2 -j <num_procs>
 ```
 
-### Paraview (Version 5.11.0)
+### VTK (9.2.6)
+```
+git clone https://gitlab.kitware.com/vtk/vtk.git
+cd vtk
+git checkout v9.2.6
+mkdir build
+cd build
+cmake ../ -DVTK_USE_MPI=ON -DCMAKE_INSTALL_PREFIX=<path>
+make -j
+```
+
+### Paraview (Version master)
 
 note: I had to do a 'sudo apt install libgl1-mesa-dev' on a clean Ubuntu 20 for this to work
 
@@ -27,12 +39,13 @@ cd paraview
 git clone --recursive https://gitlab.kitware.com/paraview/paraview-superbuild.git
 cd paraview-superbuild
 git fetch origin 
-git checkout v5.11.0
+git checkout master
 git submodule update
 cd ..
 mkdir build
 cd build
-cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE_catalyst=ON -DENABLE_mpi=ON -DENABLE_python3=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake ../paraview-superbuild -DENABLE_hdf5=ON -DENABLE_catalyst=ON -DENABLE_mpi=ON -
+=ON -DENABLE_netcdf=ON -DUSE_SYSTEM_python3=ON -DUSE_SYSTEM_mpi=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j <num_procs>
 ```
 

@@ -2,7 +2,6 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 #include "processing/inporters/inporterRawNetCDF.h"
-#include "processing/adaptor.h"
 #include "utils/logger.h"
 
 #include <vtkNew.h>

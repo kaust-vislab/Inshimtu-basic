@@ -22,6 +22,8 @@
 #include <vtkProcessGroup.h>
 #include <vtkMPI.h>
 
+#include <vtkLogger.h>
+#include <vtkDebugLeaks.h>
 
 MPISection::MPISection( MPISection::NodeRank rank_
                       , SectionIndex index_
@@ -40,6 +42,7 @@ MPIInportSection::MPIInportSection( NodeRank rank
 }
 
 
+std::string loggingLevel = "TRACE";
 MPIApplication::MPIApplication(int* argc, char** argv[])
 {
   MPI_Init(argc, argv);
@@ -57,6 +60,19 @@ MPIApplication::MPIApplication(int* argc, char** argv[])
 
   assert(rank >= 0);
   assert(size > 0);
+
+  // vtk logger
+  vtkLogger::Init(*argc, *argv);
+  // Only show what we asked for on stderr:
+  vtkLogger::SetStderrVerbosity(vtkLogger::ConvertToVerbosity(loggingLevel.c_str()));
+  vtkLogger::SetThreadName("Rank_" + std::to_string(rank));
+
+  // Put every log message in "everything.log":
+  vtkLogger::LogToFile("everything.log", vtkLogger::APPEND, vtkLogger::VERBOSITY_MAX);
+
+  // Only log INFO, WARNING, ERROR to "latest_readable.log":
+  vtkLogger::LogToFile("latest_readable.log", vtkLogger::TRUNCATE, vtkLogger::VERBOSITY_INFO);
+
 
   appSection.reset(new MPISection(rank, static_cast<size_t>(rank), static_cast<size_t>(size)));
 

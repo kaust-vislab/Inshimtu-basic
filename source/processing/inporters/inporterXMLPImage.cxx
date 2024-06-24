@@ -2,7 +2,6 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 #include "processing/inporters/inporterXMLPImage.h"
-#include "processing/adaptor.h"
 #include "utils/logger.h"
 
 #include <vtkNew.h>

@@ -1,7 +1,5 @@
 /* Inshimtu - An In-situ visualization co-processing shim
  * Licensed under GPL3 -- see LICENSE.txt
- *
- * Historical file. Implementation of the Catalyst1 standard.
  */
 #ifndef PROCESSING_ADAPTOR_HEADER
 #define PROCESSING_ADAPTOR_HEADER
@@ -9,7 +7,6 @@
 #include "core/application.h"
 
 #include <vtkNew.h>
-#include <vtkCPProcessor.h>
 
 #include <vector>
 #include <string>
@@ -17,6 +14,9 @@
 #include <boost/filesystem.hpp>
 
 #include <sys/types.h>
+#include <vtkDataObjectToConduit.h>
+#include <catalyst.hpp>
+#include <catalyst_conduit.hpp>
 
 class vtkDataObject;
 class vtkCommunicatorOpaqueComm;
@@ -26,20 +26,19 @@ class Processor
 {
 public:
   Processor( vtkMPICommunicatorOpaqueComm& communicator
-           , const std::vector<boost::filesystem::path>& scripts
-           , uint delay = 0);
+           , const Configuration &config);
   ~Processor();
 
 private:
 friend class Descriptor;
-  vtkNew<vtkCPProcessor> processor;
+  conduit_cpp::Node node;
 };
 
 class Descriptor
 {
 public:
 
-  Descriptor( Processor& processor
+  Descriptor( Processor& node
             , const MPIInportSection& section_
             , uint timeStep, double time, bool forceOutput);
   virtual ~Descriptor();
@@ -49,12 +48,12 @@ public:
   const MPIInportSection& getSection() const { return section; }
 
 private:
-  Processor& processor;
+  Processor& node;
 
 protected:
 friend class Adaptor;
 
-  vtkNew<vtkCPDataDescription> description;
+  conduit_cpp::Node description;
   bool requireProcessing;
 
   // inport section: idx of count

@@ -6,8 +6,9 @@
 #include "utils/logger.h"
 #include "sentinels/notification.h"
 #include "sentinels/coordinator.h"
-#include "processing/adaptor.h"
+#include "processing/adaptorV2.h"
 #include "processing/inporter.h"
+
 
 #include <iostream>
 #include <memory>
@@ -26,7 +27,6 @@
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
-
 
 int main(int argc, char* argv[])
 {
@@ -58,8 +58,7 @@ int main(int argc, char* argv[])
   if (app.isInporter())
   {
     processor.reset(new Processor( app.getInporterCommunicator()
-                                 , configs.collectScripts()
-                                 , configs.getStartupDelay()));
+                                 , configs));
     inporter.reset(new Inporter( *processor.get()
                                , app.getInporterSection()
                                , configs.collectPipelines()));
