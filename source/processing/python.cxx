@@ -3,7 +3,7 @@
  */
 #include "core/lambda_visitor.hxx"
 #include "processing/pipeline.h"
-#include "processing/adaptor.h"
+#include "processing/adaptorV2.h"
 #include "utils/logger.h"
 
 #include <iostream>

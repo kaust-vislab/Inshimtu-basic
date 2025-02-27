@@ -2,7 +2,6 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 #include "processing/inporters/inporterXMLPImage.h"
-#include "processing/adaptor.h"
 #include "utils/logger.h"
 
 #include <vtkNew.h>
@@ -94,12 +93,6 @@ vtkSmartPointer<vtkImageData> XMLPImageDataFileInporter::processXMLPImageDataFil
     int *local_extent = data->GetExtent();
     for (int i=0; i<6; ++i)
       global_extent_out[i] = local_extent[i];
-  }
-
-  {
-    std::stringstream ss;
-    reader->PrintSelf(ss, vtkIndent());
-    BOOST_LOG_TRIVIAL(debug) << ss.str();
   }
 
   return data;

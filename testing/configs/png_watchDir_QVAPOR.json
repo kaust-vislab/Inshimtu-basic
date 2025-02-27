@@ -7,13 +7,14 @@
   },
   "pipeline": {
     "scripts": [
-        "../testing/pipelines/pngQVAPOR.py"
+        "../testing/pipelines/png_writer_QVAPOR.py"
       ],
     "variables": [
         "QVAPOR"
       ]
     },
   "control": {
+    "catalyst_lib": "/home/kressjm/packages/inshimtu-catalystV2/paraview/build-513/install/lib/catalyst",
     "done_watchfile": "testing.done",
     "initial_connection_wait_secs": 0,
     "catalyst_inporter_nodes": [ 

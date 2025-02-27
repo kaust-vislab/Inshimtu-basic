@@ -2,7 +2,6 @@
  * Licensed under GPL3 -- see LICENSE.txt
  */
 #include "processing/inporters/inporterXMLRectilinear.h"
-#include "processing/adaptor.h"
 #include "utils/logger.h"
 
 #include <vtkNew.h>
@@ -96,9 +95,10 @@ vtkSmartPointer<vtkRectilinearGrid> XMLRectilinearGridFileInporter::processXMLRe
       global_extent_out[i] = local_extent[i];
   }
 
+  
   {
     std::stringstream ss;
-    reader->PrintSelf(ss, vtkIndent());
+    data->PrintSelf(ss, vtkIndent());
     BOOST_LOG_TRIVIAL(debug) << ss.str();
   }
 

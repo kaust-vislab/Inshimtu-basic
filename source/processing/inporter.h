@@ -6,7 +6,7 @@
 
 #include "core/options.h"
 #include "core/application.h"
-#include "processing/adaptor.h"
+#include "processing/adaptorV2.h"
 #include "processing/pipeline.h"
 
 //#include <vtkSmartPointer.h>

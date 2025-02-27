@@ -3,7 +3,7 @@
  */
 #include "core/lambda_visitor.hxx"
 #include "processing/pipeline.h"
-#include "processing/adaptor.h"
+#include "processing/adaptorV2.h"
 #include "utils/logger.h"
 
 #include "processing/inporters/inporterRawNetCDF.h"
@@ -274,7 +274,7 @@ bool ProcessingSpecCommands::processCommand( const Attributes& attributes
   fs::path exePath(cmd.first);
 
   // bp::system exe mode requires absolute exe path - find from basename and system path
-  if (fs::basename(exePath) == exePath.string())
+  if (exePath.stem() == exePath.string())
   {
     exePath = bp::search_path(exePath);
   }
@@ -406,12 +406,10 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
          BOOST_LOG_TRIVIAL(error) << "Unable to process the given file, do not have an importer that works.";
     }
   }
-  
-  std::cerr << __LINE__ << std::endl;
+
 
   for (auto& inporter : inporters)
   {
-    std::cerr << __LINE__ << std::endl;
     inporter->process(filename);
   }
 }

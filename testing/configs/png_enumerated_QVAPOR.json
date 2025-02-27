@@ -5,32 +5,33 @@
       "files_regex": "\\w*(.pvti)"
     },
     "initial_files": [
-        "testing/dataoutfile_QVAPOR_00.pvti",
-        "testing/dataoutfile_QVAPOR_01.pvti",
-        "testing/dataoutfile_QVAPOR_02.pvti",
-        "testing/dataoutfile_QVAPOR_03.pvti",
-        "testing/dataoutfile_QVAPOR_04.pvti",
-        "testing/dataoutfile_QVAPOR_05.pvti",
-        "testing/dataoutfile_QVAPOR_06.pvti",
-        "testing/dataoutfile_QVAPOR_07.pvti",
-        "testing/dataoutfile_QVAPOR_08.pvti",
-        "testing/dataoutfile_QVAPOR_09.pvti",
-        "testing/dataoutfile_QVAPOR_10.pvti",
-        "testing/dataoutfile_QVAPOR_11.pvti",
-        "testing/dataoutfile_QVAPOR_12.pvti",
-        "testing/dataoutfile_QVAPOR_13.pvti",
-        "testing/dataoutfile_QVAPOR_14.pvti"
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_00.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_01.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_02.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_03.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_04.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_05.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_06.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_07.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_08.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_09.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_10.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_11.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_12.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_13.pvti",
+        "../testing/data/wrf/pvti/dataoutfile_QVAPOR_14.pvti"
         ]
   },
   "pipeline": {
     "scripts": [
-        "../testing/pipelines/pngQVAPOR.py"
+        "../testing/pipelines/png_writer_QVAPOR.py"
       ],
     "variables": [
         "QVAPOR"
       ]
     },
   "control": {
+    "catalyst_lib": "/home/kressjm/packages/inshimtu-catalystV2/paraview/build-513/install/lib/catalyst",
     "IGNORE:done_watchfile": "testing.done",
     "initial_connection_wait_secs": 10,
     "catalyst_inporter_nodes": [ 
@@ -39,4 +40,3 @@
     "delete_processed_input_files": false
     }
 }
-
