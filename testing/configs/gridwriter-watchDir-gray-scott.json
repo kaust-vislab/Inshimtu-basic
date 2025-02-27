@@ -1,0 +1,27 @@
+{
+    "input": {
+      "watch": {
+        "directory_path": "testing",
+        "files_regex": ".*_step-\\d+\\.pvti"
+      }
+    },
+    "pipeline": {
+      "scripts": [
+          "../testing/pipelines/gridwriter.py"
+        ],
+      "variables": [
+          "u,v"
+        ]
+      },
+    "control": {
+      "catalyst_lib": "/home/kressjm/packages/inshimtu-catalystV2/paraview/build-513/install/lib/catalyst",
+      "done_watchfile": "testing.done",
+      "initial_connection_wait_secs": 10,
+      "catalyst_inporter_nodes": [ 
+          "0"
+        ],
+      "delete_processed_input_files": false
+      }
+  }
+  
+  

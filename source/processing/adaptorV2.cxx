@@ -25,10 +25,16 @@ Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
     //node["catalyst/scripts/script" + settings.catalyst_script].set_string(path);
 
     // alternatively, use this form to pass optional parameters to the script.
-    std::cerr << __FILE__ << " " << __LINE__ << " " << script_name << std::endl;
     const auto name = "catalyst/scripts/script_" + script_name;
     node[name + "/filename"].set_string(path);
-    node[name + "/args"].append().set_string("--channel-name=grid");
+    node[name + "/args"].append().set_string("--channel-name=mainGrid");
+
+    // add the name of all variables to the args so that scripts can use them to read each variable needed
+    std::vector<std::string> vars = config.collectVariables();
+    for (int numVars = 0; numVars < vars.size(); numVars++)
+    {
+      node[name + "/args"].append().set_string("--variable-" + std::to_string(numVars) + "=" + vars[numVars]);
+    }
 
     // indicate that we want to load ParaView-Catalyst
     node["catalyst_load/implementation"].set_string("paraview");
@@ -40,8 +46,8 @@ Processor::Processor( vtkMPICommunicatorOpaqueComm& communicator
     // set the communicator that we have been given
     node["catalyst/mpi_comm"].set(MPI_Comm_c2f(*(communicator.GetHandle())));
 
-    std::cerr << "Initializing catalyst with:---- " << std::endl;
-    node.print();
+    BOOST_LOG_TRIVIAL(trace) << "Initializing catalyst with:---- ";
+    BOOST_LOG_TRIVIAL(trace) << node.to_string();
 
     catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
     if (err != catalyst_status_ok)
@@ -85,22 +91,10 @@ Descriptor::Descriptor( Processor& processor_
   auto state = description["catalyst/state"];
   state["timestep"].set(timeStep);
   state["time"].set(time);
-/*
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
-  description.print();
-
-  // check to see if a grid has been defined, if so, we have data ready to process
-  auto test = description.has_path("catalyst/channels/grid");
-  std::cerr << "is description grid defined? " << test << std::endl;
-  requireProcessing = (test == true);
-  std::cerr << "require processing? " << requireProcessing << std::endl;
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
-  description.print();*/
 }
 
 Descriptor::~Descriptor()
 {
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
   if (requireProcessing)
   {
     description.print();
@@ -109,13 +103,11 @@ Descriptor::~Descriptor()
     {
         BOOST_LOG_TRIVIAL(trace) << "Failed to execute Catalyst: " << err;
     }
-
   }
 }
 
 bool Descriptor::doesRequireProcessing() const
 {
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
   return requireProcessing;
 }
 
@@ -126,29 +118,22 @@ Adaptor::Adaptor( Descriptor& descriptor_
   , name(name_)
 {
   // addInput seems analgous to a channel
-  //test defaulting to grid and see what problems this causes
   //auto channel = descriptor.description["catalyst/channels/" + name];
-  auto channel = descriptor.description["catalyst/channels/grid"];
-  //descriptor.description->AddInput(name.c_str());
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
-  descriptor.description.print();
+  auto channel = descriptor.description["catalyst/channels/mainGrid"];
 }
 
 Adaptor::~Adaptor()
 {
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
 }
 
 bool Adaptor::doesRequireProcessing() const
 {
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
   return descriptor.doesRequireProcessing();
 }
 
 Adaptor::Extent Adaptor::getExtent(size_t max) const
 {
   const MPIInportSection& section(descriptor.getSection());
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
   size_t chunksize = static_cast<size_t>(
                        ceil(static_cast<double>(max) /
                             static_cast<double>(section.getSize())));
@@ -160,7 +145,6 @@ Adaptor::Extent Adaptor::getExtent(size_t max) const
 
 const MPIInportSection& Adaptor::getSection() const
 {
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
   return descriptor.getSection();
 }
 
@@ -168,31 +152,24 @@ const MPIInportSection& Adaptor::getSection() const
 void Adaptor::coprocess(vtkDataObject* data, int global_extent[6])
 {
   //Check if the chanel we need actually exists
-  std::cerr << __FILE__ << " " << __LINE__ << std::endl;
   //if(descriptor.description.has_path("catalyst/channels/" + name))
-  if(descriptor.description.has_path("catalyst/channels/grid"))
+  if(descriptor.description.has_path("catalyst/channels/mainGrid"))
   {
-    //auto channel = descriptor.description["catalyst/channels/" + name];
-    auto channel = descriptor.description["catalyst/channels/grid"];
+    //conduit_cpp::Node channel = descriptor.description["catalyst/channels/" + name];
+    conduit_cpp::Node channel = descriptor.description["catalyst/channels/mainGrid"];
     channel["type"].set("mesh");
     // now create the mesh.
-    auto mesh = channel["data"];
+    conduit_cpp::Node mesh = channel["data"];
+    
+    // set the vtkobject to a local varaible so that it is not lost when this class is destructed (ensuring 0 copy)
+    descriptor.descriptor_data = data;
+    
     bool is_success =
-      vtkDataObjectToConduit::FillConduitNode(vtkDataObject::SafeDownCast(data), mesh);
-    std::cerr << __FILE__ << " " << __LINE__ << std::endl;
+      vtkDataObjectToConduit::FillConduitNode(vtkDataObject::SafeDownCast(descriptor.descriptor_data), mesh);
+      
     if (!is_success)
     {
       BOOST_LOG_TRIVIAL(trace) << "FillConduitNode failed for adaptorV2";
-    }
-
-/*
-    // make sure we conform:
-    conduit_cpp::Node verify_info;
-    if(!conduit_cpp::verify(mesh, verify_info))
-    {
-        BOOST_LOG_TRIVIAL(trace) << "Verify failed!";
-        BOOST_LOG_TRIVIAL(trace) << verify_info.to_string();
-    }
-    */
+    } 
   }
 }

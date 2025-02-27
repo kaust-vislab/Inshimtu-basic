@@ -42,7 +42,7 @@ MPIInportSection::MPIInportSection( NodeRank rank
 }
 
 
-std::string loggingLevel = "TRACE";
+std::string loggingLevel = "OFF";
 MPIApplication::MPIApplication(int* argc, char** argv[])
 {
   MPI_Init(argc, argv);

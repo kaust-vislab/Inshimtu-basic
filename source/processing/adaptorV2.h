@@ -54,6 +54,7 @@ protected:
 friend class Adaptor;
 
   conduit_cpp::Node description;
+  vtkSmartPointer<vtkDataObject> descriptor_data;
   bool requireProcessing;
 
   // inport section: idx of count

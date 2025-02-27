@@ -95,9 +95,10 @@ vtkSmartPointer<vtkRectilinearGrid> XMLRectilinearGridFileInporter::processXMLRe
       global_extent_out[i] = local_extent[i];
   }
 
+  
   {
     std::stringstream ss;
-    reader->PrintSelf(ss, vtkIndent());
+    data->PrintSelf(ss, vtkIndent());
     BOOST_LOG_TRIVIAL(debug) << ss.str();
   }
 

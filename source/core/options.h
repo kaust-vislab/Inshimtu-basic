@@ -46,6 +46,7 @@ public:
   bool hasDoneFile() const;
   const boost::filesystem::path getDoneFile() const;
 
+  bool hasCatalystLib() const;
   const boost::filesystem::path getCatalystLib() const;
  
   uint getStartupDelay() const;
@@ -60,10 +61,9 @@ public:
   const boost::optional<ReplaceRegexFormat> getOutputReadyConversion() const;
   const std::vector<boost::filesystem::path> collectScripts() const;
 
+  const std::vector<std::string> collectVariables() const;
 
 private:
-
-  const std::vector<std::string> collectVariables() const;
 
   bool hasWatchDirectory() const;
   const boost::filesystem::path getWatchDirectory() const;

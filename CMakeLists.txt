@@ -92,14 +92,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${Python3_INCLUDE_DIRS})
 
 
-
-# TODO: Debugging Info:
-#message("VTK_AVAILABLE_COMPONENTS: ${VTK_AVAILABLE_COMPONENTS}")
 get_cmake_property(_variableNames VARIABLES)
 list (SORT _variableNames)
-#foreach (_variableName ${_variableNames})
-#  message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
 
 
 include_directories("source")
@@ -131,42 +125,3 @@ target_link_libraries(inshimtu
     ${VTK_LIBRARIES}
     catalyst::catalyst
 )
-
-# option(BUILD_TESTING "Build Testing" ON)
-# # Setup testing.
-# if(BUILD_TESTING)
-
-#   set(Test_SRCS
-#     source/tests/test.cxx
-#     $<TARGET_OBJECTS:InshimtuObj>
-#   )
-#   add_executable(testComponents ${Test_SRCS})
-#   set_target_properties(testComponents PROPERTIES
-#       CXX_STANDARD 17
-#       CXX_STANDARD_REQUIRED YES
-#   )
-#   target_link_libraries(testComponents
-#     PRIVATE
-#       MPI::MPI_C
-#       ${Boost_LIBRARIES}
-#       ${VTK_LIBRARIES}
-#       ${PYTHON_LIBRARIES}
-#       catalyst::catalyst
-#     #  ${InshimtuLib}
-#   )
-
-#   vtk_module_autoinit(
-#     TARGETS testComponents
-#     MODULES ${VTK_LIBRARIES}
-#   )
-
-#   enable_testing()
-#   add_test(TestInputSpecPaths testComponents "InputSpecPaths" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
-#   add_test(TestProcessingSpecReadyFile testComponents "ProcessingSpecReadyFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
-#   add_test(TestProcessingSpecCommands testComponents "ProcessingSpecCommands" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
-#   add_test(TestPythonicSpec testComponents "PythonicSpec" ${CMAKE_CURRENT_SOURCE_DIR}/testing)
-#   add_test(TestPythonicSpecFile testComponents "PythonicFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing pythonic_tests/pythonicSpec.py)
-#   add_test(TestPythonicSpecFile2 testComponents "PythonicFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing pythonic_tests/mitgcmSpec.py)
-#   add_test(ConfigurationConfigFile testComponents "ConfigurationConfigFile" ${CMAKE_CURRENT_SOURCE_DIR}/testing configs/mitgcm_compress.json)
-
-# endif()

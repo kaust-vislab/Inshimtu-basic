@@ -397,7 +397,7 @@ Configuration::Configuration(int argc, const char* const argv[])
   basicDesc.add_options()
     ("help,h", "help message describing command line options")
     ("version", "output version number")
-    ("verbosity,V", po::value<std::string>()->default_value("warning"), "logging verbosity (trace, debug, info, warning, error, fatal)")
+    ("verbosity", po::value<std::string>()->default_value("WARNING"), "logging verbosity (trace, debug, info, warning, error, fatal)")
     ("config,c", po::value<std::string>()->default_value(""), "json configuration file")
     ("watch,w", po::value<std::string>()->default_value(""), "pre-existing inporting source directory to watch")
     ("done,d", po::value<std::string>()->default_value(""), "pre-existing termination trigger; done file; file must be outside watch directory")
@@ -405,7 +405,7 @@ Configuration::Configuration(int argc, const char* const argv[])
     ("initial,i", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of pre-exisiting files to process (unquoted for shell expansion)")
     ("scripts,s", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "list of Catalyst scripts for visualization processing")
     ("external_commands,x", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "list of external commands for post processing")
-    ("variables,v", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of comma-separated variable sets to process")
+    ("variables", po::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>(), "<none>"), "space-separated list of comma-separated variable sets to process")
     ("nodes,n", po::value<std::string>()->default_value(""), "comma-separated list of node-id intervals specifying inporter Catalyst nodes")
     ("pause,p", po::value<uint>()->default_value(0), "initial delay in seconds to wait for ParaView to connect before processing commences")
     ("delete", po::bool_switch()->default_value(false), "delete watched files after processing")
@@ -504,6 +504,7 @@ Configuration::Configuration(int argc, const char* const argv[])
     const bool externalCommands(!collectExternalCommands().empty());
     const bool hasPipelines(!collectPipelines().empty());
     const bool specifiedVariables(hasVariables());
+    const bool catalystLib(hasCatalystLib());
 
     if (initialFiles)
     {
@@ -542,6 +543,13 @@ Configuration::Configuration(int argc, const char* const argv[])
     {
       BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
                                << "The missing option '--scripts' or '--external_commands' or '--config' with pipelines is required";
+      throw std::runtime_error("configuration validation error");
+    }
+
+    if (!catalystLib)
+    {
+      BOOST_LOG_TRIVIAL(error) << "Configuration validation error: "
+                               << "The option '--catalyst_lib' is required";
       throw std::runtime_error("configuration validation error");
     }
   }
@@ -951,11 +959,16 @@ uint Configuration::getStartupDelay() const
   return delay;
 }
 
+bool Configuration::hasCatalystLib() const
+{
+  return !configs.get<std::string>("control.catalyst_lib", "").empty()
+      || !opts["catalyst_lib"].as<std::string>().empty();
+}
+
 const fs::path Configuration::getCatalystLib() const
 {
   std::string catalystLibStr(configs.get<std::string>("control.catalyst_lib", ""));
-std::cerr << __LINE__ << " " << catalystLibStr << std::endl;
-  std::string optsfile(opts["done"].as<std::string>());
+  std::string optsfile(opts["catalyst_lib"].as<std::string>());
   if (!optsfile.empty())
   {
     catalystLibStr = optsfile;
@@ -1008,7 +1021,7 @@ boost::optional<boost::log::trivial::severity_level> Configuration::getVerbosity
   {
     v_ = boost::log::trivial::fatal;
   }
-
+  std::cerr << v_ << std::endl;
   return v_;
 }
 

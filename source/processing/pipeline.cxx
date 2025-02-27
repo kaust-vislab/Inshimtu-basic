@@ -406,12 +406,10 @@ void ProcessingSpecCatalyst::process( const fs::path &filename
          BOOST_LOG_TRIVIAL(error) << "Unable to process the given file, do not have an importer that works.";
     }
   }
-  
-    std::cerr << __FILE__ << " " << __LINE__ << std::endl;
+
 
   for (auto& inporter : inporters)
   {
-      std::cerr << __FILE__ << " " << __LINE__ << std::endl;
     inporter->process(filename);
   }
 }

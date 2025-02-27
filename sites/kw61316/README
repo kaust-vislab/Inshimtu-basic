@@ -1,1 +1,10 @@
 ## Local build notes
+
+# Debugging #
+To get core dumps to work do the following:
+-  ulimit -c unlimited
+-  sudo service apport stop
+
+
+11/2024
+Started using vtk built by paraview due to a IO library being missing in the 9.3.1 build when I tried to upgrade.

@@ -1,13 +1,36 @@
-# script-version: 2.0
-# Catalyst state generated using paraview version 5.12.0
-import paraview
+from paraview import catalyst
+from paraview.simple import *
+from paraview.catalyst import get_args, get_execute_params
+import time
+import os
+
 paraview.compatibility.major = 5
-paraview.compatibility.minor = 12
+paraview.compatibility.minor = 13
 
 #### import the simple module from the paraview
 from paraview.simple import *
 #### disable automatic camera reset on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
+
+# Specify the output directory. Ideally, this should be an
+# absolute path to avoid confusion.
+outputDirectory = "./images"
+
+# print values for parameters passed via adaptor (note these don't change,
+# and hence must be created as command line params)
+args = get_args()
+channel_name = "grid"
+varsToProcess = []
+for arg in args:
+    if "channel-name" in arg:
+        channel_name = arg.split("=")[1]
+    if "variable" in arg:
+        varsToProcess.append(arg.split("=")[1])
+print("executing catalyst_pipeline")
+print("===================================")
+print("pipeline args={}".format(get_args()))
+print("===================================")
+
 
 # ----------------------------------------------------------------
 # setup views used in the visualization
@@ -51,8 +74,8 @@ SetActiveView(renderView1)
 # ----------------------------------------------------------------
 
 # create a new 'XML Partitioned Image Data Reader'
-qVAPOR = PVTrivialProducer(registrationName='QVAPOR')
-qVAPOR.CellArrayStatus = ['QVAPOR']
+qVAPOR = PVTrivialProducer(registrationName=channel_name)
+qVAPOR.PointArrayStatus = ['QVAPOR']
 
 # ----------------------------------------------------------------
 # setup the visualization in view 'renderView1'
@@ -183,12 +206,12 @@ options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
+options.ExtractsOutputDirectory = outputDirectory
 
 #--------------------------------------------------------------
 # Dynamically determine client
-clientport = 11111
+clientport = 22222
 clienthost = 'localhost'
-options.CatalystLiveURL = "localhost:22222"
 if 'CATALYST_CLIENT' in os.environ:
   clienthost = os.environ['CATALYST_CLIENT']
 options.CatalystLiveURL = str(clienthost) + ":" + str(clientport)
