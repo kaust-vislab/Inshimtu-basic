@@ -13,7 +13,7 @@ Pull requests that improve the generalizability of Inshimtu, or add new function
 ### Install boost 1.84.0
 
 ```
-wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_85_0.tar.gz
+wget https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz
 tar -xvf boost_1_85_0.tar.gz
 cd boost_1_85_0/
 ./bootstrap.sh --with-python=python3
