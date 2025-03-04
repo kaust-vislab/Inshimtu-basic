@@ -132,5 +132,16 @@
  
  bool PollingNotify::checkDone() const
  {
-   return !fs::exists(done_file);
+   static auto last_done_time = fs::last_write_time(done_file);
+ 
+   if (fs::exists(done_file))
+   {
+     auto current_time = fs::last_write_time(done_file);
+     if (current_time > last_done_time) // Detect file modification
+     {
+       BOOST_LOG_TRIVIAL(info) << "Detected modification of done file: " << done_file;
+       return true;
+     }
+   }
+   return false;
  }
