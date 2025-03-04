@@ -96,22 +96,15 @@ int main(int argc, char* argv[])
 
   while (!isFinished)
   {
-      newfiles.clear();
       notify->processEvents(newfiles);
   
-      // Check if polling detected the done file's deletion/modification
-      if (notify->isDone()) {
-          BOOST_LOG_TRIVIAL(info) << "Exiting: Done file removed or modified.";
-          break;
-      }
-  
-      isFinished = coordinator.update(newfiles);
+      isFinished = notify->isDonePolling() || coordinator.update(newfiles);
+      newfiles.clear();
   
       if (app.isInporter())
       {
           inporter->process(coordinator.getReadyFiles(), shouldDelete);
       }
   }
-
   return 0;
 }

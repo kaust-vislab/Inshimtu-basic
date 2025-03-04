@@ -16,6 +16,7 @@
 #include <chrono>
 #include <thread>
 #include <unordered_set>
+#include <unordered_map>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
@@ -33,28 +34,32 @@ public:
   virtual ~Notify();
 
   virtual void processEvents(std::vector<boost::filesystem::path>& out_newFiles);
+  virtual void processEvents(std::vector<std::string>& out_newFiles);
   virtual bool isDone() const;
+  virtual bool isDonePolling();
 };
 
 
-class PollingNotify : public Notify {
-  public:
-      PollingNotify(const std::vector<InputSpecPaths>& watch_paths, const fs::path& done);
-      ~PollingNotify();
-  
-      void processEvents(std::vector<fs::path>& out_newFiles) override;
-      bool isDone() const override;
-  
-  private:
-      fs::path done_file;
-      std::vector<fs::path> watch_dirs;
-      std::vector<std::string> known_files;
-      time_t last_mtime; // Stores last modification time of done_file
-      bool done_flag;
-  
-      bool fileExists(const fs::path& file);
-      time_t getFileMTime(const fs::path& file);
-  };
+class PollingNotify : public Notify
+{
+public:
+    PollingNotify(const std::vector<std::string>& watch_paths, const std::string& done_file);
+    virtual void processEvents(std::vector<std::string>& newfiles) override;
+    virtual bool isDonePolling() override;
+
+private:
+    struct FileInfo {
+        time_t mtime;
+    };
+
+    std::vector<std::string> watch_dirs;  // Directories being monitored
+    std::unordered_map<std::string, FileInfo> known_files;  // Track file changes
+    std::string done_file;
+    time_t done_file_mtime;
+
+    void scanDirectory(const std::string& dir, std::vector<std::string>& newfiles);
+    time_t getFileMtime(const std::string& filepath);
+};
 
 class INotify : public Notify
 {
@@ -66,6 +71,10 @@ public:
   virtual void processEvents(std::vector<boost::filesystem::path>& out_newFiles) override;
 
   virtual bool isDone() const override;
+
+  void processEvents(std::vector<std::string>& newfiles) override {}
+
+  bool isDonePolling() override { return false;}
 
 protected:
 
