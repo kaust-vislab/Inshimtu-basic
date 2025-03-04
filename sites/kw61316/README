@@ -8,3 +8,63 @@ To get core dumps to work do the following:
 
 11/2024
 Started using vtk built by paraview due to a IO library being missing in the 9.3.1 build when I tried to upgrade.
+
+
+## Shaheen 3 Build ##
+
+# Used these modules #
+module swap PrgEnv-${PE_ENV,,} PrgEnv-gnu/8.5.0
+module unload cray-python
+module load cmake
+export CRAYPE_LINK_TYPE=dynamic
+CMAKE=$(which cmake)
+module unload cray-libsci
+
+# Boost build #
+- Had to rebuild boost after ParaView had built python so that the proper python was detected
+- follow repo instructions otherwise
+
+# ParaView Build #
+- turned off system python3 in paraview build
+
+export CXX=/usr/bin/g++-13
+export CC=/usr/bin/gcc-13
+cmake ../paraview-superbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS_paraview=OFF -DENABLE_boost=ON -DENABLE_bzip2=ON -DENABLE_ffmpeg=OFF -DENABLE_fortran=OFF -DENABLE_hdf5=ON -DENABLE_lapack=OFF -DENABLE_fides=OFF -DENABLE_mpi=ON -DENABLE_netcdf=ON -DENABLE_nlohmannjson=ON -DENABLE_paraview=ON -DENABLE_python3=ON -DENABLE_protobuf=OFF -DENABLE_pythondateutil=ON -DENABLE_pythonsetuptools=ON -DENABLE_vtkm=ON -DENABLE_zlib=ON -DUSE_SYSTEM_boost=OFF -DUSE_SYSTEM_bzip2=OFF -DUSE_SYSTEM_expat=OFF -DUSE_SYSTEM_hdf5=OFF -DUSE_SYSTEM_lapack=OFF -DUSE_SYSTEM_mpi=ON -DUSE_SYSTEM_netcdf=OFF -DUSE_SYSTEM_ninja=OFF -DUSE_SYSTEM_pkgconf=OFF -DUSE_SYSTEM_sqlite=OFF -DUSE_SYSTEM_zlib=OFF -DENABLE_silo=ON -DENABLE_catalyst=ON -DENABLE_visitbridge=ON -DENABLE_openmp=ON -DENABLE_tbb=ON -DENABLE_glproto=ON -DENABLE_h5py=OFF -DENABLE_png=ON -DENABLE_embree=OFF -DENABLE_llvm=ON -DUSE_SYSTEM_llvm=OFF -DENABLE_adios2=OFF -DUSE_SYSTEM_python3=OFF -DUSE_SYSTEM_png=ON -DENABLE_pythonwheel=ON -DENABLE_osmesa=ON -DENABLE_egl=OFF -DUSE_SYSTEM_osmesa=OFF -DENABLE_ospray=OFF -DPARAVIEW_PACKAGE_FILE_NAME=SHAHEEN3-mesa -DCMAKE_INSTALL_PREFIX=paraview-installMesa
+
+
+# Inshimtu build #
+
+export PATH=/scratch/kressjm/inshimtu-paper/paraview/build/install/bin:$PATH
+export ParaView_DIR=/scratch/kressjm/inshimtu-paper/paraview/build/install
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -Dcatalyst_DIR=/scratch/kressjm/inshimtu-paper/paraview/build/install/lib/cmake/catalyst-2.0 \
+      -DVTK_DIR=/scratch/kressjm/inshimtu-paper/paraview/build/install/lib/cmake/paraview-5.13/vtk  \
+      -DBOOST_ROOT=/scratch/kressjm/inshimtu-paper/boost_1_85_0 \
+      -DBoost_NO_BOOST_CMAKE=TRUE \
+      -DBoost_NO_SYSTEM_PATHS=TRUE \
+      ../.
+make -j 4
+
+# KAUST Visualization Vignettes Build #
+
+export CXX=/usr/bin/g++-13
+export CC=/usr/bin/gcc-13
+ccmake -DCMAKE_INSTALL_PREFIX=../install \
+  -DENABLE_TIMERS=ON \
+  -Dcatalyst_DIR=/scratch/kressjm/inshimtu-paper/paraview/build/install/lib/cmake/catalyst-2.0 \
+  -DVTK_DIR=/scratch/kressjm/inshimtu-paper/paraview/build/install/lib/cmake/paraview-5.13/vtk \
+  ../.
+
+- to run, export the following:
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scratch/kressjm/inshimtu-paper/paraview/build/install/lib
+
+## Ibex CPU Build ##
+
+# Used these modules #
+module load openmpi/4.1.4/gnu11.2.1-cuda11.8
+#module load openmpi/4.1.4/gnu11.2.1
+module load cmake/3.28.4/gnu-11.3.1 
+CMAKE=$(which cmake
+
+
+# Boost Build #

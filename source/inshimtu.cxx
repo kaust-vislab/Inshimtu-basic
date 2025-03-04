@@ -33,7 +33,9 @@ int main(int argc, char* argv[])
   MPICatalystApplication app(&argc, &argv);
   const Configuration& configs(app.getConfigs());
 
-  // TODO: WatchFilesystem replaces INotify;
+  // Replaced INotify with PollFS due to lustre storage system. Could add the 
+  // logic back in to use either or if needed.
+  //
   //       WatchFS uses INotify (if all nodes have a node master)
   //       or PollFS (for shared filesystem)
   std::unique_ptr<Notify> notify;
@@ -92,18 +94,23 @@ int main(int argc, char* argv[])
     }
   }
 
-  // process watched files
   while (!isFinished)
   {
-    notify->processEvents(newfiles);
-
-    isFinished = coordinator.update(newfiles);
-    newfiles.clear();
-
-    if (app.isInporter())
-    {
-      inporter->process(coordinator.getReadyFiles(), shouldDelete);
-    }
+      newfiles.clear();
+      notify->processEvents(newfiles);
+  
+      // Check if polling detected the done file's deletion/modification
+      if (notify->isDone()) {
+          BOOST_LOG_TRIVIAL(info) << "Exiting: Done file removed or modified.";
+          break;
+      }
+  
+      isFinished = coordinator.update(newfiles);
+  
+      if (app.isInporter())
+      {
+          inporter->process(coordinator.getReadyFiles(), shouldDelete);
+      }
   }
 
   return 0;

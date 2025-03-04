@@ -4,6 +4,15 @@
 #include "sentinels/notification.h"
 #include "utils/logger.h"
 
+#include "sentinels/notification.h"
+#include "utils/logger.h"
+
+#include <boost/filesystem.hpp>
+#include <chrono>
+#include <thread>
+#include <vector>
+#include <sys/stat.h>
+
 #include <iostream>
 #include <algorithm>
 
@@ -266,3 +275,80 @@ void INotify::remove_watches()
   }
 }
 
+PollingNotify::PollingNotify(const std::vector<InputSpecPaths>& watch_paths, const fs::path& done)
+    : done_file(done), done_flag(false) {
+    
+    BOOST_LOG_TRIVIAL(trace) << "STARTED PollingNotify";
+
+    if (!fs::is_regular_file(done_file)) {
+        BOOST_LOG_TRIVIAL(error) << "Error: 'done' file '" << done_file << "' does not exist at startup.";
+        done_flag = true;
+        return;
+    }
+
+    last_mtime = getFileMTime(done_file);
+
+    for (const auto& inSp : watch_paths) {
+        if (!fs::is_directory(inSp.directory)) {
+            BOOST_LOG_TRIVIAL(warning) << "Warning: Directory '" << inSp.directory << "' does not exist.";
+            continue;
+        }
+        watch_dirs.push_back(inSp.directory);
+    }
+}
+
+PollingNotify::~PollingNotify() {
+    BOOST_LOG_TRIVIAL(trace) << "FINALIZED PollingNotify";
+}
+
+void PollingNotify::processEvents(std::vector<fs::path>& out_newFiles) {
+  if (done_flag) return;
+
+  std::this_thread::sleep_for(std::chrono::seconds(1)); // Sleep for a second between checks
+
+  // Check if `done_file` has been deleted
+  if (!fileExists(done_file)) {
+      BOOST_LOG_TRIVIAL(info) << "Done file '" << done_file << "' deleted. Exiting...";
+      done_flag = true;
+      return;
+  }
+
+  // Check if `done_file` has been modified
+  time_t current_mtime = getFileMTime(done_file);
+  if (current_mtime != last_mtime) {
+      BOOST_LOG_TRIVIAL(info) << "Done file '" << done_file << "' modified. Exiting...";
+      done_flag = true;
+      return;
+  }
+
+  // Scan watched directories for new files
+  for (const auto& dir : watch_dirs) {
+      for (fs::directory_iterator it(dir), end; it != end; ++it) {
+          if (fs::is_regular_file(it->path())) {
+              std::string filename = it->path().filename().string();
+
+              if (std::find(known_files.begin(), known_files.end(), filename) == known_files.end()) {
+                  known_files.push_back(filename);
+                  out_newFiles.push_back(it->path());
+                  BOOST_LOG_TRIVIAL(debug) << "Detected new file: " << it->path();
+              }
+          }
+      }
+  }
+}
+
+bool PollingNotify::isDone() const {
+    return done_flag;
+}
+
+bool PollingNotify::fileExists(const fs::path& file) {
+    return fs::exists(file) && fs::is_regular_file(file);
+}
+
+time_t PollingNotify::getFileMTime(const fs::path& file) {
+    struct stat file_stat;
+    if (stat(file.c_str(), &file_stat) == 0) {
+        return file_stat.st_mtime;
+    }
+    return 0;
+}

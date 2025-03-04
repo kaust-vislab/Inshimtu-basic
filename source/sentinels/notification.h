@@ -7,9 +7,15 @@
 #include "core/options.h"
 #include "core/specifications.h"
 
+#include "sentinels/notification.h"
+#include "utils/logger.h"
+
+#include <iostream>
 #include <vector>
 #include <string>
-
+#include <chrono>
+#include <thread>
+#include <unordered_set>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
@@ -19,7 +25,7 @@
 #include <sys/types.h>
 #include <sys/inotify.h>
 
-
+namespace fs = boost::filesystem;
 class Notify
 {
 public:
@@ -29,6 +35,26 @@ public:
   virtual void processEvents(std::vector<boost::filesystem::path>& out_newFiles);
   virtual bool isDone() const;
 };
+
+
+class PollingNotify : public Notify {
+  public:
+      PollingNotify(const std::vector<InputSpecPaths>& watch_paths, const fs::path& done);
+      ~PollingNotify();
+  
+      void processEvents(std::vector<fs::path>& out_newFiles) override;
+      bool isDone() const override;
+  
+  private:
+      fs::path done_file;
+      std::vector<fs::path> watch_dirs;
+      std::vector<std::string> known_files;
+      time_t last_mtime; // Stores last modification time of done_file
+      bool done_flag;
+  
+      bool fileExists(const fs::path& file);
+      time_t getFileMTime(const fs::path& file);
+  };
 
 class INotify : public Notify
 {
