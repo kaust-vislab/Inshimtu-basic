@@ -1,353 +1,136 @@
 /* Inshimtu - An In-situ visualization co-processing shim
  * Licensed under GPL3 -- see LICENSE.txt
  */
-#include "sentinels/notification.h"
-#include "utils/logger.h"
 
-#include "sentinels/notification.h"
-#include "utils/logger.h"
-
-#include <boost/filesystem.hpp>
-#include <chrono>
-#include <thread>
-#include <vector>
-#include <sys/stat.h>
-
-#include <iostream>
-#include <algorithm>
-
-#include <unistd.h>
-#include <assert.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/inotify.h>
-#include <dirent.h>
-
-
-namespace fs = boost::filesystem;
-
-
-Notify::Notify()
-{
-  BOOST_LOG_TRIVIAL(trace) << "STARTED Notification";
-}
-
-Notify::~Notify()
-{
-  BOOST_LOG_TRIVIAL(trace) << "FINALIZED Notification.";
-}
-
-void Notify::processEvents(std::vector<boost::filesystem::path>&)
-{
-}
-
-bool Notify::isDone() const
-{
-  return true;
-}
-
-void Notify::processEvents(std::vector<std::string>&)
-{
-}
-
-bool Notify::isDonePolling()
-{
-  return true;
-}
-
-
-INotify::INotify( const std::vector<InputSpecPaths>& watch_paths
-                , const fs::path& done)
-  : Notify()
-  , inotify_descriptor(-1)
-  , done_descriptor(-1)
-  , done_file(done)
-  , watches()
-{
-  BOOST_LOG_TRIVIAL(trace) << "STARTED INotify";
-
-  if (!fs::is_regular_file(done_file))
-  {
-    BOOST_LOG_TRIVIAL(error) << "Failed: Cannot set inotify 'done'. Expected an exisiting file. "
-                             << " Ensure file '" << done_file << "' exists.";
-    return;
-  }
-
-  inotify_descriptor = inotify_init();
-
-  if (inotify_descriptor < 0)
-  {
-    BOOST_LOG_TRIVIAL(error) << "Failed: Cannot init inotify filesystem watcher";
-    return;
-  }
-
-  done_descriptor = inotify_add_watch( inotify_descriptor, done_file.c_str()
-                                     , IN_ACCESS | IN_MODIFY | IN_ATTRIB | IN_DELETE_SELF );
-
-  if (done_descriptor < 0)
-  {
-    BOOST_LOG_TRIVIAL(error) << "Failed: Cannot add 'done' watch. Ensure file '"
-                             << done_file << "' exists.";
-    return;
-  }
-
-  for (const auto& inSp: watch_paths)
-  {
-
-    if (!fs::is_directory(inSp.directory))
-    {
-      BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot set inotify 'watch'. Expected an exisiting directory. "
-                               << " Ensure directory '" << inSp.directory << "' exists.";
-      continue;
-    }
-
-    if (fs::equivalent(done_file.parent_path(), inSp.directory))
-    {
-      BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot set inotify 'done'. Expected file outside of 'watch' directory. "
-                               << " Ensure file '" << done_file << "' is not within '"
-                               << inSp.directory << "' directory.";
-      continue;
-    }
-
-    auto it = std::find_if( std::begin(watches), std::end(watches)
-                          , [&] (const WatchSpec& w) { return inSp.directory == w.directory; } );
-
-    if (it == std::end(watches))
-    {
-      WatchSpec ws(inSp.directory, inSp.filenames);
-
-      ws.descriptor = inotify_add_watch( inotify_descriptor, ws.directory.c_str()
-                                       , IN_CLOSE_WRITE );
-
-      if (ws.descriptor < 0)
-      {
-        BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot add filesystem watcher."
-                                 << "Ensure directory '" << ws.directory << "' exists.";
-        ws.descriptor = -1;
-        continue;
-      }
-
-      watches.push_back(ws);
-
-      BOOST_LOG_TRIVIAL(info) << "Added filter '" << inSp.filenames << "' and watch directory '" << ws.directory << "'.";
-    }
-    else
-    {
-      WatchSpec& ws(*it);
-
-      ws.files_filters.push_back(inSp.filenames);
-
-      BOOST_LOG_TRIVIAL(info) << "Added filter '" << inSp.filenames << "' to watch directory '" << ws.directory << "'.";
-    }
-  }
-
-  if (watches.empty())
-  {
-    remove_watches();
-
-    BOOST_LOG_TRIVIAL(error) << "Failed: No valid filesystem watchers found for notification.";
-  }
-}
-
-
-INotify::~INotify()
-{
-  remove_watches();
-
-  if (inotify_descriptor >=0)
-  {
-    close( inotify_descriptor );
-    inotify_descriptor = -1;
-  }
-}
-
-void INotify::processEvents(std::vector<fs::path>& out_newFiles)
-{
-  assert(done_descriptor > 0 && "'done' event already recieved.");
-
-  constexpr size_t EVENT_SIZE = sizeof (struct inotify_event);
-  constexpr size_t BUF_LEN = 1024 * ( EVENT_SIZE + 16 );
-
-  bool done = false;
-  char buffer[BUF_LEN];
-
-  if (!isReady())
-  {
-    // nothing yet
-    return;
-  }
-
-  const long length = read( inotify_descriptor, buffer, BUF_LEN );
-
-  if ( length < 0 )
-  {
-    BOOST_LOG_TRIVIAL(warning) << "WARNING: INotify read failed.";
-    return;
-  }
-
-  int i = 0;
-  while ( i < length )
-  {
-    struct inotify_event* event = static_cast<struct inotify_event*>(static_cast<void*>(&buffer[i]));
-
-    boost::optional<const WatchSpec> ows(get_watch_spec(*event));
-
-    if (ows.is_initialized())
-    {
-      const WatchSpec& watch(ows.get());
-
-      if (is_closed_file(*event))
-      {
-        BOOST_LOG_TRIVIAL(debug) << "Event IS a closed file: '" << event->name << " :: " << event->mask << "\n";
-        const fs::path name(watch.directory / event->name);
-        for(const auto& files_filter: watch.files_filters)
-        {
-            if (boost::regex_match(event->name, files_filter))
-            {
-              BOOST_LOG_TRIVIAL(debug) << "Watched file '" << name << "' matched regex.\n";
-
-              // add to client's newly found files
-              out_newFiles.push_back(name);
-
-              // add to our bookkeeping list
-              auto fitr = std::find(std::begin(found_files), std::end(found_files), name);
-              if (fitr == std::end(found_files))
-              {
-                found_files.push_back(name);
-                BOOST_LOG_TRIVIAL(debug) << "Added newly found file '" << name << "' to found files.\n";
-              }
-            }
-            else
-            {
-              BOOST_LOG_TRIVIAL(debug) << "Event name does not match the files_filter. Event name/mask/filter (" << event->name << " :: " << event->mask << " :: " << files_filter << ")\n";
-            }
-        }
-      }
-      else
-      {
-        BOOST_LOG_TRIVIAL(debug) << "Event is NOT a closed file: '" << event->name << " :: " << event->mask << "\n";
-      }
-    }
-
-    if (is_done_event(*event))
-    {
-      done = true;
-      BOOST_LOG_TRIVIAL(debug) << "DONE Event! file '" << done_file << "' was modified.\n";
-    }
-
-    i += EVENT_SIZE + event->len;
-  }
-
-  if (done)
-  {
-    remove_watches();
-  }
-}
-
-// TODO: Generalize how done is signalled (not just by writing a file,
-//       but other options too, e.g., co-process has ended)
-bool INotify::isDone() const
-{
-  return done_descriptor < 0;
-}
-
-bool INotify::isReady() const
-{
-  const __time_t secs = 1;
-  timeval timeout{secs,0};
-  fd_set r_fds, w_fds, x_fds;
-  FD_ZERO(&r_fds);
-  FD_ZERO(&w_fds);
-  FD_ZERO(&x_fds);
-  FD_SET(inotify_descriptor, &r_fds);
-
-  const int result = select(inotify_descriptor+1, &r_fds, &w_fds, &x_fds, &timeout);
-
-  return result > 0;
-}
-
-
-void INotify::remove_watches()
-{
-  if (done_descriptor >= 0)
-  {
-    inotify_rm_watch( inotify_descriptor, done_descriptor );
-    done_descriptor = -1;
-  }
-
-  for(auto& w: watches)
-  {
-    if (w.descriptor >= 0)
-    {
-      inotify_rm_watch( inotify_descriptor, w.descriptor );
-      w.descriptor = -1;
-    }
-  }
-}
-
-
-PollingNotify::PollingNotify(const std::vector<std::string>& watch_paths, const std::string& done_file_path)
-    : watch_dirs(watch_paths), done_file(done_file_path)
-{
-    // Ensure done file exists at startup
-    done_file_mtime = getFileMtime(done_file);
-    if (done_file_mtime == 0) {
-        std::cerr << "ERROR: Done file must exist at startup: " << done_file << std::endl;
-        exit(EXIT_FAILURE);
-    }
-}
-
-void PollingNotify::processEvents(std::vector<std::string>& newfiles)
-{
-    for (const auto& dir : watch_dirs)
-    {
-        scanDirectory(dir, newfiles);
-    }
-}
-
-bool PollingNotify::isDonePolling()
-{
-    time_t new_mtime = getFileMtime(done_file);
-    
-    // Done file deleted or modified
-    if (new_mtime == 0 || new_mtime != done_file_mtime) {
-        return true;
-    }
-    
-    return false;
-}
-
-void PollingNotify::scanDirectory(const std::string& dir, std::vector<std::string>& newfiles)
-{
-    DIR* d = opendir(dir.c_str());
-    if (!d) {
-        std::cerr << "WARNING: Cannot open directory: " << dir << std::endl;
-        return;
-    }
-
-    struct dirent* entry;
-    while ((entry = readdir(d)) != nullptr)
-    {
-        if (entry->d_type == DT_DIR) continue;  // Skip directories
-
-        std::string filepath = dir + "/" + entry->d_name;
-        time_t mtime = getFileMtime(filepath);
-
-        // File is new or modified
-        if (mtime > 0 && (known_files.find(filepath) == known_files.end() || known_files[filepath].mtime != mtime))
-        {
-            newfiles.push_back(filepath);
-            known_files[filepath] = {mtime};
-        }
-    }
-    closedir(d);
-}
-
-time_t PollingNotify::getFileMtime(const std::string& filepath)
-{
-    struct stat file_stat;
-    if (stat(filepath.c_str(), &file_stat) == 0)
-        return file_stat.st_mtime;
-    
-    return 0;  // File does not exist
-}
+ #include "sentinels/notification.h"
+ #include "utils/logger.h"
+ 
+ #include <iostream>
+ #include <algorithm>
+ #include <fstream>
+ #include <chrono>
+ #include <thread>
+
+ #include <boost/filesystem.hpp>
+ #include <boost/regex.hpp>
+ 
+ namespace fs = boost::filesystem;
+ 
+ Notify::Notify()
+ {
+   BOOST_LOG_TRIVIAL(trace) << "STARTED Notification";
+ }
+ 
+ Notify::~Notify()
+ {
+   BOOST_LOG_TRIVIAL(trace) << "FINALIZED Notification.";
+ }
+ 
+ void Notify::processEvents(std::vector<boost::filesystem::path>&)
+ {
+ }
+ 
+ bool Notify::isDone() const
+ {
+   return true;
+ }
+ 
+ PollingNotify::PollingNotify( const std::vector<InputSpecPaths>& watch_paths
+                             , const fs::path& done)
+   : Notify(), done_file(done), polling_interval(2), done_flag(false),
+     monitoring_start_time(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()))
+ {
+   BOOST_LOG_TRIVIAL(trace) << "STARTED PollingNotify";
+ 
+   if (!fs::is_regular_file(done_file))
+   {
+     BOOST_LOG_TRIVIAL(error) << "Failed: Cannot set polling 'done'. Expected an existing file. "
+                              << "Ensure file '" << done_file << "' exists.";
+     done_flag = true;
+     return;
+   }
+ 
+   for (const auto& inSp: watch_paths)
+   {
+     if (!fs::is_directory(inSp.directory))
+     {
+       BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot set polling 'watch'. Expected an existing directory. "
+                                << "Ensure directory '" << inSp.directory << "' exists.";
+       continue;
+     }
+ 
+     if (fs::equivalent(done_file.parent_path(), inSp.directory))
+     {
+       BOOST_LOG_TRIVIAL(warning) << "Failed: Cannot set polling 'done'. Expected file outside of 'watch' directory. "
+                                << "Ensure file '" << done_file << "' is not within '"
+                                << inSp.directory << "' directory.";
+       continue;
+     }
+ 
+     auto it = std::find_if(watches.begin(), watches.end(),
+                            [&](const WatchSpec& w) { return inSp.directory == w.directory; });
+ 
+     if (it == watches.end())
+     {
+       watches.emplace_back(inSp.directory, inSp.filenames);
+       BOOST_LOG_TRIVIAL(info) << "Added filter '" << inSp.filenames << "' and watch directory '" << inSp.directory << "'.";
+     }
+     else
+     {
+       it->files_filters.push_back(inSp.filenames);
+       BOOST_LOG_TRIVIAL(info) << "Added filter '" << inSp.filenames << "' to watch directory '" << it->directory << "'.";
+     }
+   }
+ }
+ 
+ PollingNotify::~PollingNotify()
+ {
+   BOOST_LOG_TRIVIAL(trace) << "FINALIZED PollingNotify.";
+ }
+ 
+ void PollingNotify::processEvents(std::vector<fs::path>& out_newFiles)
+ {
+   if (done_flag)
+     return;
+ 
+   for (auto& watch : watches)
+   {
+     for (fs::directory_iterator itr(watch.directory), end; itr != end; ++itr)
+     {
+       if (!fs::is_regular_file(itr->path()))
+         continue;
+ 
+       const std::string filename = itr->path().filename().string();
+       auto last_write_time = fs::last_write_time(itr->path());
+ 
+       if (last_write_time <= monitoring_start_time)
+         continue;
+ 
+       for (const auto& filter : watch.files_filters)
+       {
+         if (boost::regex_match(filename, filter))
+         {
+           auto known = watch.known_files.find(filename);
+           if (known == watch.known_files.end() || known->second != last_write_time)
+           {
+             out_newFiles.push_back(itr->path());
+             watch.known_files[filename] = last_write_time;
+             BOOST_LOG_TRIVIAL(debug) << "Detected new/updated file: " << itr->path();
+           }
+         }
+       }
+     }
+   }
+   done_flag = checkDone();
+   std::this_thread::sleep_for(std::chrono::seconds(polling_interval));
+ }
+ 
+ bool PollingNotify::isDone() const
+ {
+   return done_flag;
+ }
+ 
+ bool PollingNotify::checkDone() const
+ {
+   return !fs::exists(done_file);
+ }

@@ -39,16 +39,15 @@ int main(int argc, char* argv[])
   //       WatchFS uses INotify (if all nodes have a node master)
   //       or PollFS (for shared filesystem)
   std::unique_ptr<Notify> notify;
-
   {
-    const bool watchPaths(configs.hasWatchPaths());
-    const bool doneFile(configs.hasDoneFile());
-
-    if (!watchPaths && !doneFile)
-      notify.reset(new Notify());
-    else
-      notify.reset(new INotify( configs.getWatchPaths()
-                              , configs.getDoneFile()));
+      const bool watchPaths = configs.hasWatchPaths();
+      const bool doneFile = configs.hasDoneFile();
+  
+      if (!watchPaths && !doneFile) {
+          notify.reset(new Notify());
+      } else {
+          notify.reset(new PollingNotify(configs.getWatchPaths(), configs.getDoneFile()));
+      }
   }
 
   Coordinator coordinator(app, *notify.get(), configs);
@@ -97,10 +96,9 @@ int main(int argc, char* argv[])
   while (!isFinished)
   {
       notify->processEvents(newfiles);
-  
-      isFinished = notify->isDonePolling() || coordinator.update(newfiles);
+      isFinished = notify->isDone() || coordinator.update(newfiles);
       newfiles.clear();
-  
+
       if (app.isInporter())
       {
           inporter->process(coordinator.getReadyFiles(), shouldDelete);
