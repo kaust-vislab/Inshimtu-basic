@@ -1,0 +1,26 @@
+{
+    "input": {
+      "watch": {
+        "directory_path": "/scratch/kressjm/inshimtu-paper/runs/gray-scott-1024grid-256procs",
+        "files_regex": ".*_step-\\d+\\.pvti"
+      }
+    },
+    "pipeline": {
+      "scripts": [
+          "gray-scott-1024-png-clip.py"
+        ],
+      "variables": [
+          "u,v"
+        ]
+      },
+    "control": {
+      "catalyst_lib": "/scratch/kressjm/inshimtu-paper/paraview/build/install/lib/catalyst",
+      "done_watchfile": "testing.done",
+      "initial_connection_wait_secs": 0,
+      "catalyst_inporter_nodes": [ 
+          "0"
+        ],
+      "delete_processed_input_files": false
+      }
+  }
+  

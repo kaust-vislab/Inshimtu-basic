@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Author: James Kress, <james.kress@kaust.edu.sa>
+#
+#SBATCH --account=k01
+#SBATCH --job-name=inshimtu.shaheen
+#SBATCH --output=inshimtu.%j.out
+#SBATCH --error=inshimtu.%j.out
+#SBATCH --partition=workq
+#SBATCH --nodes=18
+#SBATCH --mem=0
+#SBATCH --time=12:00:00
+
+# load the paraview environment
+module swap PrgEnv-${PE_ENV,,} PrgEnv-gnu/8.5.0
+module unload cray-python
+module load cmake
+export CRAYPE_LINK_TYPE=dynamic
+CMAKE=$(which cmake)
+module unload cray-libsci
+
+#OpenMP settings:
+export OMP_NUM_THREADS=4
+
+# export paths
+export PATH=/scratch/kressjm/inshimtu-paper/paraview/build/install/bin:$PATH
+export ParaView_DIR=/scratch/kressjm/inshimtu-paper/paraview/build/install
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scratch/kressjm/inshimtu-paper/paraview/build/install/lib
+
+echo "Running Gray-scott"
+time srun --hint=nomultithread --ntasks=256 --ntasks-per-node=16 --ntasks-per-socket=8 --cpus-per-task=4 --ntasks-per-core=1 --mem-bind=v,local --cpu-bind=threads ./kvvm-gray-scott --settings-file=settings-vtk-pvti.json --logging-level=INFO  &
+
+
+#OpenMP settings:
+export OMP_NUM_THREADS=64
+echo "Running Inshimtu"
+time srun --hint=nomultithread --ntasks=2 --ntasks-per-node=1 --ntasks-per-socket=1 --cpus-per-task=1 --ntasks-per-core=64 --cpu-bind=threads --mem-bind=v,none  ./inshimtu -c png-countour-watchDir-gray-scott.json  --verbosity trace
+
+date
+echo "Run finished"

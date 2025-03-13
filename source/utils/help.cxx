@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 
+#include <cstdint>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
